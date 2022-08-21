@@ -18,6 +18,9 @@ document.getElementById("print_button").onclick = (() => console.log(textEditor.
 textEditor.begin_draw();
 
 /* What's new:
+    Hosting:
+      We're on GitHub! Say hello!
+
     Editor:
       improved aesthetics
 

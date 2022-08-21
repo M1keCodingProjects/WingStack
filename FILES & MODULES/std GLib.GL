@@ -1,0 +1,81 @@
+## THIS IS THE BASIC GAMELANG LIBRARY MODULE ##
+use "basic stack ops"
+
+def typecheck => el typ msg {
+  make elType = el type
+  when elType typ != { flag msg " expected " typ " but got " elType " instead." str }
+  exit el
+}
+
+def mult => f1 f2 { # this is a type friendly function, repeating f2 times any f1 input
+  typecheck( f2 "number" "mult function" )
+  make _f1 = f1
+  when f1 type "list" == {
+    _f1 = _f1 spill #dereference
+    loop f2 1 - { f1 = f1 spill _f1 spill }
+  } else {
+    loop f2 1 - { f1 += _f1 }
+  }
+  exit f1
+}
+
+def random => from to {
+  exit rangeList( from 1 to ) rand pop
+}
+
+def ? => condition eval altEval {
+  when condition { exit eval } else { exit altEval }
+}
+
+## THESE ARE LIST SPECIFIC FUNCTIONS THAT WILL BE PART OF THE LIST CLASS ONCE IMPLEMENTED ##
+def rangeList => from step to {
+  make arr = from pack
+  when step not { exit arr }
+  when step 0 < dup not from to 2dup < rot> > and rot> and or { # ((step>=0)&&(from>to))||((from<to)&&(step<0))
+    flag "Invalid range: from " from " to " to " with step = " step str
+  }
+  
+  loop to from - step // { arr = arr spill dup step + }
+  exit arr
+}
+
+def in => arr el {
+  loop arr range with i {
+    when arr[ i ] el == { exit TRUE }
+  }
+  exit FALSE
+}
+
+def findMax => arr {
+  make m = arr spill
+  loop arr range 1 - { m = m spill max }
+  exit m
+}
+
+def findMin => arr {
+  make m = arr spill
+  loop arr range 1 - { m = m spill min }
+  exit m
+}
+
+def sumAll => arr {
+  make s = 0
+  loop arr range with i { s += arr[ i ] }
+  exit s
+}
+
+def avg => arr {
+  exit arr range sumAll( arr ) swap /
+}
+
+def flip => arr {
+  when arr range 1 == { exit arr }
+  make j = arr range
+  make arr2 = arr spill
+  loop j with i {
+    j -= 1
+    arr[ i ] = arr2[ j ]
+  }
+  
+  exit arr
+}

@@ -1,0 +1,5 @@
+use "std GLib" with std
+
+# Hi! this is an Integrated Development Environment for GameLang, aka GLIDE
+# press the button on the left to Build & Run your code, or the one on the right to
+# print it to the console

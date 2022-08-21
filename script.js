@@ -17,21 +17,6 @@ document.getElementById("run_button").onclick   = (() => GLC.run(textEditor.prin
 document.getElementById("print_button").onclick = (() => console.log(textEditor.printText()));
 textEditor.begin_draw();
 
-/* What's new:
-    Hosting:
-      We're on GitHub! Say hello!
-
-    Editor:
-      improved aesthetics
-
-    Bug fixing:
-      fixed bug where functions with no arguments would throw a syntax error upon calling because they require an empty stackExpr
-      fixed bug where a compile-time error would make any subsequent runtime throw a "module already loaded" error on used modules because compiler.resetExec() wasn't getting called
-
-    General polish:
-
-*/
-
 /* TODO:
     Utmost priority:
       fix the fucking editor: add scrolling and the custom console

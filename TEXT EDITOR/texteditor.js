@@ -12,7 +12,7 @@ const CARET_TRANSL_X   = TEXT_SIZE / -16;
 //Future me will probably fix this
 
 export default class TextEditor {
-    constructor(initText = "", canvasWidth = window.innerWidth * 0.99, canvasHeight = window.innerHeight * 0.6, crispScl = 4) {
+    constructor(initText = "", canvasWidth = window.innerWidth * 0.99, canvasHeight = window.innerHeight * 0.9, crispScl = 4) {
         this.loadText(initText);
         this.scl = crispScl;
         this.canvas = document.createElement('canvas');
@@ -22,10 +22,15 @@ export default class TextEditor {
         this.canvas.height = canvasHeight * this.scl;
         document.getElementById("EditorContainer").appendChild(this.canvas);
         
-        this.caret = new Caret(this, CARET_TRANSL_X, CARET_TRANSL_Y);
+        this.scrollX = new ScrollBar(0, canvasHeight * 0.955, canvasWidth * 0.96,  canvasWidth * 0.005);
+        this.scrollY = new ScrollBar(canvasWidth * 0.97, 0,  canvasWidth * 0.005, canvasHeight * 0.96);
+        this.caret   = new Caret(this, CARET_TRANSL_X, CARET_TRANSL_Y);
         
         this.styleFile = this.finalizeData(styleData);
         this.looping = true;
+        this.longestLine = this.text.reduce((acc, line) => line.length > acc.length ? line : acc);
+        this.caret.updateLateralScroll();
+        this.caret.updateVerticalScroll();
     }
 
     loadText(initText) {
@@ -42,9 +47,6 @@ export default class TextEditor {
     printText() {
       return this.text.map(l => l.join("")).join("\n").replace("\\n", "\n");
     }
-
-    getRGBA(r, g, b, a = 255) { return b === undefined ? `rgba(${r}, ${r}, ${r}, ${g === undefined ? 255 : g / 255})` : `rgba(${r}, ${g}, ${b}, ${a / 255})`; }
-
     set_textSize(ctx, size) {
         ctx.font = `bold ${TEXT_SIZE}px monospace`;
     }
@@ -63,17 +65,17 @@ export default class TextEditor {
     display_lineCounter(ctx) {
         ctx.save();
         ctx.translate(5, 0);
-        ctx.fillStyle = this.getRGBA(200, 10);
+        ctx.fillStyle = getRGBA(200, 10);
         ctx.fillRect(0, 0, TEXT_SIZE, this.canvas.height);
         ctx.translate(0, OVERALL_TRANSL_Y);
         ctx.fillRect(TEXT_SIZE, this.caret.y * TEXT_SPACING_V - TEXT_SIZE / 15, this.canvas.width, TEXT_SIZE);
-        ctx.fillStyle = this.getRGBA(200, 40);
+        ctx.fillStyle = getRGBA(200, 40);
         this.set_textAlign(ctx, "center", "top");
         this.set_textSize(ctx, TEXT_SIZE);
         
         for(let y = 0; y < this.canvas.height / TEXT_SPACING_V; y++) {
             if(y >= this.text.length) break;
-            ctx.fillStyle = this.getRGBA(220, 220 - 150 * (this.caret.y == y), 220, 40 + 40 * (this.caret.y == y));
+            ctx.fillStyle = getRGBA(220, 220 - 150 * (this.caret.y == y), 220, 40 + 40 * (this.caret.y == y));
             ctx.fillText("" + y, TEXT_SIZE / 2, y * TEXT_SPACING_V + CARET_TRANSL_Y);
         }
         ctx.restore();
@@ -122,7 +124,7 @@ export default class TextEditor {
 
     display_lineHighlight(ctx, lineID, fromXID, toXID) {
         ctx.save();
-        ctx.fillStyle = this.getRGBA(255, 50);
+        ctx.fillStyle = getRGBA(255, 50);
         ctx.fillRect(fromXID * TEXT_SPACING_H, lineID * TEXT_SPACING_V, (toXID - fromXID) * TEXT_SPACING_H, TEXT_SIZE);
         ctx.restore();
     }
@@ -131,12 +133,16 @@ export default class TextEditor {
         const ctx = objRef.canvas.getContext("2d");
         if(!this.looping) return;
         ctx.save();
+        ctx.translate(-this.scrollX.x, -this.scrollY.y);
         this.display_background(ctx);
         this.display_lineCounter(ctx);
         ctx.translate(OVERALL_TRANSL_X, OVERALL_TRANSL_Y);
-        ctx.fillStyle = this.getRGBA(220);
+        ctx.fillStyle = getRGBA(220);
         this.display_text(ctx);
         this.caret.show(ctx);
+        ctx.translate(this.scrollX.x, this.scrollY.y);
+        this.scrollX.show(ctx);
+        this.scrollY.show(ctx);
         ctx.restore();
         window.requestAnimationFrame(this.draw.bind(objRef, this));
     }
@@ -207,7 +213,33 @@ class Caret {
       event.preventDefault();
     }
     
-    correct_xUnderflow() { this.x = this.y > 0 ? this.container.text[this.y - 1].length : 0; }
+    updateLateralScroll() {
+      this.container.scrollX.update(this.container.longestLine.length, 0);
+    }
+
+    updateVerticalScroll() {
+      this.container.scrollY.update(0, this.container.text.length);
+    }
+
+    scroll_x() {
+      //this.container.scrollX.move(this.x, 0);
+    }
+
+    scroll_y() {
+      this.container.scrollY.move(0, this.y);
+    }
+
+    moveLateralScroll(event) {
+      this.container.scrollY.move(event.clientX, event.clientY);
+    }
+
+    moveVerticalScroll(event) {
+      this.container.scrollY.move(event.clientX, event.clientY);
+    }
+
+    correct_xUnderflow() {
+      this.x = this.y > 0 ? this.container.text[this.y - 1].length : 0;
+    }
     
     go_up() {
       this.y--;              //could implement "this.oldIndentX" or something, so that it's a bit nicer to use.
@@ -246,7 +278,7 @@ class Caret {
       }
     }
     
-    flush() { //UNSAFE:: used only when caret is part of console-type TextEditor textbox, as overwrite for go_newLine
+    flush() { //Unused
       if(this.selection) this.delete_selection();
       this.container.print(this.container.text.map(l => l.join("")).join(""));
       this.container.text = [[]];
@@ -272,6 +304,9 @@ class Caret {
       }
       this.y++;
       this.x = indent.length;
+
+      this.updateLateralScroll();
+      this.updateVerticalScroll();
     }
     
     write(letter) {
@@ -280,6 +315,10 @@ class Caret {
       if(this.x == currentLine.length) this.container.text[this.y].push(letter);
       else this.container.text[this.y].splice(this.x, 0, letter);
       this.x++;
+      
+      const updatedLine = this.container.text[this.y];
+      if(updatedLine !== this.container.longestLine && updatedLine.length > this.container.longestLine.length) this.container.longestLine = updatedLine;
+      this.updateLateralScroll();
     }
     
     delete_selection() {
@@ -323,9 +362,13 @@ class Caret {
             let nextLine = this.container.text.splice(this.y, 1)[0];
             this.y--;
             if(nextLine.length) this.container.text[this.y].push(...nextLine);
+            this.updateVerticalScroll();
           }
         }
       }
+      const updatedLine = this.container.text[this.y];
+      if(updatedLine !== this.container.longestLine && updatedLine.length > this.container.longestLine.length) this.container.longestLine = updatedLine;
+      this.updateLateralScroll();
     }
     
     worldCoords_toCaretCoords(x, y) {
@@ -337,7 +380,7 @@ class Caret {
     
     get_worldCoords() {
       let rect = this.container.canvas.getBoundingClientRect();
-      return [this.x * TEXT_SPACING_H + this.worldX + OVERALL_TRANSL_X + rect.left, this.y * TEXT_SPACING_V + this.worldY + OVERALL_TRANSL_Y + rect.top/* + verticalScroll*/];
+      return [this.x * TEXT_SPACING_H + this.worldX + OVERALL_TRANSL_X + rect.left, this.y * TEXT_SPACING_V + this.worldY + OVERALL_TRANSL_Y + rect.top];
     }
     
     position_manually(event) {
@@ -375,6 +418,8 @@ class Caret {
       this.animationBuffer = 1;
       this.flickerAnimation = Math.PI / 2; //makes the caret bright on release
       this.selection = false;
+      this.scroll_x();
+      this.scroll_y();
     }
     
     make_newSelection(event) {
@@ -427,11 +472,102 @@ class Caret {
       ctx.save();
       this.container.set_textAlign(ctx, "center", "top");
       this.container.set_textSize(ctx, TEXT_SIZE);
-      if(!this.animationBuffer) ctx.fillStyle = this.container.getRGBA(220, 255 * (Math.sin(this.flickerAnimation) > 0));
+      if(!this.animationBuffer) ctx.fillStyle = getRGBA(220, 255 * (Math.sin(this.flickerAnimation) > 0));
       ctx.translate(this.x * TEXT_SPACING_H + this.worldX, this.y * TEXT_SPACING_V + this.worldY);
       ctx.fillText("|", 0, 0);
       ctx.restore();
     }
 }
 
+class ScrollBar {
+  constructor(x, y, w, h) {
+    this.showX = x;
+    this.showY = y;
+    this.x = 0;
+    this.y = 0;
+    this.w = w;
+    this.h = h;
+    
+    this.maxW = this.w;
+    this.maxH = this.h;
+    this.minW = this.w * 0.1;
+    this.minH = this.h * 0.1;
+    
+    this.cornerRadius = Math.min(this.w, this.h) / 2;
+    this.canFit = Math.round(this.h > this.w ? this.h / TEXT_SPACING_V : this.w / TEXT_SPACING_H);
+  }
+
+  update(xAmt, yAmt) {
+    if(xAmt) {
+      if(xAmt <= this.canFit) return this.w = this.maxW;
+      const newWidth = this.maxW - xAmt * TEXT_SPACING_H / 20;
+      if(newWidth >= this.minW) return this.w = newWidth;
+    }
+    else {
+      if(yAmt <= this.canFit) return this.h = this.maxH;
+      const newHeight = this.maxH - yAmt * TEXT_SPACING_V / 10;
+      if(newHeight >= this.minH) this.h = newHeight;
+    }
+  }
+
+  move(newX, newY) {
+    if(newX) {
+      this.x = newX - this.canFit;
+      if(this.x + this.w > this.maxW) this.x = this.maxW - this.w;
+    }
+
+    if(newY) {
+      this.y = Math.max(newY - this.canFit + 1, 0) * TEXT_SPACING_V;
+      this.showY = 2;
+      //if(this.y + this.h > this.maxH + 1) this.y = this.maxH - this.h - 1;
+    }
+  }
+
+  isHovered(mouseX, mouseY) { //not implemented yet
+    return mouseX >= this.x && mouseX <= this.x + this.w && mouseY >= this.y && mouseY <= this.y + this.h;
+  }
+
+  show(ctx) {
+    ctx.save();
+    ctx.translate(this.showX, this.showY);
+    ctx.fillStyle = getRGBA(220, 50 + 30 * this.isHovered());
+    drawRect(ctx, 0, 0, this.w, this.h, this.cornerRadius);
+    ctx.fill();
+    ctx.restore();
+  }
+}
+
 const sign = (n) => n ? n / Math.abs(n) : 0;
+
+const getRGBA = (r, g, b, a = 255) => b === undefined ? `rgba(${r}, ${r}, ${r}, ${g === undefined ? 255 : g / 255})` : `rgba(${r}, ${g}, ${b}, ${a / 255})`;
+
+const drawRect = (ctx, x, y, w, h, tl, tr, br, bl) => {
+  ctx.beginPath();
+  if(tl === undefined) ctx.rect(x, y, w, h);
+  else {
+    if(tr === undefined) tr = tl;
+    if(br === undefined) br = tr;
+    if(bl === undefined) bl = br;
+
+    const absW = Math.abs(w);
+    const absH = Math.abs(h);
+    const hw = absW / 2;
+    const hh = absH / 2;
+    if(absW < 2 * tl) tl = hw;
+    if(absH < 2 * tl) tl = hh;
+    if(absW < 2 * tr) tr = hw;
+    if(absH < 2 * tr) tr = hh;
+    if(absW < 2 * br) br = hw;
+    if(absH < 2 * br) br = hh;
+    if(absW < 2 * bl) bl = hw;
+    if(absH < 2 * bl) bl = hh;
+
+    ctx.beginPath();
+    ctx.moveTo(x + tl, y);
+    ctx.arcTo(x + w, y, x + w, y + h, tr);
+    ctx.arcTo(x + w, y + h, x, y + h, br);
+    ctx.arcTo(x, y + h, x, y, bl);
+    ctx.arcTo(x, y, x + w, y, tl);
+    ctx.closePath();
+  }
+};

@@ -132,7 +132,7 @@ export class WhenProc extends Proc {
         this.block = new ArgClasses.BlockArg(this.ID, this.compiler, line.block.value, this.loops);
         
         if(line.else) {
-            if(line.else.name === "when") this.else = new WhenProc(this.compiler, line.else);
+            if(line.else.type[1] === "when") this.else = new WhenProc(this.compiler, line.else);
             else this.else = new ArgClasses.BlockArg(this.ID, this.compiler, line.else.block.value);
         }
     }

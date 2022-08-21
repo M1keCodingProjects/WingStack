@@ -133,14 +133,14 @@ export default class TextEditor {
         const ctx = objRef.canvas.getContext("2d");
         if(!this.looping) return;
         ctx.save();
-        ctx.translate(-this.scrollX.x, -this.scrollY.y);
+        ctx.translate(-this.scrollX.x * TEXT_SPACING_H, -this.scrollY.y * TEXT_SPACING_V);
         this.display_background(ctx);
         this.display_lineCounter(ctx);
         ctx.translate(OVERALL_TRANSL_X, OVERALL_TRANSL_Y);
         ctx.fillStyle = getRGBA(220);
         this.display_text(ctx);
         this.caret.show(ctx);
-        ctx.translate(this.scrollX.x, this.scrollY.y);
+        ctx.translate(this.scrollX.x * TEXT_SPACING_H, this.scrollY.y * TEXT_SPACING_V);
         this.scrollX.show(ctx);
         this.scrollY.show(ctx);
         ctx.restore();
@@ -373,14 +373,15 @@ class Caret {
     
     worldCoords_toCaretCoords(x, y) {
       let rect = this.container.canvas.getBoundingClientRect();
-      return [Math.round((x - rect.left - this.worldX - OVERALL_TRANSL_X) / TEXT_SPACING_H),
-              Math.floor((y - rect.top  - this.worldY - OVERALL_TRANSL_Y) / TEXT_SPACING_V)
+      return [Math.round((x - rect.left - this.worldX - OVERALL_TRANSL_X + this.container.scrollX.x * TEXT_SPACING_H) / TEXT_SPACING_H),
+              Math.floor((y - rect.top  - this.worldY - OVERALL_TRANSL_Y + this.container.scrollY.y * TEXT_SPACING_V) / TEXT_SPACING_V)
              ];
     }
     
     get_worldCoords() {
       let rect = this.container.canvas.getBoundingClientRect();
-      return [this.x * TEXT_SPACING_H + this.worldX + OVERALL_TRANSL_X + rect.left, this.y * TEXT_SPACING_V + this.worldY + OVERALL_TRANSL_Y + rect.top];
+      return [this.x * TEXT_SPACING_H + this.worldX + OVERALL_TRANSL_X + rect.left - this.container.scrollX.x * TEXT_SPACING_H,
+              this.y * TEXT_SPACING_V + this.worldY + OVERALL_TRANSL_Y + rect.top  - this.container.scrollY.y * TEXT_SPACING_V];
     }
     
     position_manually(event) {
@@ -494,7 +495,8 @@ class ScrollBar {
     this.minH = this.h * 0.1;
     
     this.cornerRadius = Math.min(this.w, this.h) / 2;
-    this.canFit = Math.round(this.h > this.w ? this.h / TEXT_SPACING_V : this.w / TEXT_SPACING_H);
+    this.canFit = Math.round(this.h > this.w ? this.maxH / TEXT_SPACING_V : this.maxW / TEXT_SPACING_H);
+    this.maxLen = this.canFit;
   }
 
   update(xAmt, yAmt) {
@@ -505,22 +507,22 @@ class ScrollBar {
     }
     else {
       if(yAmt <= this.canFit) return this.h = this.maxH;
+      this.maxLen = yAmt;
       const newHeight = this.maxH - yAmt * TEXT_SPACING_V / 10;
       if(newHeight >= this.minH) this.h = newHeight;
     }
   }
 
   move(newX, newY) {
-    if(newX) {
-      this.x = newX - this.canFit;
-      if(this.x + this.w > this.maxW) this.x = this.maxW - this.w;
-    }
+    //x goes here lol
 
-    if(newY) {
-      this.y = Math.max(newY - this.canFit + 1, 0) * TEXT_SPACING_V;
-      this.showY = 2;
-      //if(this.y + this.h > this.maxH + 1) this.y = this.maxH - this.h - 1;
+    if(newY > this.y) {
+      if(newY - this.y >= this.canFit) this.y = newY + 1 - this.canFit;
     }
+    else  {
+      this.y = newY;
+    }
+    this.showY = (this.maxLen - this.y) * (this.maxH - this.h);
   }
 
   isHovered(mouseX, mouseY) { //not implemented yet

@@ -22,7 +22,7 @@ export default class TextEditor {
         this.canvas.height = canvasHeight * this.scl;
         document.getElementById("EditorContainer").appendChild(this.canvas);
         
-        this.scrollX = new ScrollBar(0, canvasHeight * 0.955, canvasWidth * 0.96,  canvasWidth * 0.005);
+        this.scrollX = new ScrollBar(0, canvasHeight * 0.97 - OVERALL_TRANSL_Y / 2, canvasWidth * 0.96,  canvasWidth * 0.005);
         this.scrollY = new ScrollBar(canvasWidth * 0.97, 0,  canvasWidth * 0.005, canvasHeight * 0.96);
         this.caret   = new Caret(this, CARET_TRANSL_X, CARET_TRANSL_Y);
         
@@ -65,24 +65,34 @@ export default class TextEditor {
     display_lineCounter(ctx) {
         ctx.save();
         ctx.translate(5, 0);
-        ctx.fillStyle = getRGBA(200, 10);
+        ctx.fillStyle = getRGBA(49);
         ctx.fillRect(0, 0, TEXT_SIZE, this.canvas.height);
         ctx.translate(0, OVERALL_TRANSL_Y);
-        ctx.fillRect(TEXT_SIZE, this.caret.y * TEXT_SPACING_V - TEXT_SIZE / 15, this.canvas.width, TEXT_SIZE);
         ctx.fillStyle = getRGBA(200, 40);
         this.set_textAlign(ctx, "center", "top");
         this.set_textSize(ctx, TEXT_SIZE);
         
         for(let y = 0; y < this.canvas.height / TEXT_SPACING_V; y++) {
-            if(y >= this.text.length) break;
-            ctx.fillStyle = getRGBA(220, 220 - 150 * (this.caret.y == y), 220, 40 + 40 * (this.caret.y == y));
-            ctx.fillText("" + y, TEXT_SIZE / 2, y * TEXT_SPACING_V + CARET_TRANSL_Y);
+            const scrolledY = y + this.scrollY.y;
+            if(scrolledY >= this.text.length) break;
+            ctx.fillStyle = getRGBA(220, 220 - 150 * (this.caret.y == scrolledY), 220, 40 + 40 * (this.caret.y == scrolledY));
+            ctx.fillText(`${scrolledY}`, TEXT_SIZE / 2, y * TEXT_SPACING_V + CARET_TRANSL_Y);
         }
         ctx.restore();
     }
 
+    display_currentLineHighlight(ctx) {
+      ctx.save();
+      ctx.translate(5, OVERALL_TRANSL_Y);
+      ctx.fillStyle = getRGBA(200, 20);
+      ctx.fillRect(TEXT_SIZE, (this.caret.y - this.scrollY.y) * TEXT_SPACING_V - TEXT_SIZE / 15, this.canvas.width, TEXT_SIZE);
+      ctx.restore();
+    }
+
     display_text(ctx) {
         ctx.save();
+        this.display_currentLineHighlight(ctx);
+        ctx.translate(-this.scrollX.x * TEXT_SPACING_H + OVERALL_TRANSL_X, -this.scrollY.y * TEXT_SPACING_V + OVERALL_TRANSL_Y);
         let delimiterOpen = false;
         for(let y = 0; y < this.text.length; y++) {
             let lineArr = [...this.text[y]];
@@ -111,6 +121,7 @@ export default class TextEditor {
               ctx.fillText(ch, x * TEXT_SPACING_H, y * TEXT_SPACING_V);
             }
         }
+        this.caret.show(ctx);
         ctx.restore();
     }
 
@@ -133,14 +144,11 @@ export default class TextEditor {
         const ctx = objRef.canvas.getContext("2d");
         if(!this.looping) return;
         ctx.save();
-        ctx.translate(-this.scrollX.x * TEXT_SPACING_H, -this.scrollY.y * TEXT_SPACING_V);
         this.display_background(ctx);
-        this.display_lineCounter(ctx);
-        ctx.translate(OVERALL_TRANSL_X, OVERALL_TRANSL_Y);
         ctx.fillStyle = getRGBA(220);
         this.display_text(ctx);
-        this.caret.show(ctx);
-        ctx.translate(this.scrollX.x * TEXT_SPACING_H, this.scrollY.y * TEXT_SPACING_V);
+        this.display_lineCounter(ctx);
+        ctx.translate(OVERALL_TRANSL_X, OVERALL_TRANSL_Y);
         this.scrollX.show(ctx);
         this.scrollY.show(ctx);
         ctx.restore();
@@ -214,19 +222,19 @@ class Caret {
     }
     
     updateLateralScroll() {
-      this.container.scrollX.update(this.container.longestLine.length, 0);
+      this.container.scrollX.updateX(this.container.longestLine.length);
     }
 
     updateVerticalScroll() {
-      this.container.scrollY.update(0, this.container.text.length);
+      this.container.scrollY.updateY(this.container.text.length);
     }
 
     scroll_x() {
-      //this.container.scrollX.move(this.x, 0);
+      this.container.scrollX.moveX(this.x);
     }
 
     scroll_y() {
-      this.container.scrollY.move(0, this.y);
+      this.container.scrollY.moveY(this.y);
     }
 
     moveLateralScroll(event) {
@@ -482,7 +490,7 @@ class Caret {
 
 class ScrollBar {
   constructor(x, y, w, h) {
-    this.showX = x;
+    this.showX = x; 
     this.showY = y;
     this.x = 0;
     this.y = 0;
@@ -493,36 +501,44 @@ class ScrollBar {
     this.maxH = this.h;
     this.minW = this.w * 0.1;
     this.minH = this.h * 0.1;
-    
+
     this.cornerRadius = Math.min(this.w, this.h) / 2;
     this.canFit = Math.round(this.h > this.w ? this.maxH / TEXT_SPACING_V : this.maxW / TEXT_SPACING_H);
     this.maxLen = this.canFit;
   }
 
-  update(xAmt, yAmt) {
-    if(xAmt) {
-      if(xAmt <= this.canFit) return this.w = this.maxW;
-      const newWidth = this.maxW - xAmt * TEXT_SPACING_H / 20;
-      if(newWidth >= this.minW) return this.w = newWidth;
-    }
-    else {
-      if(yAmt <= this.canFit) return this.h = this.maxH;
-      this.maxLen = yAmt;
-      const newHeight = this.maxH - yAmt * TEXT_SPACING_V / 10;
-      if(newHeight >= this.minH) this.h = newHeight;
-    }
+  updateX(xAmt) {
+    this.maxLen = xAmt;
+    if(xAmt < this.canFit) return this.w = this.maxW;
+    this.w = this.maxW - (xAmt - this.canFit) * TEXT_SPACING_V / 20;
+    if(this.w < this.minW) this.w = this.minW;
+    if(this.w > this.maxW) this.w = this.maxW;
+  }
+  
+  updateY(yAmt) {
+    this.maxLen = yAmt;
+    if(yAmt < this.canFit) return this.h = this.maxH;
+    this.h = this.maxH - (yAmt - this.canFit) * TEXT_SPACING_V / 10;
+    if(this.h < this.minH) this.h = this.minH;
+    if(this.h > this.maxH) this.h = this.maxH;
   }
 
-  move(newX, newY) {
-    //x goes here lol
+  moveX(newX) {
+    if(newX > this.x) {
+      if(newX - this.x < this.canFit) return;
+      this.x = newX + 1 - this.canFit;
+    }
+    else this.x = newX;
+    this.showX = map(this.x, 0, this.maxLen - this.canFit + 1, 0, this.maxW - this.w);
+  }
 
+  moveY(newY) {    
     if(newY > this.y) {
-      if(newY - this.y >= this.canFit) this.y = newY + 1 - this.canFit;
+      if(newY - this.y < this.canFit) return;
+      this.y = newY + 1 - this.canFit;
     }
-    else  {
-      this.y = newY;
-    }
-    this.showY = (this.maxLen - this.y) * (this.maxH - this.h);
+    else this.y = newY;
+    this.showY = map(this.y, 0, this.maxLen - this.canFit + 1, 0, this.maxH - this.h);
   }
 
   isHovered(mouseX, mouseY) { //not implemented yet
@@ -540,6 +556,8 @@ class ScrollBar {
 }
 
 const sign = (n) => n ? n / Math.abs(n) : 0;
+
+const map = (value, currentRangeMin, currentRangeMax, newRangeMin, newRangeMax) => (newRangeMax - newRangeMin) / (currentRangeMax - currentRangeMin) * (value - currentRangeMin) + newRangeMin;
 
 const getRGBA = (r, g, b, a = 255) => b === undefined ? `rgba(${r}, ${r}, ${r}, ${g === undefined ? 255 : g / 255})` : `rgba(${r}, ${g}, ${b}, ${a / 255})`;
 

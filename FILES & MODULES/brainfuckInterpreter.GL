@@ -1,0 +1,66 @@
+use "std GLib" with std
+
+def fillStack => value amt {
+  make arr = value pack
+  loop amt { arr = arr spill dup }
+  exit arr
+}
+
+replace coerce with 2 * 1 -
+
+make options = ">" "<" "." "," "[" "]" "+" "-"
+
+def eval => char {
+  when in( options char ) not { flag "Unrecognized token " char str }
+  
+  when char dup ">" == swap "<" == or { ptr += char ">" == coerce }
+  when char dup "+" == swap "-" == or { stack[ ptr ] += char "+" == coerce }
+  when char "." == { print stack[ ptr ] }
+  when char "," == { stack[ ptr ] = inp }
+  when char "[" == {
+    when stack[ ptr ] not { runID = searchEnd( ) }
+  }
+  when char "]" == {
+    when stack[ ptr ] { runID = searchBegin( ) }
+  }
+}
+
+def searchBegin {
+  loop loopIDs range with i {
+    when loopIDs[ i ][ 1 ] runID == { exit loopIDs[ i ][ 0 ] }
+  }
+}
+
+def searchEnd {
+  loop loopIDs range with i {
+    when loopIDs[ i ][ 0 ] runID == { exit loopIDs[ i ][ 1 ] }
+  }
+}
+
+make text = "++++++++++[>+++++++>++++++++++>+++>+<<<<-]>++.>+.+++++++.+++.>++.<<+++++++++++++++.>.+++.------.--------.>+.>." spill
+make textSize = text range
+make stackSize = 100
+make stack = fillStack( 0 stackSize )
+make ptr
+make runID
+
+make openLoops = 0 pack
+make loopIDs   = 0 pack
+
+loop text range with i {
+  when text[ i ] "[" == { openLoops = openLoops spill i }
+  when text[ i ] "]" == {
+    when openLoops range 2 < { flag "Error: too many ] for the amount of [ present" }
+    loopIDs[ loopIDs range 1 - ] = openLoops[ openLoops range 1 - ] i pack
+    openLoops = openLoops spill drop
+  }
+}
+
+when loopIDs range 1 > { loopIDs = loopIDs spill rot< drop }
+
+when openLoops type "list" == { flag "Error: not enough ] for the amount of [ present" }
+
+when runID textSize < loop {
+  eval( text[ runID ] )
+  runID += 1
+}

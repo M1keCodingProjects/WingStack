@@ -19,7 +19,7 @@ textEditor.begin_draw();
 
 /* TODO:
     Utmost priority:
-      fix the fucking editor: add scrolling and the custom console
+      (doing...) fix the fucking editor: add scrolling
       clean the parser
 
     Mid priority:

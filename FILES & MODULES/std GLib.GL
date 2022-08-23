@@ -7,6 +7,15 @@ def typecheck => el typ msg {
   exit el
 }
 
+def add => el1 el2 { # this is a type friendly function that supports many behaviours for addition
+  when el1 type "list" == {
+    when el2 type "list" == { exit el1 spill el2 spill }
+    exit el1 spill el2
+  }
+  when el2 type "list" == { exit el1 el2 spill }
+  exit el1 el2 +
+}
+
 def mult => f1 f2 { # this is a type friendly function, repeating f2 times any f1 input
   typecheck( f2 "number" "mult function" )
   make _f1 = f1

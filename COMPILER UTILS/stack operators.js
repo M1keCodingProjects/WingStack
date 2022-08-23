@@ -18,7 +18,7 @@ export class StackValue {
     }
 
     execute(stack) {
-      stack.push(this.value);
+      stack.data.push(this.value);
       return true;
     }
   }
@@ -34,7 +34,7 @@ export class StackOp {
     }
   }
   
-  check_minLength(stack, len) { if(stack.length < len) throw new Errors.RuntimeError(this.ID, `A Runtime NotEnoughArguments Error occurred at line ${this.ID} : tried performing the stack operation "${this.type}" with less than ${len} elements on the stack`); }
+  check_minLength(stack, len) { if(stack.data.length < len) throw new Errors.RuntimeError(this.ID, `A Runtime NotEnoughArguments Error occurred at line ${this.ID} : tried performing the stack operation "${this.type}" with less than ${len} elements on the stack`); }
   throw_unsupportedTypes_error(acceptedTypes, typesArr) { throw new Errors.RuntimeError(this.ID, `A Runtime UnsupportedTypes Error occurred at line ${this.ID} : unsupported type(s) for <StackOperator> "${this.type}", which only accepts items of type(s) ${acceptedTypes.join(" or ")}, and instead got : ${typesArr.join(" and ")}`); }
 
   replaceExec(stack) {
@@ -67,7 +67,7 @@ export class Math_stackOp extends StackOp {
   
   checkNaN(stack, res) {
     if(isNaN(res)) throw new Errors.RuntimeError(this.ID, "you tried performing a mathematically impossible operation");
-    stack.push(res);
+    stack.data.push(res);
     return true;
   }
 }
@@ -77,7 +77,7 @@ export class Add_stackOp extends Math_stackOp {
   
   execute(stack) {
     let [el1, el2] = super.execute(stack);
-    stack.push(el1 + el2);
+    this.checkNaN(stack, el1 + el2);
   }
 }
 
@@ -225,7 +225,7 @@ export class Not_stackOp extends StackOp {
     this.check_minLength(stack, 1);
     let el1 = stack.pop();
     if(StackValue.prototype.get_type(el1) != "number") return this.throw_unsupportedTypes_error(["<number>"], [type1]);
-    stack.push(1 * !el1);
+    stack.data.push(1 * !el1);
   }
 }
 
@@ -236,7 +236,7 @@ export class Bnot_stackOp extends StackOp {
     this.check_minLength(stack, 1);
     let el1 = stack.pop();
     if(StackValue.prototype.get_type(el1) != "number") return this.throw_unsupportedTypes_error(["<number>"], [type1]);
-    stack.push(1 * ~el1);
+    stack.data.push(1 * ~el1);
   }
 }
 
@@ -245,7 +245,7 @@ export class Dup_stackOp extends StackOp {
   
   execute(stack) {
     this.check_minLength(stack, 1);
-    stack.push(stack[stack.length - 1]);
+    stack.data.push(stack.pop(1, true));
   }
 }
 
@@ -253,7 +253,7 @@ export class Size_stackOp extends StackOp {
   constructor(ID) { super(ID, "size"); }
   
   execute(stack) {
-    stack.push(stack.length);
+    stack.data.push(stack.len());
   }
 }
 
@@ -262,7 +262,7 @@ export class RotL_stackOp extends StackOp {
   
   execute(stack) {
     this.check_minLength(stack, 2);
-    stack.push(stack.shift());
+    stack.data.push(stack.fetch(0, false));
   }
 }
 
@@ -271,7 +271,7 @@ export class RotR_stackOp extends StackOp {
   
   execute(stack) {
     this.check_minLength(stack, 2);
-    stack.unshift(stack.pop());
+    stack.data.push(stack.pop());
   }
 }
 
@@ -283,8 +283,8 @@ export class Spill_stackOp extends StackOp {
     let el1 = stack.pop();
     let type1 = StackValue.prototype.get_type(el1);
     switch(type1) {
-      case "string" : stack.push(...el1.split("")); break;
-      case "list" :   stack.push(...el1); break;
+      case "string" : stack.data.push(...el1.split("")); break;
+      case "list" :   stack.data.push(...el1); break;
       default :       return this.throw_unsupportedTypes_error(["<list>", "<string>"], [type1]);
     }
   }
@@ -295,7 +295,7 @@ export class Type_stackOp extends StackOp {
   
   execute(stack) {
     this.check_minLength(stack, 1);
-    stack.push(StackValue.prototype.get_type(stack.pop()));
+    stack.data.push(StackValue.prototype.get_type(stack.pop()));
   }
 }
 
@@ -306,7 +306,7 @@ export class Swap_stackOp extends StackOp {
     this.check_minLength(stack, 2);
     let el1 = stack.pop();
     let el2 = stack.pop();
-    stack.push(el1, el2);
+    stack.data.push(el1, el2);
   }
 }
 
@@ -326,7 +326,7 @@ export class Inp_stackOp extends StackOp {
     let res = prompt("GLIDE Compiler requested user input:");
     if(res === null) throw new Errors.RuntimeError(this.ID, `unhandled user input, don't cancel input prompts!`);
     let fres = Number(res);
-    stack.push(isNaN(fres) ? res : fres);
+    stack.data.push(isNaN(fres) ? res : fres);
   }
 }
 
@@ -335,7 +335,7 @@ export class Over_stackOp extends StackOp {
   
   execute(stack) {
     this.check_minLength(stack, 3);
-    stack.push(...stack.splice(-3, 1));
+    stack.data.push(...stack.fetch(stack.data.len() - 3, false));
   }
 }
 
@@ -344,7 +344,7 @@ export class Rand_stackOp extends StackOp {
   
   execute(stack) {
     this.check_minLength(stack, 1);
-    stack.push(stack[Math.floor(Math.random() * stack.length)]);
+    stack.data.push(stack.fetch(Math.floor(Math.random() * stack.len())));
   }
 }
 
@@ -352,9 +352,17 @@ export class Pop_stackOp extends StackOp {
   constructor(ID) { super(ID, "pop"); }
   
   execute(stack) {
+    this.check_minLength(stack, 2);
+    stack.data.push(stack.pop("all")[0]);
+  }
+}
+
+export class Limit_stackOp extends StackOp {
+  constructor(ID) { super(ID, ","); }
+  
+  execute(stack) {
     this.check_minLength(stack, 1);
-    stack.unshift(stack.pop());
-    stack.length = 1;
+    stack.fetchID = stack.len();
   }
 }
 
@@ -369,16 +377,13 @@ class Cast_stackOp extends StackOp {
     if(!this.acceptedTypes.includes("none")) this.check_minLength(stack, 1);
     let el;
     let type = "many";
-    if(this.acceptedTypes.includes("many") && stack.length > 1) {
-      el = [...stack];
-      stack.length = 0;
-    }
+    if(this.acceptedTypes.includes("many") && stack.len() > 1) el = [...stack.pop("all")];
     else {
       el = stack.pop();
       type = StackValue.prototype.get_type(el);
       if(!this.acceptedTypes.includes(type)) Errors.RuntimeError(this.ID, `Invalid casting attempt from ${type} to ${this.type}, expected ${this.acceptedTypes.join("or ")}`);
     }
-    stack.push(this.cast(el, type));
+    stack.data.push(this.cast(el, type));
   }
 }
 
@@ -407,11 +412,8 @@ export class LstCast_stackOp extends Cast_stackOp {
   constructor(ID) { super(ID, "list", ["number", "string", "list", "many"]); }
 
   cast(el, type) {
-    switch(type) {
-      case "list": return el;
-      case "many": return [...el];
-      default    : return [el];
-    }
+    if(type == "many") return [...el];
+    return [el];
   }
 }
 
@@ -424,41 +426,6 @@ export class _stackOp extends StackOp {
   execute(stack) {
     this.check_minLength(stack, 1);
     
-  }
-}
-*/
-
-/* DEPRECATED OPS BELOW:
-export class Mod_stackOp extends Math_stackOp {  // Deprecated: the basic stack ops module replaces this function
-  constructor(ID) { super(ID, "%"); }
-  
-  execute(stack) {
-    let [el1, el2] = super.execute(stack);
-    this.checkNaN(stack, el1 % el2);
-  }
-}
-export class Gre_stackOp extends Math_stackOp {  // Deprecated: the basic stack ops module replaces this function
-  constructor(ID) { super(ID, ">="); }
-  
-  execute(stack) {
-    let [el1, el2] = super.execute(stack);
-    this.checkNaN(stack, 1 * (el1 >= el2));
-  }
-}
-export class Lse_stackOp extends Math_stackOp {  // Deprecated: the basic stack ops module replaces this function
-  constructor(ID) { super(ID, "<="); }
-  
-  execute(stack) {
-    let [el1, el2] = super.execute(stack);
-    this.checkNaN(stack, 1 * (el1 <= el2));
-  }
-}
-export class Neq_stackOp extends Math_stackOp {  // Deprecated: the basic stack ops module replaces this function
-  constructor(ID) { super(ID, "!=", ["number", "string"]); }
-  
-  execute(stack) {
-    let [el1, el2] = super.execute(stack);
-    this.checkNaN(stack, 1 * (el1 != el2));
   }
 }
 */

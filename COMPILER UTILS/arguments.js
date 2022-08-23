@@ -57,7 +57,7 @@ export class StackCallArg extends Arg {
                     if(variable instanceof Array) throw new Errors.RuntimeError(this.ID, `item "${name.join("")}" does not contain data at index ${property}`);
                     throw new Errors.RuntimeError(this.ID, `item "${name.join("")}" does not contain a property named ${property}`);
                 }   
-                if(!isReading && i == this.properties.length - 1) return variable[property] = stack; //cheeky one-liner
+                if(!isReading && i == this.properties.length - 1) return variable[property] = stack; //unused return value
                 variable = variable[property];
             }
         }
@@ -65,8 +65,7 @@ export class StackCallArg extends Arg {
         if(isReading) {
             if(variable.value !== undefined) variable = variable.value;
             if(variable === null) throw new Errors.RuntimeError(this.ID, `cannot push a null value to the stack, this may have happened because a variable was called before finishing its initialization`);
-            //if(variable instanceof Array) stack.push(...variable); automatic spilling makes it impossible to pass by reference and it is thus no longer supported
-            else stack.push(variable);
+            else stack.data.push(variable);
         }    
         else variable.value = stack;
     }
@@ -99,12 +98,11 @@ export class StackExprArg extends Arg {
     }
 
     execute() {
-        let stack = [];
+        let stack = new Stack(this.ID);
         this.stackOps.forEach(op => op.execute(stack));
-        //case specific dumping is handled here:
-        if(stack.length < 2 && !this.isArgStream) stack = stack[0];
-        if(stack === undefined) throw new Errors.RuntimeError(this.ID, `<stackExpr> ends its evaluation empty`);
-        return stack;
+        if(stack.data.length < 2 && !this.isArgStream) stack.data = stack.data[0];
+        if(stack.data === undefined) throw new Errors.RuntimeError(this.ID, `<stackExpr> ends its evaluation empty`);
+        return stack.data;
     }
 }
 
@@ -197,9 +195,36 @@ export class FuncCall extends Arg {
         }
         else returnValue = func.call(this.stackExpr ? this.stackExpr.execute() : []);
 
-        if(stack instanceof Array) {
+        if(stack instanceof Stack) {
             if(returnValue === null) throw new Errors.RuntimeError(this.ID, `the function ${this.name} didn't have an exit ready for the particular control-flow path that happened at runtime, and thus produced an invalid stack value`);
-            stack.push(returnValue);
+            stack.data.push(returnValue);
         }
     }
 }
+
+class Stack {
+    constructor(ID) {
+      this.ID = ID;
+      this.data = [];
+      this.fetchID = 0;
+
+      this.OOB_Error = new Errors.RuntimeError(this.ID, `tried fetching data from a point of the stack protected by a <comaSeparator> stackOperator`);
+    }
+
+    fetch(ID, keep = true) {
+        ID += this.fetchID;
+        if(ID >= this.data.length) throw OOB_Error;
+        return keep ? this.data[ID] : this.data.splice(ID, 1);
+    }
+
+    pop(n = 1, keep = false) {
+        n = n === "all" ? this.fetchID : this.data.length - n; 
+        if(n < this.fetchID) throw this.OOB_Error;
+        const popped = keep ? this.data.slice(n) : this.data.splice(n);
+        return popped.length == 1 ? popped[0] : popped;
+    }
+
+    len() {
+        return this.data.length - this.fetchID;
+    }
+  }

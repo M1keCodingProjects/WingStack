@@ -78,12 +78,7 @@ export default class Compiler {
           num    : ((ID) => new StackClasses.NumCast_stackOp(ID)),
           str    : ((ID) => new StackClasses.StrCast_stackOp(ID)),
           pack   : ((ID) => new StackClasses.LstCast_stackOp(ID)),
-          //"&&"   : ((ID) => new StackClasses.And_stackOp(ID)),
-          //"||"   : ((ID) => new StackClasses.Or_stackOp(ID)),
-          //">="   : ((ID) => new StackClasses.Gre_stackOp(ID)),
-          //"<="   : ((ID) => new StackClasses.Lse_stackOp(ID)),
-          //"!="   : ((ID) => new StackClasses.Neq_stackOp(ID)),
-          //"%"    : ((ID) => new StackClasses.Mod_stackOp(ID)),
+          ","    : ((ID) => new StackClasses.Limit_stackOp(ID)),
         };
     }
     
@@ -168,7 +163,7 @@ export default class Compiler {
     searchVar(targetToken) {
       const sameName = this.vars.filter(v => v.name === targetToken.name);
       if(!sameName.length) throw new Errors.RuntimeError(targetToken.ID, `cannot get unknown item "${targetToken.name}"`); 
-      if(sameName.filter(v => v instanceof ProcClasses.DefProc).length) throw new Errors.RuntimeError(targetToken.ID, `function ${targetToken.name} was addressed as if it was a variable`);
+      if(sameName.filter(v => v instanceof ProcClasses.DefProc).length) throw new Errors.RuntimeError(targetToken.ID, `function "${targetToken.name}" was addressed as if it was a variable`);
       return sameName.reduce((acc, v) => v.depth > acc.depth ? v : acc);
     }
 

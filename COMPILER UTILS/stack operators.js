@@ -353,7 +353,7 @@ export class Pop_stackOp extends StackOp {
   
   execute(stack) {
     this.check_minLength(stack, 2);
-    stack.data.push(stack.pop("all")[0]);
+    stack.data.push(stack.pop("all").pop());
   }
 }
 

@@ -35,6 +35,7 @@ export default class TextEditor {
 
     loadText(initText) {
       this.text = initText.split("\n").map(l => l.split(""));
+      this.copied = new CopiedDraft();
     }
 
     finalizeData(jsonData) {
@@ -214,7 +215,7 @@ class Caret {
         case "ArrowDown"  : caretObj.go_down(); break;
         case "ArrowRight" : caretObj.go_right(); break;
       
-        default           : caretObj.write(event.key); break;
+        default           : return caretObj.write(event);
       }
 
       caretObj.calibrate();
@@ -317,7 +318,17 @@ class Caret {
       this.updateVerticalScroll();
     }
     
-    write(letter) {
+    write(event) {
+      event.preventDefault();
+      const letter = event.key;
+      if(event.ctrlKey) {
+        switch(letter) {
+          case "c" : if(this.selection) this.get_selectedText(); break;
+          case "v" : this.pasteText(); break;
+          // add Ctrl+Z eventually
+        }
+        return;
+      }
       if(this.selection) this.delete_selection();
       let currentLine = this.container.text[this.y];
       if(this.x == currentLine.length) this.container.text[this.y].push(letter);
@@ -327,8 +338,36 @@ class Caret {
       const updatedLine = this.container.text[this.y];
       if(updatedLine !== this.container.longestLine && updatedLine.length > this.container.longestLine.length) this.container.longestLine = updatedLine;
       this.updateLateralScroll();
+      this.calibrate(); //we calibrate here so that we don't delete the selection when using keyboard shortcuts
     }
     
+    get_selectedText() {
+      this.container.copied.reset();
+      const isForward = this.selection.start[1] === this.selection.end[1] ? this.selection.start[0] < this.selection.end[0]: this.selection.start[1] < this.selection.end[1];
+
+      const fromID = isForward ? this.selection.start[1] : this.selection.end[1];
+      const toID   = isForward ? this.selection.end[1]   : this.selection.start[1];
+      const startX = isForward ? this.selection.start[0] : this.selection.end[0];
+      const endX =   isForward ? this.selection.end[0]   : this.selection.start[0];
+
+      if(fromID === toID) return this.container.copied.add(this.container.text[fromID].slice(startX, endX)); // unused return value
+
+      this.container.copied.add(this.container.text[fromID].slice(startX));
+      if(this.selection.IDs.length) {
+        this.container.text.filter((l,i) => i > fromID && i < toID).forEach(l => this.container.copied.add(l));
+      }
+      this.container.copied.add(this.container.text[toID].slice(0, endX));
+    }
+
+    pasteText() {
+      if(this.selection) this.delete_selection();
+      this.container.text[this.y].splice(this.x, 0, ...this.container.copied.textContent[0]);
+      this.x += this.container.copied.lineLengths[0];
+      this.container.text.splice(this.y + 1, 0, ...this.container.copied.textContent.slice(1).map(l => [...l]));
+      this.y += this.container.copied.lineLengths.length - 1;
+      if(this.x > this.container.text[this.y].length) this.x = this.container.text[this.y].length;
+    }
+
     delete_selection() {
       let start, end;
       if(this.selection.start[1] < this.selection.end[1]) {
@@ -486,6 +525,22 @@ class Caret {
       ctx.fillText("|", 0, 0);
       ctx.restore();
     }
+}
+
+class CopiedDraft {
+  constructor() {
+    this.reset();
+  }
+
+  add(lineArr) {
+    this.textContent.push([...lineArr]);
+    this.lineLengths.push(lineArr.length);
+  }
+
+  reset() {
+    this.textContent = [];
+    this.lineLengths = [];
+  }
 }
 
 class ScrollBar {

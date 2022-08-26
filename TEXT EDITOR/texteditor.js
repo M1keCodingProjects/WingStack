@@ -319,16 +319,20 @@ class Caret {
     }
     
     write(event) {
-      event.preventDefault();
-      const letter = event.key;
-      if(event.ctrlKey) {
-        switch(letter) {
-          case "c" : if(this.selection) this.get_selectedText(); break;
-          case "v" : this.pasteText(); break;
-          // add Ctrl+Z eventually
+      let letter;
+      if(event instanceof Event) {
+        event.preventDefault();
+        letter = event.key;
+        if(event.ctrlKey) {
+          switch(letter) {
+            case "c" : if(this.selection) this.get_selectedText(); break;
+            case "v" : this.pasteText(); break;
+            // add Ctrl+Z eventually
+          }
+          return;
         }
-        return;
       }
+      else letter = event;
       if(this.selection) this.delete_selection();
       let currentLine = this.container.text[this.y];
       if(this.x == currentLine.length) this.container.text[this.y].push(letter);

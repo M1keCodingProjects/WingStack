@@ -1,0 +1,25 @@
+use "std GLib" with std
+
+def toNum => el { exit el num }
+
+def makeStack => el _size {
+  make arr = el str
+  loop _size 1 - { arr += el }
+  arr = arr spill pack
+  exit toNum( @arr )
+}
+
+make symbols = "O" " " "X"
+def numToSym => n { exit symbols[ n 1 + ] "|" str } # use + when possible!
+
+def printBoard { 
+  make arr = numToSym( @board ) spill spill drop
+  loop 3 with y {
+    arr[ y 2 dup over * + ] += "
+"
+  }
+  print arr
+}
+
+make board = makeStack( 0 9 )
+printBoard( )

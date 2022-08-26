@@ -214,7 +214,7 @@ class Stack {
     fetch(ID, keep = true) {
         ID += this.fetchID;
         if(ID >= this.data.length) throw OOB_Error;
-        return keep ? this.data[ID] : this.data.splice(ID, 1);
+        return keep ? this.data[ID] : this.data.splice(ID, 1)[0];
     }
 
     pop(n = 1, keep = false) {
@@ -222,6 +222,12 @@ class Stack {
         if(n < this.fetchID) throw this.OOB_Error;
         const popped = keep ? this.data.slice(n) : this.data.splice(n);
         return popped.length == 1 ? popped[0] : popped;
+    }
+
+    push(data, ID = this.data.length - this.fetchID - 1) {
+        ID += this.fetchID;
+        if(ID >= this.data.length) throw OOB_Error;
+        this.data.splice(ID, 0, data);
     }
 
     len() {

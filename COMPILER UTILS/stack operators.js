@@ -271,7 +271,7 @@ export class RotR_stackOp extends StackOp {
   
   execute(stack) {
     this.check_minLength(stack, 2);
-    stack.data.push(stack.pop());
+    stack.push(stack.pop(), 0);
   }
 }
 
@@ -335,7 +335,7 @@ export class Over_stackOp extends StackOp {
   
   execute(stack) {
     this.check_minLength(stack, 3);
-    stack.data.push(...stack.fetch(stack.len() - 3, false));
+    stack.data.push(stack.fetch(stack.len() - 3, false));
   }
 }
 

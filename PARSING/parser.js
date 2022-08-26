@@ -461,9 +461,10 @@ export default class Parser {
 
     StringLiteral() { // StringLiteral ::= STRING
         const token = this._eat("STRING");
+        if(token.value.match(/\n/) !== null) throw new CompileTimeError(this._lineID, "<StringLiteral> tokens cannot span multiple lines");
         return {
             type  : 'StringLiteral',
-            value : token.value.slice(1, -1), // strip quotes
+            value : token.value.slice(1, -1).replace("&new", '\n'), // strip quotes, escape newlines
         };
     }
 

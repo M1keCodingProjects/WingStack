@@ -66,7 +66,7 @@ export class Math_stackOp extends StackOp {
   }
   
   checkNaN(stack, res) {
-    if(isNaN(res)) throw new Errors.RuntimeError(this.ID, "you tried performing a mathematically impossible operation");
+    if(StackValue.prototype.get_type(res) !== "string" && isNaN(res)) throw new Errors.RuntimeError(this.ID, "you tried performing a mathematically impossible operation");
     stack.data.push(res);
     return true;
   }
@@ -335,7 +335,7 @@ export class Over_stackOp extends StackOp {
   
   execute(stack) {
     this.check_minLength(stack, 3);
-    stack.data.push(...stack.fetch(stack.data.len() - 3, false));
+    stack.data.push(...stack.fetch(stack.len() - 3, false));
   }
 }
 

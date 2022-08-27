@@ -22,7 +22,7 @@ export default class TextEditor {
         this.canvas.height = canvasHeight * this.scl;
         document.getElementById("EditorContainer").appendChild(this.canvas);
         
-        this.scrollX = new ScrollBar(0, canvasHeight * 0.97 - OVERALL_TRANSL_Y / 2, canvasWidth * 0.96,  canvasWidth * 0.005);
+        this.scrollX = new ScrollBar(0, canvasHeight * 0.97 - OVERALL_TRANSL_Y, canvasWidth * 0.96,  canvasWidth * 0.005);
         this.scrollY = new ScrollBar(canvasWidth * 0.97, 0,  canvasWidth * 0.005, canvasHeight * 0.96);
         this.caret   = new Caret(this, CARET_TRANSL_X, CARET_TRANSL_Y);
         
@@ -172,8 +172,8 @@ class Caret {
       this.worldX = textAreaTLx;
       this.worldY = textAreaTLy;
       
-      this.y = containerElement.text.length - 1;
-      this.x = containerElement.text[this.y].length;
+      this.y = 0; //containerElement.text.length - 1;
+      this.x = 0; //containerElement.text[this.y].length;
       this.container = containerElement;
       
       this.manage_inputEvents(containerElement.canvas);

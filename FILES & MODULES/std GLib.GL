@@ -37,6 +37,11 @@ def ? => condition eval altEval {
 }
 
 ## THESE ARE LIST SPECIFIC FUNCTIONS THAT WILL BE PART OF THE LIST CLASS ONCE IMPLEMENTED ##
+def len => arr {
+  when arr type "list" == { exit arr range }
+  exit 1
+}
+
 def rangeList => from step to {
   make arr = from pack
   when step not { exit arr }
@@ -48,11 +53,17 @@ def rangeList => from step to {
   exit arr
 }
 
-def in => arr el {
+def fillList => value sz {
+  make arr = value pack
+  loop sz 1 - { arr = arr spill dup }
+  exit arr
+}
+
+def getPos => arr el {
   loop arr range with i {
-    when arr[ i ] el == { exit TRUE }
+    when arr[ i ] el == { exit i }
   }
-  exit FALSE
+  exit -1
 }
 
 def findMax => arr {

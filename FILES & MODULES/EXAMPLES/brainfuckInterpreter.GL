@@ -1,51 +1,39 @@
 use "std GLib" with std
 
-def fillStack => value amt {
-  make arr = value pack
-  loop amt { arr = arr spill dup }
-  exit arr
-}
-
 replace coerce with 2 * 1 -
 
 make options = ">" "<" "." "," "[" "]" "+" "-"
 
 def eval => char {
-  when in( options char ) not { flag "Unrecognized token " char str }
+  when getPos( options char ) -1 == { flag "Unrecognized token " char str }
   
   when char dup ">" == swap "<" == or { ptr += char ">" == coerce }
   when char dup "+" == swap "-" == or { stack[ ptr ] += char "+" == coerce }
   when char "." == { print stack[ ptr ] }
   when char "," == { stack[ ptr ] = inp }
   when char "[" == {
-    when stack[ ptr ] not { runID = searchEnd( ) }
+    when stack[ ptr ] not { runID = search( 0 ) }
   }
   when char "]" == {
-    when stack[ ptr ] { runID = searchBegin( ) }
+    when stack[ ptr ] { runID = search( 1 ) }
   }
 }
 
-def searchBegin {
+def search => n {
   loop loopIDs range with i {
-    when loopIDs[ i ][ 1 ] runID == { exit loopIDs[ i ][ 0 ] }
-  }
-}
-
-def searchEnd {
-  loop loopIDs range with i {
-    when loopIDs[ i ][ 0 ] runID == { exit loopIDs[ i ][ 1 ] }
+    when loopIDs[ i ][ n ] runID == { exit loopIDs[ i ][ n not ] }
   }
 }
 
 make text = "++++++++++[>+++++++>++++++++++>+++>+<<<<-]>++.>+.+++++++.+++.>++.<<+++++++++++++++.>.+++.------.--------.>+.>." spill
 make textSize = text range
 make stackSize = 100
-make stack = fillStack( 0 stackSize )
+make stack = fillList( 0 stackSize )
 make ptr
 make runID
 
 make openLoops = 0 pack
-make loopIDs   = 0 pack
+make loopIDs   = 0 pack pack
 
 loop text range with i {
   when text[ i ] "[" == { openLoops = openLoops spill i }

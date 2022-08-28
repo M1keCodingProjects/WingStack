@@ -1,4 +1,5 @@
 const Specs = [  // a series of RegExp rules to be mapped to specific token types
+    [/^#.*/, null],
     [/^\s*(\n|$)/, "NEWLINE"],
     [/^\s+/, "SPACE"],
     [/^\./, "DOT"],
@@ -20,7 +21,7 @@ export default class Tokenizer { // lazily pulls tokens from a stream of charact
     }
     
     init(string) {
-        this._string = string.replace(/#.*(\n|$)/g, "$1");
+        this._string = string;//.replace(/#.*(\n|$)/g, "$1");
         this._cursor = 0; // character position tracker
     }
 

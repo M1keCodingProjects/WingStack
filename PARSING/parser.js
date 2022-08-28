@@ -18,12 +18,13 @@ export default class Parser {
     }
 
     Program() { // Parses the main entry point, Program ::= Expression | Program Expression
-        const lines = [];
+        let lines = [];
         if(this._lookahead !== null && this._lookahead.type === "NEWLINE") this._eat("NEWLINE");
         while(this._lookahead !== null && this._lookahead.type !== "}") {
             if(this._lookahead.type === "SPACE") this._eat("SPACE");
-            if(this._lookahead !== null && this._lookahead.type !== "}") lines.push(this.Expression());
+            lines.push(this.Expression());
         }
+        lines = lines.filter(l => l);
         if(!lines.length) console.warn("Empty <Program>");
 
         return {
@@ -34,11 +35,13 @@ export default class Parser {
     }
 
     Expression() { // Expression ::= Procedure LineEnder | Assignment LineEnder | FuncCall LineEnder
-        let token;
+        let token = null;
         
         switch(this._lookahead.type) {
             case "procKeyword" : token = this.Procedure();  break;
             case "WORD"        : token = this._lookahead.value.slice(-1) === "(" ? this.FuncCall() : this.Assignment(); break;
+            case "}"           : break;
+            case "NEWLINE"     : break;
             default            : throw new CompileTimeError(this._lineID, `Unrecognized statement "${this._lookahead.value}" as any known <Expression> token type`);
         }
 

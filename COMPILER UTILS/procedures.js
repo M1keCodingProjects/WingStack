@@ -12,13 +12,13 @@ class Proc {
     getArguments(line) {}
 }
 
-export class PrintProc extends Proc {  // print <stackExpr>
+export class PrintProc extends Proc {
     constructor(compilerRef, line) {
         super(compilerRef, line);
     }
 
     getArguments(line) {
-        this.stackExpr = new ArgClasses.StackExprArg(this.ID, this.compiler, line.value.value);
+        this.stackExpr = new ArgClasses.StackExprArg(this.ID, this.compiler, line.value);
     }
 
     execute() {
@@ -47,7 +47,7 @@ export class FreeProc extends Proc {
     }
 
     getArguments(line) {
-        this.target = new ArgClasses.StackCallArg(this.ID, this.compiler, line.value.value);
+        this.target = new ArgClasses.StackCallArg(this.ID, this.compiler, line.value);
     }
 
     execute() {
@@ -61,14 +61,13 @@ export class ReplaceProc extends Proc {
     }
 
     getArguments(line) {
-        const assignmentToken = line.value;
-        this.target = new ArgClasses.StackCallArg(this.ID, this.compiler, assignmentToken.target.value);
-        this.stackExpr = new ArgClasses.StackExprArg(this.ID, this.compiler, assignmentToken.value.value);
+        this.target = new ArgClasses.StackCallArg(this.ID, this.compiler, line.target);
+        this.stackExpr = new ArgClasses.StackExprArg(this.ID, this.compiler, line.value);
 
-        const found = this.stackExpr.stackOps.find(sOp => sOp instanceof ArgClasses.StackCallArg);
-        if(found) throw new Errors.RuntimeError(this.ID, `<stackExpression>s that are to be replaced cannot contain items of type <stackCall>, found "${found.name}"`);
+        const found = this.stackExpr.stackOps.find(sOp => sOp instanceof ArgClasses.StackCallArg || sOp instanceof ArgClasses.FuncCall);
+        if(found) throw new Errors.CompileTimeError(this.ID, `<stackExpression>s that are to be replaced cannot contain items of type <stackCall> or <funcCall>, found "${found.name}"`);
 
-        if(this.compiler.stackOps[this.target.name]) throw new Errors.RuntimeError(this.ID, "overwriting an already defined <stackOperand> is not allowed");
+        if(this.compiler.stackOps[this.target.name]) throw new Errors.CompileTimeError(this.ID, `overwriting an already defined <stackOperand> (${this.target.name}) is not allowed`);
         this.compiler.stackOps[this.target.name] = (() => new StackOp(this.ID, this.target.name, this.stackExpr.stackOps));
     }
     
@@ -87,8 +86,8 @@ export class LoopProc extends Proc {
     }
 
     getArguments(line) {
-        this.stackExpr = new ArgClasses.StackExprArg(this.ID, this.compiler, line.value.value);
-        this.block     = new ArgClasses.BlockArg(this.ID, this.compiler, line.block.value, true);
+        this.stackExpr = new ArgClasses.StackExprArg(this.ID, this.compiler, line.value);
+        this.block     = new ArgClasses.BlockArg(    this.ID, this.compiler, line.block, true);
     }
 
     execute() {
@@ -110,8 +109,8 @@ export class UseProc extends Proc {
     }
 
     getArguments(line) {
-        const path = new StackValue(this.ID, line.value.value);
-        if(line.label) this.label = line.label; //for now it does nothing, it will when we add functions
+        const path = new StackValue(this.ID, line.value);
+        if(line.label) this.label = line.label; //for now it does nothing, it will when we add objects
         this.block = new ArgClasses.BlockArg(this.ID, this.compiler, this.compiler.compileModule(path));
         this.block.lines.forEach(line => line.ID += ` from module ${path.value}`);
     }
@@ -127,13 +126,13 @@ export class WhenProc extends Proc {
     }
 
     getArguments(line) {
-        this.stackExpr = new ArgClasses.StackExprArg(this.ID, this.compiler, line.value.value);
+        this.stackExpr = new ArgClasses.StackExprArg(this.ID, this.compiler, line.value);
         this.loops = (line.loops == true);
-        this.block = new ArgClasses.BlockArg(this.ID, this.compiler, line.block.value, this.loops);
+        this.block = new ArgClasses.BlockArg(this.ID, this.compiler, line.block, this.loops);
         
         if(line.else) {
-            if(line.else.type[1] === "when") this.else = new WhenProc(this.compiler, line.else);
-            else this.else = new ArgClasses.BlockArg(this.ID, this.compiler, line.else.block.value);
+            if(line.else.value) this.else = new WhenProc(this.compiler, line.else);
+            else this.else = new ArgClasses.BlockArg(this.ID, this.compiler, line.else.block);
         }
     }
 
@@ -160,6 +159,7 @@ export class NextProc extends Proc {
     }
 
     execute() {
+        if(!this.compiler.openLoops.length) throw new Errors.RuntimeError(this.ID, "cannot use <next> procedure outside of a looping block");
         this.compiler.skipIter = true;
     }
 }
@@ -170,15 +170,19 @@ export class ExitProc extends Proc {
     }
 
     getArguments(line) {
-        if(line.value) this.stackExpr = new ArgClasses.StackExprArg(this.ID, this.compiler, line.value.value);
+        if(line.value) this.stackExpr = new ArgClasses.StackExprArg(this.ID, this.compiler, line.value);
     }
 
     execute() {
         if(this.stackExpr) {
+            if(!this.compiler.callStack.length) throw new Errors.RuntimeError(this.ID, "<exit> procedures called outside of functions cannot carry <stackExpr> arguments");
             const evaluation = this.stackExpr.execute();
             this.compiler.exitStatus = evaluation instanceof Array ? [...evaluation] : [evaluation];
         }
-        else this.compiler.exitStatus = true;
+        else {
+            if(!this.compiler.openLoops.length) throw new Errors.RuntimeError(this.ID, `cannot use <exit> procedure outside of a looping block`);
+            this.compiler.exitStatus = true;
+        }
     }
 }
 
@@ -188,7 +192,7 @@ export class FlagProc extends Proc {
     }
 
     getArguments(line) {
-        this.stackExpr = new ArgClasses.StackExprArg(this.ID, this.compiler, line.value.value);
+        this.stackExpr = new ArgClasses.StackExprArg(this.ID, this.compiler, line.value);
     }
 
     execute() {
@@ -204,10 +208,10 @@ export class DefProc extends Proc {
     }
 
     getArguments(line) {
-        this.name = line.name.value; //remember to label these for modules
+        this.name = line.name; //remember to label these for modules
         this.args = [];
-        if(line.args) this.args = line.args.map(e => new ArgClasses.StackCallArg(this.ID, this.compiler, e.value));
-        this.block = new ArgClasses.BlockArg(this.ID, this.compiler, line.block.value);
+        if(line.args) this.args = line.args.map(e => new ArgClasses.StackCallArg(this.ID, this.compiler, e));
+        this.block = new ArgClasses.BlockArg(this.ID, this.compiler, line.block);
     }
 
     execute() {

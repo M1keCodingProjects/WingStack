@@ -80,13 +80,11 @@ export class StackExprArg extends Arg {
     argumentize(stackOpList) {
         this.stackOps = [];
         for(let opToken of stackOpList) {
-            switch(opToken.type) {
-                case "NumericLiteral" : this.stackOps.push(new StackValue(this.ID, opToken.value)); break;
-                case "StringLiteral"  : this.stackOps.push(new StackValue(this.ID, opToken.value)); break;
+            switch(opToken?.type) {
                 case "FuncCall"       : this.stackOps.push(new FuncCall(this.ID, this.compiler, opToken)); break;
                 case "StackOperand"   : this.stackOps.push(this.compiler.stackOps[opToken.value](this.ID)); break;
                 case "StackCall"      : this._manageReplacedOps(opToken.value); break;
-                default               : throw new SyntaxError(`Cannot recognize stackElement type ${opToken.type}`);
+                default               : this.stackOps.push(new StackValue(this.ID, opToken)); break;
             }
         }
     }
@@ -125,7 +123,6 @@ export class BlockArg extends Arg {
             line.execute();
             if(this.compiler.skipIter) {
                 let currentRunningLoop = this.compiler.openLoops[this.compiler.openLoops.length - 1];
-                if(!currentRunningLoop) throw new Errors.RuntimeError(this.ID, `cannot use <next> procedure outside of a looping block`);
                 if(currentRunningLoop === this) this.compiler.skipIter = false;
                 break;
             }
@@ -133,11 +130,9 @@ export class BlockArg extends Arg {
             if(this.compiler.exitStatus) {
                 if(this.compiler.exitStatus === true) {
                     let currentRunningLoop = this.compiler.openLoops[this.compiler.openLoops.length - 1];
-                    if(!currentRunningLoop) throw new Errors.RuntimeError(this.ID, `cannot use <exit> procedure outside of a looping block`);
                     if(currentRunningLoop === this) this.compiler.exitStatus = "done";
                 }
                 else {
-                    if(!this.compiler.callStack.length) throw new Errors.RuntimeError(this.ID, `cannot <exit> with trailing value outside of a function`);
                     if(this.compiler.callStack[this.compiler.callStack.length - 1] === this) {
                         returnValue = [...this.compiler.exitStatus];
                         this.compiler.exitStatus = "done";
@@ -160,8 +155,8 @@ export class Assignment extends Arg {
     }
 
     argumentize(content) {
-        this.target = new StackCallArg(this.ID, this.compiler, content.target.value);
-        this.stackExpr = new StackExprArg(this.ID, this.compiler, content.value.value);
+        this.target = new StackCallArg(this.ID, this.compiler, content.target);
+        this.stackExpr = new StackExprArg(this.ID, this.compiler, content.value);
     }
 
     execute() {
@@ -175,11 +170,11 @@ export class FuncCall extends Arg {
     }
 
     argumentize(content) {
-        this.name = content.name.value;
-        if(content.value === null) return;
+        this.name = content.name;
+        if(!content.value) return;
         
-        if(content.value.type === "WORD") this.iterator = new StackCallArg(this.ID, this.compiler, content.value.value);
-        else this.stackExpr = new StackExprArg(this.ID, this.compiler, content.value.value, true); 
+        if(content.value instanceof Array) this.stackExpr = new StackExprArg(this.ID, this.compiler, content.value, true);
+        else this.iterator = new StackCallArg(this.ID, this.compiler, content.value);
     }
 
     execute(stack = null) {

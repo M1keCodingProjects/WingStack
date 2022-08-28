@@ -24,14 +24,14 @@ textEditor.begin_draw();
 
 /* TODO:
     Utmost priority:
-      (doing...) fix the fucking editor: add scrolling
-      clean the parser
+      introduce object syntax support and use it to load modules and apply labels to function names
 
     Mid priority:
       finish std GLib
+      fix the fucking editor: add manual scrolling
 
     Low priority:
-      introduce object syntax support and use it to load modules and apply labels to function names
+      
 
     Vague ideas:
       

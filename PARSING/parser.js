@@ -19,10 +19,10 @@ export default class Parser {
 
     Program() { // Parses the main entry point, Program ::= Expression | Program Expression
         const lines = [];
+        if(this._lookahead !== null && this._lookahead.type === "NEWLINE") this._eat("NEWLINE");
         while(this._lookahead !== null && this._lookahead.type !== "}") {
-            if(this._lookahead.type === "NEWLINE") this._eat("NEWLINE");
-            else if(this._lookahead !== null && this._lookahead.type === "SPACE") this._eat("SPACE");
-            else if(this._lookahead !== null) lines.push(this.Expression());
+            if(this._lookahead.type === "SPACE") this._eat("SPACE");
+            if(this._lookahead !== null && this._lookahead.type !== "}") lines.push(this.Expression());
         }
         if(!lines.length) console.warn("Empty <Program>");
 
@@ -35,13 +35,14 @@ export default class Parser {
 
     Expression() { // Expression ::= Procedure LineEnder | Assignment LineEnder | FuncCall LineEnder
         let token;
-        if(this._lookahead !== null && this._lookahead.type === "SPACE") this._eat("SPACE");
+        
         switch(this._lookahead.type) {
             case "procKeyword" : token = this.Procedure();  break;
             case "WORD"        : token = this._lookahead.value.slice(-1) === "(" ? this.FuncCall() : this.Assignment(); break;
             default            : throw new CompileTimeError(this._lineID, `Unrecognized statement "${this._lookahead.value}" as any known <Expression> token type`);
         }
 
+        if(this._lookahead !== null && this._lookahead.type !== "}") this._eat("NEWLINE");
         return token;
     }
 
@@ -72,113 +73,87 @@ export default class Parser {
     PrintProc() { // PrintProc ::= "print" StackExpr
         return {
             type  : "print",
-            value : this.StackExpr(),
+            value : this.StackExpr().value,
         }
     }
 
     MakeProc() { // MakeProc ::= "make" Assignment | "make" TargetArg | "make" WORD Block
         return {
             type  : "make",
-            value : this.Assignment(true),
+            value : this.Assignment(true), // Assignment can have many things to consider, no further extraction
         }
     }
 
     FreeProc() { // FreeProc ::= "free" WORD
         return {
             type : "free",
-            value : this._eat("WORD"),
+            value : this._eat("WORD").value,
         }
     }
 
     ReplaceProc() { // ReplaceProc ::= "replace" WORD "=" StackExpr | "replace" WORD "with" StackExpr
-        const token = this._eat("WORD");
+        const token = this._eat("WORD").value;
         this._eat("SPACE");
         if(this._lookahead === null) throw new SyntaxError(`at line ${this._lineID}: <replace> procedure expected <assignment>`);
         
         if(this._lookahead.type == "ASSIGN") {
-            if(this._lookahead.value !== "=") throw new SyntaxError("<replace> procedure only supports strict assignment");
-            this._eat("ASSIGN");
+            if(this._eat("ASSIGN").value !== "=") throw new SyntaxError("<replace> procedure only supports strict assignment");
         }
-        else {
-            if(this._lookahead.value !== "with") throw new SyntaxError("<replace> procedure expected <with> or \"=\"");
-            this._eat("procKeyword");
-        }
+        else if(this._eat("procKeyword").value !== "with") throw new SyntaxError("<replace> procedure expected <with> or \"=\"");
         this._eat("SPACE");
 
         return {
-            type  : "replace",
-            value : {
-                ID     : this._lineID, // design consistency
-                type   : "Assignment",
-                target : token,
-                value  : this.StackExpr(),
-            }
+            type   : "replace",
+            target : token,
+            value  : this.StackExpr().value,
         };
     }
 
     LoopProc() { // LoopProc ::= "loop" StackExpr Block | "loop" StackExpr "with" WORD Block
-        const value = this.StackExpr();
+        const value = this.StackExpr().value;
         if(this._lookahead !== null && this._lookahead.type === "procKeyword") {
             if(this._eat("procKeyword").value !== "with") throw new SyntaxError("<loop> procedure expected optional keyword \"with\" after <StackExpr> and before <block> declaration");
             this._eat("SPACE");
-            return this._handCraftLoop(this._eat("WORD"), value);
+            return this._handCraftLoop(this._eat("WORD").value, value);
         }
-        const block = this.Block();
         
         return {
             type  : "loop",
             value : value,
-            block : block,
+            block : this.Block().value,
         }
     }
 
-    _handCraftLoop(target, value) {
-        target = {
-            type  : "StackCall",
-            value : target.value,
-        };
-
+    _handCraftLoop(target, value) { //come back here
         this._eat("SPACE");
         const token = {
             type  : "when",
-            value : {
-                type  : "StackExpr",
-                value : [ { type  : "NumericLiteral", value : 1 } ],
-            },
-            block : {
-                type  : "Block",
-                value : [
-                    {
-                        ID    : this._lineID,
-                        type  : ["Procedure", "make"],
-                        value : {
-                            ID     : this._lineID,
-                            type   : "Assignment",
-                            target : target,
-                            value  : {
-                                type : "StackExpr",
-                                value : [ { type  : "NumericLiteral", value : -1 } ], // this init value allows to solve problems with the <next> procedure
-                            },
-                        },
+            value : [ 1 ],
+            block : [
+                {
+                    ID    : this._lineID,
+                    type  : ["Procedure", "make"],
+                    value : {
+                        ID     : this._lineID,
+                        type   : "Assignment",
+                        target : target,
+                        value  : [ -1 ], // this init value allows to solve problems with the <next> procedure
                     },
-                    {
-                        ID    : this._lineID,
-                        type  : ["Procedure", "loop"],
-                        value : value,
-                        block : this.Block(),
-                    },
-                ],
-            },
+                },
+                {
+                    ID    : this._lineID,
+                    type  : ["Procedure", "loop"],
+                    value : value,
+                    block : this.Block().value,
+                },
+            ],
         };
 
-        token.block.value[1].block.value.unshift({
+        token.block[1].block.unshift({
             ID     : this._lineID,
             type   : "Assignment",
             target : target,
-            value  : {
-                type  : "StackExpr",
-                value : [ target, { type  : "NumericLiteral", value : 1 }, { type  : "StackOperand", value : "+" } ],
-            },
+            value  : [ { type: "StackCall", value : target }, 1, { type  : "StackOperand", value : "+" } ],
         });
 
         return token;
@@ -187,7 +162,7 @@ export default class Parser {
     UseProc() { // UseProc ::= "use" StringLiteral "with" WORD | "use" StringLiteral
         const token = {
             type: "use",
-            value: this.StringLiteral(),
+            value: this.StringLiteral().value,
         }
 
         let label;
@@ -196,24 +171,23 @@ export default class Parser {
             if(!["NEWLINE", "}"].includes(this._lookahead.type)) {
                 if(this._eat("procKeyword").value !== "with") throw new SyntaxError("<use> procedure expected optional keyword \"with\" after target argument");
                 this._eat("SPACE");
-                label = this._eat("WORD");
+                label = this._eat("WORD").value;
             }
         }
         
-        if(label) token.label = label.value;
+        if(label) token.label = label;
         return token;
     }
 
-    WhenProc(canLoop = true) { // WhenProc ::= "when" StackExpr Block | "when" StackExpr Block ElseProc
-        const value = this.StackExpr();
+    WhenProc(canLoop = true) { // WhenProc ::= "when" StackExpr Block | "when" StackExpr Block ElseProc | WhenLoopProc
+        const value = this.StackExpr().value;
         const loops = (this._lookahead !== null && this._lookahead.type === "procKeyword") ? this._eat("procKeyword").value : false;
         if(this._lookahead?.type === "SPACE") this._eat("SPACE");
-        const block = this.Block();
         
         const token = {
             type  : "when",
             value : value,
-            block : block,
+            block : this.Block().value,
         }
         if(loops) {
             if(!canLoop) throw new CompileTimeError(this._lineID, "using <else> blocks as looping conditionals is confusing and thus not allowed");
@@ -224,7 +198,10 @@ export default class Parser {
         if(this._lookahead !== null) {
             if(!["NEWLINE", "}"].includes(this._lookahead.type)) {
                 if(this._eat("procKeyword").value !== "else") throw new SyntaxError(`at line ${this._lineID}: tried pairing <when> procedure to a block owned by a procedure other than <else>`);
-                token.else = this.ElseProc();
+                const els = this.ElseProc();
+                token.else = { block: els.block };
+                if(els.value) token.else.value = els.value;
+                if(els.else)  token.else.else  = els.else;
             }
         }
 
@@ -237,14 +214,14 @@ export default class Parser {
             if(this._eat("procKeyword").value !== "when") throw new CompileTimeError(this._lineID, "<else> procedure token expected either block declaration or when statement");
             this._eat("SPACE");
             const token = this.WhenProc(false);
-            token.ID = this._lineID;
+            token.ID = this._lineID; // necessary
             token.type = ["Procedure", token.type];
             return token;
         }    
         else return {
-            ID    : this._lineID,
+            ID    : this._lineID, // necessary
             type  : ["Procedure", "else"],
-            block : this.Block(),
+            block : this.Block().value,
         };
     }
 
@@ -252,7 +229,6 @@ export default class Parser {
         if(this._lookahead !== null && this._lookahead.type === "SPACE") this._eat("SPACE");
         return {
             type  : "next",
-            value : null,  // useless
         }
     }
 
@@ -260,7 +236,7 @@ export default class Parser {
         let value = null;
         if(this._lookahead !== null && this._lookahead.type === "SPACE") {
             this._eat("SPACE");
-            if(this._lookahead !== null && !["NEWLINE", "}"].includes(this._lookahead.type)) value = this.StackExpr();
+            if(this._lookahead !== null && !["NEWLINE", "}"].includes(this._lookahead.type)) value = this.StackExpr().value;
         }
 
         return {
@@ -272,12 +248,12 @@ export default class Parser {
     FlagProc() { // FlagProc ::= "flag" StackExpr
         return {
             type  : "flag",
-            value : this.StackExpr(),
+            value : this.StackExpr().value,
         }
     }
 
     FuncProc() { // FuncProc ::= "def" WORD "with" InputList Block | "def" WORD "=>" InputList Block
-        const name = this._eat("WORD");
+        const name = this._eat("WORD").value;
         this._eat("SPACE");
         
         const argStream = [];
@@ -286,10 +262,10 @@ export default class Parser {
             if(!["with", "=>"].includes(symbol)) throw new CompileTimeError(this._lineID, `<def> procedure expected either "with" keyword or "=>" after the function's name`);  
             this._eat("SPACE");
 
-            argStream.push(this._eat("WORD"));
+            argStream.push(this._eat("WORD").value); //this needs to be here because it's mandatory to have at least one argument after =>/with
             this._eat("SPACE");
             while(this._lookahead !== null && this._lookahead.type === "WORD") {
-                argStream.push(this._eat("WORD"));
+                argStream.push(this._eat("WORD").value);
                 this._eat("SPACE");
             }
         }
@@ -297,7 +273,7 @@ export default class Parser {
         const token = {
             type  : "def",
             name  : name,
-            block : this.Block(),
+            block : this.Block().value,
         }
 
         if(argStream.length) token.args = argStream;
@@ -310,7 +286,7 @@ export default class Parser {
         if(this._lookahead !== null && this._lookahead.type === "NEWLINE") this._eat("NEWLINE");
         else this._eat("SPACE");
 
-        const linesContainer = this.Program();
+        const linesContainer = this.Program().body;
         this._eat("}");
         
         try { if(this._lookahead != null && this._lookahead.type !== "NEWLINE") this._eat("SPACE"); }
@@ -320,21 +296,20 @@ export default class Parser {
         
         return {
             type  : "Block",
-            value : linesContainer.body,
+            value : linesContainer,
         }
     }
 
     FuncCall() { // FuncCall ::= WORD"(" StackExpr ")" | WORD"(" Iterator ")"
-        const name = this._eat("WORD");
-        name.value = name.value.slice(0, -1);
+        const name = this._eat("WORD").value.slice(0, -1);
         this._eat("SPACE");
-        let value = null;
+        let value;
         if(this._lookahead !== null && this._lookahead.type === "@") { // Iterator ::= "@"WORD
             this._eat("@");
-            value = this._eat("WORD");
+            value = this._eat("WORD").value;
             this._eat("SPACE");
         }
-        else if(this._lookahead !== null && this._lookahead.type !== ")") value = this.StackExpr();
+        else if(this._lookahead !== null && this._lookahead.type !== ")") value = this.StackExpr().value;
         this._eat(")");
 
         return {
@@ -345,26 +320,23 @@ export default class Parser {
     }
 
     Assignment(canOmit = false) { // Assignment ::= Target AssignmentSymbol StackExpr | Target
-        const target = this.Target();
+        const target = this.Target().value;
         let value;
         if(this._lookahead === null || this._lookahead.type === "NEWLINE") {
             if(!canOmit) throw new SyntaxError(`at line ${this._lineID}: lazy assignment is only valid inside of a <make> procedure`);
-            value = {
-                type: "StackExpr",
-                value: [{ type: "NumericLiteral", value: 0, }],
-            };
+            value = [0];
         }
         else {
             const symbol = this._eat("ASSIGN").value;
             this._eat("SPACE");
-            value = this.StackExpr();
+            value = this.StackExpr().value;
             if(symbol !== "=") {
                 const injectedOps = [
-                    { type: "StackCall"   , value: target.value instanceof Array ? [...target.value] : target.value },
+                    { type: "StackCall"   , value: target instanceof Array ? [...target] : target },
                     { type: "StackOperand", value: "rot>"       },
-                    { type: "StackOperand", value: symbol[0]    }
+                    { type: "StackOperand", value: symbol[0]    },
                 ];
-                value.value.push(...injectedOps);
+                value.push(...injectedOps);
             }
         }
 
@@ -379,7 +351,7 @@ export default class Parser {
     StackExpr() { // StackExpr ::= StackElement | StackExpr StackElement
         const StackElementList = [];
         while(this._lookahead !== null && !["]", "{", "}", "NEWLINE", "procKeyword", ")"].includes(this._lookahead.type)) {
-            StackElementList.push(this.StackElement());
+            StackElementList.push(this.StackElement()); // no further extraction needed, it's useful to have the whole token to differentiate them
             if(this._lookahead !== null && this._lookahead.type !== "NEWLINE") this._eat("SPACE");
         }
         if(!StackElementList.length) throw new SyntaxError("Empty <StackExpr>");
@@ -390,7 +362,7 @@ export default class Parser {
         switch(this._lookahead.type) {
             case "StackOp" : return this.StackOp();
             case "WORD"    : return this._lookahead.value.slice(-1) === "(" ? this.FuncCall() : this.StackCall();
-            default        : return this.Literal();
+            default        : return this.Literal().value;
         }
     }
 
@@ -412,10 +384,10 @@ export default class Parser {
     }
 
     StackCall() {
-        const token = this._eat("WORD");
+        const token = this._eat("WORD"); // no extraction here, Property is checked based on its type
         if(this._checkPropertyAhead()) {
             token.value = [token.value];
-            while(this._checkPropertyAhead()) token.value.push(this.Property());    
+            while(this._checkPropertyAhead()) token.value.push(this.Property()); // same as above
         }
 
         return {

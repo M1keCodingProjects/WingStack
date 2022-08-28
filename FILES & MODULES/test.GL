@@ -1,1 +1,11 @@
-#use "std GLib" with std
+use "std GLib" with std
+
+make a = {
+    make a = "First property"
+    make b = "Second property"
+}
+
+make obj2 = a
+make obj3 = a obj
+a.b = 2
+print a obj2 obj3

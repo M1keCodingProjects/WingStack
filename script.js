@@ -13,7 +13,7 @@ const printAction = () => {
   console.log(textEditor.printText());
 }
 
-const usedFilePath = "EXAMPLES/presentation";
+const usedFilePath = "test"; //"EXAMPLES/presentation";
 
 const GLC = new Compiler(usedFilePath, preloadedModuleList);
 const textEditor = new TextEditor(await loadFile(usedFilePath));
@@ -24,7 +24,8 @@ textEditor.begin_draw();
 
 /* TODO:
     Utmost priority:
-      introduce object syntax support and use it to load modules and apply labels to function names
+      allow objects to have functions as methods
+      use object syntax to load modules and apply labels to function names
 
     Mid priority:
       finish std GLib

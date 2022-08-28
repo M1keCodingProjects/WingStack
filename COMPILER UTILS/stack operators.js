@@ -381,7 +381,7 @@ class Cast_stackOp extends StackOp {
     else {
       el = stack.pop();
       type = StackValue.prototype.get_type(el);
-      if(!this.acceptedTypes.includes(type)) Errors.RuntimeError(this.ID, `Invalid casting attempt from ${type} to ${this.type}, expected ${this.acceptedTypes.join("or ")}`);
+      if(!this.acceptedTypes.includes(type)) throw new Errors.RuntimeError(this.ID, `Invalid casting attempt from <${type}> to <${this.type}>, expected ${this.acceptedTypes.join(" or ")}`);
     }
     stack.data.push(this.cast(el, type));
   }
@@ -409,11 +409,23 @@ export class StrCast_stackOp extends Cast_stackOp {
 }
 
 export class LstCast_stackOp extends Cast_stackOp {
-  constructor(ID) { super(ID, "list", ["number", "string", "list", "many"]); }
+  constructor(ID) { super(ID, "list", ["number", "string", "list", "many", "object"]); }
 
   cast(el, type) {
-    if(type == "many") return [...el];
-    return [el];
+    switch(type) {
+      case "many"   : return [...el];
+      case "object" : return Object.entries(el);
+      default       : return [el];
+    }
+  }
+}
+
+export class ObjCast_stackOp extends Cast_stackOp {
+  constructor(ID) { super(ID, "object", ["number", "string", "list", "object"]); }
+
+  cast(el, type) {
+    if(type == "object") return {...el};
+    return { value : el };
   }
 }
 

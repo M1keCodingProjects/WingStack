@@ -13,14 +13,14 @@
         },
 
         "@" : {
-            "ends" : [" ", "\n"],
+            "ends"  : [" ", "\n"],
             "color" : "#47A184"
         }
     },
 
     "keywords" : {
         "#FFD53D" : ["print", "make", "loop", "def", "when", "free", "use", "replace", "else", "with", "exit", "next", "flag"],
-        "#18F21F" : ["dup", "size", "rot<", "rot>", "swap", "drop", "inp", "spill", "rand", "over", "type", "pop", "and", "or", "xor", "not", "num", "str", "pack"],
+        "#18F21F" : ["dup", "size", "rot<", "rot>", "swap", "drop", "inp", "spill", "rand", "over", "type", "pop", "and", "or", "xor", "not", "num", "str", "pack", "obj"],
         "#DC64AA" : [ "PI", "INF", "TRUE", "FALSE"]
     }
 }

@@ -606,7 +606,7 @@ class ScrollBar {
 
   show(ctx) {
     ctx.save();
-    ctx.translate(this.showX, this.showY);
+    ctx.translate(this.showX || 0, this.showY || 0);
     ctx.fillStyle = getRGBA(220, 50 + 30 * this.isHovered());
     drawRect(ctx, 0, 0, this.w, this.h, this.cornerRadius);
     ctx.fill();

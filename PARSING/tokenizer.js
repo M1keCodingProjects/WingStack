@@ -21,7 +21,7 @@ export default class Tokenizer { // lazily pulls tokens from a stream of charact
     }
     
     init(string) {
-        this._string = string;//.replace(/#.*(\n|$)/g, "$1");
+        this._string = string;
         this._cursor = 0; // character position tracker
     }
 

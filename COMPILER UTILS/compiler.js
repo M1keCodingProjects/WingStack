@@ -78,6 +78,7 @@ export default class Compiler {
           num    : ((ID) => new StackClasses.NumCast_stackOp(ID)),
           str    : ((ID) => new StackClasses.StrCast_stackOp(ID)),
           pack   : ((ID) => new StackClasses.LstCast_stackOp(ID)),
+          obj    : ((ID) => new StackClasses.ObjCast_stackOp(ID)),
           ","    : ((ID) => new StackClasses.Limit_stackOp(ID)),
         };
     }

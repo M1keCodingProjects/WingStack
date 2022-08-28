@@ -149,6 +149,26 @@ export class BlockArg extends Arg {
     }
 }
 
+export class ObjBlockArg extends BlockArg {
+    constructor(ID, compilerRef, linesList) {
+        super(ID, compilerRef, linesList);
+    }
+
+    saveProperties() {
+        const res = [...this.compiler.vars.filter(v => v.depth >= this.compiler.scopeDepth)];
+        this.compiler.clearLocalDepth();
+        return res.reduce((acc, el) => ({...acc, [el.name] : el.value}) , {});
+    }
+
+    execute() {
+        this.compiler.scopeDepth++;
+        this.lines.forEach(line => line.execute());
+        const returnValue = this.saveProperties();
+        this.compiler.scopeDepth--;
+        return returnValue;
+    }
+}
+
 export class Assignment extends Arg {
     constructor(ID, compilerRef, content) {
         super("assignment", ID, compilerRef, content);
@@ -156,11 +176,15 @@ export class Assignment extends Arg {
 
     argumentize(content) {
         this.target = new StackCallArg(this.ID, this.compiler, content.target);
-        this.stackExpr = new StackExprArg(this.ID, this.compiler, content.value);
+        switch(content.value.type) {
+            case "Block"     : this.block     = new ObjBlockArg( this.ID, this.compiler, content.value.value); break;
+            case "StackExpr" : this.stackExpr = new StackExprArg(this.ID, this.compiler, content.value.value); break;
+            default          : throw new SyntaxError(`Cannot recognize property type ${content.value.type}`);
+        }
     }
 
     execute() {
-        this.target.execute(this.stackExpr.execute(), false);
+        this.target.execute(this.stackExpr ? this.stackExpr.execute() : this.block.execute(), false);
     }
 }
 

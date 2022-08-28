@@ -77,7 +77,7 @@ export default class Parser {
         }
     }
 
-    MakeProc() { // MakeProc ::= "make" Assignment | "make" TargetArg | "make" WORD Block
+    MakeProc() { // MakeProc ::= "make" Assignment | "make" TargetArg
         return {
             type  : "make",
             value : this.Assignment(true), // Assignment can have many things to consider, no further extraction
@@ -137,7 +137,10 @@ export default class Parser {
                         ID     : this._lineID,
                         type   : "Assignment",
                         target : target,
-                        value  : [ -1 ], // this init value allows to solve problems with the <next> procedure
+                        value  : {
+                            type  : "StackExpr",
+                            value : [ -1 ], // this init value allows to solve problems with the <next> procedure
+                        }
                     },
                 },
                 {
@@ -153,7 +156,10 @@ export default class Parser {
             ID     : this._lineID,
             type   : "Assignment",
             target : target,
-            value  : [ { type: "StackCall", value : target }, 1, { type  : "StackOperand", value : "+" } ],
+            value  : {
+                type : "StackExpr", // necessary because it could be a block
+                value : [ { type: "StackCall", value : target }, 1, { type  : "StackOperand", value : "+" } ],
+            },
         });
 
         return token;
@@ -319,24 +325,26 @@ export default class Parser {
         };
     }
 
-    Assignment(canOmit = false) { // Assignment ::= Target AssignmentSymbol StackExpr | Target
+    Assignment(canOmit = false) { // Assignment ::= TargetArg AssignmentSymbol StackExpr | TargetArg AssignmentSymbol Block
         const target = this.Target().value;
         let value;
         if(this._lookahead === null || this._lookahead.type === "NEWLINE") {
             if(!canOmit) throw new SyntaxError(`at line ${this._lineID}: lazy assignment is only valid inside of a <make> procedure`);
-            value = [0];
+            value = { type : "StackExpr", value : [0] };
         }
         else {
             const symbol = this._eat("ASSIGN").value;
             this._eat("SPACE");
-            value = this.StackExpr().value;
+            value = (this._lookahead !== null && this._lookahead.type === "{") ? this.Block() : this.StackExpr(); //need to be different, can't extract further
+
             if(symbol !== "=") {
+                if(value.type !== "StackExpr") throw new CompileTimeError(this._lineID, `Unstrict assignment (${symbol}) is only valid if followed by a <StackExpr> argument`);
                 const injectedOps = [
                     { type: "StackCall"   , value: target instanceof Array ? [...target] : target },
                     { type: "StackOperand", value: "rot>"       },
                     { type: "StackOperand", value: symbol[0]    },
                 ];
-                value.push(...injectedOps);
+                value.value.push(...injectedOps);
             }
         }
 

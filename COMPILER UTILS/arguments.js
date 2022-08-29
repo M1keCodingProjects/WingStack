@@ -82,7 +82,17 @@ export class StackCallArg extends Arg {
             if(this.isPseudoCall) return;
             if(variable.constructor.name === "Variable") variable = variable.value;
             if(variable === null) throw new Errors.RuntimeError(this.ID, `cannot push a null value to the stack, this may have happened because a variable was called before finishing its initialization`);
-            else stack.data.push(variable);
+            else {
+                if(StackValue.prototype.get_type(variable) === "object") {
+                    let restVar = {...variable};
+                    for(let key in variable) {
+                        if(!Object.hasOwn(variable, key)) continue;
+                        if(variable[key].constructor.name === "DefProc") delete restVar[key];
+                    }
+                    variable = restVar;
+                }
+                stack.data.push(variable);
+            }
         }
         else variable.value = stack; // this only happens when writing to variables without properties. StackCalls property-chains ending in a FuncCall are not allowed to be a target by the parser
     }

@@ -41,17 +41,18 @@ export class StackCallArg extends Arg {
                 if(property instanceof StackExprArg) {
                     property = property.execute();
                     switch(StackValue.prototype.get_type(property)) {
-                        case "number" : if(! (variable instanceof Array)) throw new Errors.RuntimeError(this.ID, `cannot access index propery of non-list object`);
-                                        name.push(`[${property}]`); break;
+                        case "number" : if(!(variable instanceof Array)) throw new Errors.RuntimeError(this.ID, `cannot access index propery of non-list object`);
+                                        break;
 
-                        case "string" : if(   variable instanceof Array)  throw new Errors.RuntimeError(this.ID, `cannot access literal property of <list> type object`);
-                                        name.push(`.${property}`); break; 
-                        
+                        case "string" : if(variable instanceof Array) throw new Errors.RuntimeError(this.ID, `cannot access literal property of <list> type object`);
+                                        break;
+
                         default       : throw new Errors.RuntimeError(this.ID, `a <stackExpression> evaluated to a result not compatible with a property access operation`);
                     }
                 }
                 else if(variable instanceof Array) throw new Errors.RuntimeError(this.ID, `cannot access literal property of <list> type object`);
-                
+                name.push(`.${property}`);
+
                 if(variable[property] === undefined) {
                     name.pop();
                     if(variable instanceof Array) throw new Errors.RuntimeError(this.ID, `item "${name.join("")}" does not contain data at index ${property}`);
@@ -157,7 +158,7 @@ export class ObjBlockArg extends BlockArg {
     saveProperties() {
         const res = [...this.compiler.vars.filter(v => v.depth >= this.compiler.scopeDepth)];
         this.compiler.clearLocalDepth();
-        return res.reduce((acc, el) => ({...acc, [el.name] : el.value}) , {});
+        return res.reduce((acc, el) => ({...acc, [el.name] : (el.constructor.name === "DefProc" ? ((inputEval) => el.call(inputEval)) : el.value)}) , {});
     }
 
     execute() {

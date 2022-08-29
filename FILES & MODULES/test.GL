@@ -1,11 +1,13 @@
 use "std GLib" with std
 
-make a = {
-    make a = "First property"
-    make b = "Second property"
+make Vec2 = {
+  make x
+  make y
+  
+  def new => _x _y {
+    x = _x
+    y = _y
+  }
 }
 
-make obj2 = a
-make obj3 = a obj
-a.b = 2
-print a obj2 obj3
+print Vec2.new

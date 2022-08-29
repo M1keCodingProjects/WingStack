@@ -5,6 +5,7 @@ import { loadFile } from "./FILES & MODULES/file loader.js";
 const preloadedModuleList = {
     "basic stack ops"   : (await(await fetch(`./FILES & MODULES/basic stack ops.GL`)).text()).split("\r").join(""),
     "std GLib"          : (await(await fetch(`./FILES & MODULES/std GLib.GL`)).text()).split("\r").join(""),
+    "Vector2D"          : (await(await fetch(`./FILES & MODULES/Vector2D.GL`)).text()).split("\r").join(""),
     //add here all the files you intend to load with the "use" procedure.
 };
 

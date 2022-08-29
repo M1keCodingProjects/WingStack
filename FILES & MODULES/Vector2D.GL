@@ -30,7 +30,3 @@ def mult_Vec2 => n {
 def mag_Vec2 => vec {
   exit 2 dup vec.x vec.y over ** swap over ** + sqrt
 }
-
-make pos = new_Vec2( 4 3 )
-make speed = new_Vec2( 1 -1 )
-print mag_Vec2( pos )

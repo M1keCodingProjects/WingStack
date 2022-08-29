@@ -1,13 +1,18 @@
 use "std GLib" with std
 
-make Vec2 = {
-  make x
-  make y
+make object = {
+  make a = 22
+  make b = "hi"
   
-  def new => _x _y {
-    x = _x
-    y = _y
+  def repr {
+    print object.repr2( )
+  }
+  
+  def repr2 {
+    exit "{ a : " object.a ", b : " object.b " }" str
   }
 }
 
-print Vec2.new
+print object.repr2( )
+#print object.repr( )  --> !! error: repr( ) doesn't exit properly
+object.repr( )

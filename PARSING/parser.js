@@ -328,14 +328,19 @@ export default class Parser {
         };
     }
 
-    Assignment(canOmit = false) { // Assignment ::= TargetArg AssignmentSymbol StackExpr | TargetArg AssignmentSymbol Block
+    Assignment(canOmit = false) { // Assignment ::= Target | Target AssignmentSymbol StackExpr | Target AssignmentSymbol Block
         const target = this.Target().value;
         let value;
-        if(this._lookahead === null || this._lookahead.type === "NEWLINE") {
-            if(!canOmit) throw new SyntaxError(`at line ${this._lineID}: lazy assignment is only valid inside of a <make> procedure`);
-            value = { type : "StackExpr", value : [0] };
+        if(target[target.length - 1]?.type === "FuncCall") value = "omitted";
+        
+        if(this._lookahead === null || this._lookahead.type === "NEWLINE" || this._lookahead.type === "}") {
+            if(value !== "omitted") {
+                if(!canOmit) throw new SyntaxError(`at line ${this._lineID}: lazy assignment is only valid inside of a <make> procedure`);   
+                value = { type : "StackExpr", value : [0] };
+            }
         }
         else {
+            if(value === "omitted") throw new CompileTimeError(this._lineID, "cannot assign to <FuncCall> items, expected <NEWLINE> or <EOF> token");
             const symbol = this._eat("ASSIGN").value;
             this._eat("SPACE");
             value = (this._lookahead !== null && this._lookahead.type === "{") ? this.Block() : this.StackExpr(); //need to be different, can't extract further
@@ -411,11 +416,11 @@ export default class Parser {
         return this._lookahead !== null && ["DOT", "["].includes(this._lookahead.type);
     }
 
-    Property() { // Property ::= "." ValidName | "[" " " StackExpr "]"
+    Property() { // Property ::= "." WORD | "." FuncCall | "[" " " StackExpr "]"
         let res;
         if(this._lookahead.type === "DOT") {
             this._eat("DOT");
-            res = this._eat("WORD");
+            res = (this._lookahead !== null && this._lookahead.value.slice(-1) === "(") ? this.FuncCall() : this._eat("WORD");
         }
         else {
             this._eat("[");

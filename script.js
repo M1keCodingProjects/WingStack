@@ -25,7 +25,6 @@ textEditor.begin_draw();
 
 /* TODO:
     Utmost priority:
-      allow objects to have functions as methods
       use object syntax to load modules and apply labels to function names
 
     Mid priority:

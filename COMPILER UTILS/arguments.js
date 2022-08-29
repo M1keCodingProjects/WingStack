@@ -11,8 +11,9 @@ class Arg {
 }
 
 export class StackCallArg extends Arg {
-    constructor(ID, compilerRef, nameList) {
+    constructor(ID, compilerRef, nameList, isPseudoCall = false) {
         super("target", ID, compilerRef, nameList);
+        this.isPseudoCall = isPseudoCall;
     }
 
     argumentize(nameList) {
@@ -23,6 +24,7 @@ export class StackCallArg extends Arg {
                 switch(property.type) {
                     case "WORD"      : this.properties.push(property.value); break;
                     case "StackExpr" : this.properties.push(new StackExprArg(this.ID, this.compiler, property.value)); break;
+                    case "FuncCall"  : this.properties.push(new FuncCall(this.ID, this.compiler, property)); break;
                     default          : throw new SyntaxError(`Cannot recognize property type ${property.type}`);
                 }
             }
@@ -49,26 +51,40 @@ export class StackCallArg extends Arg {
 
                         default       : throw new Errors.RuntimeError(this.ID, `a <stackExpression> evaluated to a result not compatible with a property access operation`);
                     }
+                    name.push(`[${property}]`);
                 }
-                else if(variable instanceof Array) throw new Errors.RuntimeError(this.ID, `cannot access literal property of <list> type object`);
-                name.push(`.${property}`);
+                else if(property instanceof FuncCall) {
+                    if(StackValue.prototype.get_type(variable) !== "object") throw new Errors.RuntimeError(this.ID, `tried accessing method property "${property.name}" of non-object type item "${name.join("")}"`);
+                    name.push(`.${property.name}`);
+                    const isPseudoLast = i == this.properties.length - 1 && isReading && this.isPseudoCall;
+                    const returnValue = isPseudoLast ? null : new Stack(this.ID);
+                    property.execute(returnValue, variable);
+                    if(!isPseudoLast) variable = returnValue.pop("all");
+                    continue;
+                }
+                else {
+                    if(variable instanceof Array) throw new Errors.RuntimeError(this.ID, `cannot access literal property of <list> type object`);
+                    name.push(`.${property}`);
+                }
 
                 if(variable[property] === undefined) {
                     name.pop();
                     if(variable instanceof Array) throw new Errors.RuntimeError(this.ID, `item "${name.join("")}" does not contain data at index ${property}`);
                     throw new Errors.RuntimeError(this.ID, `item "${name.join("")}" does not contain a property named ${property}`);
-                }   
+                }
+                if(variable[property].constructor.name === "DefProc") throw new Errors.RuntimeError(this.ID, `"${name}" is a method and should be called as such`); 
                 if(!isReading && i == this.properties.length - 1) return variable[property] = stack; //unused return value
                 variable = variable[property];
             }
         }
         
         if(isReading) {
-            if(variable.value !== undefined) variable = variable.value;
+            if(this.isPseudoCall) return;
+            if(variable.constructor.name === "Variable") variable = variable.value;
             if(variable === null) throw new Errors.RuntimeError(this.ID, `cannot push a null value to the stack, this may have happened because a variable was called before finishing its initialization`);
             else stack.data.push(variable);
-        }    
-        else variable.value = stack;
+        }
+        else variable.value = stack; // this only happens when writing to variables without properties. StackCalls property-chains ending in a FuncCall are not allowed to be a target by the parser
     }
 }
 
@@ -155,16 +171,23 @@ export class ObjBlockArg extends BlockArg {
         super(ID, compilerRef, linesList);
     }
 
-    saveProperties() {
-        const res = [...this.compiler.vars.filter(v => v.depth >= this.compiler.scopeDepth)];
-        this.compiler.clearLocalDepth();
-        return res.reduce((acc, el) => ({...acc, [el.name] : (el.constructor.name === "DefProc" ? ((inputEval) => el.call(inputEval)) : el.value)}) , {});
-    }
-
     execute() {
         this.compiler.scopeDepth++;
-        this.lines.forEach(line => line.execute());
-        const returnValue = this.saveProperties();
+        let returnValue = {};
+        const oldLen = this.compiler.vars.length;
+        for(let line of this.lines) {
+            line.execute();
+            const newVarsAmt = this.compiler.vars.length - oldLen;
+            if(newVarsAmt > 0) {
+                for(let i = 0; i < newVarsAmt; i++) {
+                    const property = this.compiler.vars.pop();
+                    if(property.constructor.name === "Variable") returnValue[property.name] = property.value;
+                    else returnValue[property.name] = property; // we save the whole DefProc
+                }
+            }
+        }
+        if(!Object.keys(returnValue).length) throw new Errors.RuntimeError(this.ID, `an empty <object> type item was created, with no properties nor methods`);
+        //this.compiler.clearLocalDepth();
         this.compiler.scopeDepth--;
         return returnValue;
     }
@@ -176,16 +199,18 @@ export class Assignment extends Arg {
     }
 
     argumentize(content) {
-        this.target = new StackCallArg(this.ID, this.compiler, content.target);
+        this.target = new StackCallArg(this.ID, this.compiler, content.target, content.value === "omitted");
+        if(this.target.isPseudoCall) return;
         switch(content.value.type) {
             case "Block"     : this.block     = new ObjBlockArg( this.ID, this.compiler, content.value.value); break;
             case "StackExpr" : this.stackExpr = new StackExprArg(this.ID, this.compiler, content.value.value); break;
-            default          : throw new SyntaxError(`Cannot recognize property type ${content.value.type}`);
+            default          : throw new SyntaxError(`Cannot recognize argument type ${content.value.type}`);
         }
     }
 
     execute() {
-        this.target.execute(this.stackExpr ? this.stackExpr.execute() : this.block.execute(), false);
+        if(this.target.isPseudoCall) this.target.execute(null, true);
+        else this.target.execute(this.stackExpr ? this.stackExpr.execute() : this.block.execute(), false);
     }
 }
 
@@ -202,10 +227,11 @@ export class FuncCall extends Arg {
         else this.iterator = new StackCallArg(this.ID, this.compiler, content.value);
     }
 
-    execute(stack = null) {
-        const func = this.compiler.searchFunc(this.name, this.ID);
-        let returnValue = [];
+    execute(stack = null, objectRef = null) {
+        const func = objectRef ? objectRef[this.name] : this.compiler.searchFunc(this.name, this.ID);
+        if(func.constructor.name !== "DefProc") throw new Errors.RuntimeError(this.ID, `tried calling non-method property "${this.name}"`);
 
+        let returnValue = [];
         if(this.iterator) {
             const iterable = this.compiler.searchVar(this.iterator);
             if(StackValue.prototype.get_type(iterable.value) !== "list") throw new Errors.RuntimeError(this.ID, `cannot iterate over non-list type item ${this.iterator.name}`);

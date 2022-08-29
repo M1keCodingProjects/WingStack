@@ -36,7 +36,7 @@ StackCall ::= WORD | WORD PropertyList
 
 PropertyList ::= Property | PropertyList Property
 
-Property ::= "."WORD | "[" StackExpr "]"
+Property ::= Property ::= "." WORD | "." FuncCall | "[" " " StackExpr "]"
 
 Literal ::= NumericLiteral | StringLiteral
 

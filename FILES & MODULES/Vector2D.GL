@@ -1,0 +1,36 @@
+use "std GLib" with std
+
+# VECTOR2D CLASS #
+def new_Vec2 => _x _y {
+  make Vec2 = {
+    make x = _x
+    make y = _y
+  }
+  exit Vec2
+}
+
+def add_Vec2 => vec1 vec2 {
+  vec1.x += vec2.x
+  vec1.y += vec2.y
+  exit vec1
+}
+
+def sub_Vec2 => vec1 vec2 {
+  vec1.x -= vec2.x
+  vec1.y -= vec2.y
+  exit vec1
+}
+
+def mult_Vec2 => n {
+  vec1.x *= n
+  vec1.y *= n
+  exit vec1
+}
+
+def mag_Vec2 => vec {
+  exit 2 dup vec.x vec.y over ** swap over ** + sqrt
+}
+
+make pos = new_Vec2( 4 3 )
+make speed = new_Vec2( 1 -1 )
+print mag_Vec2( pos )

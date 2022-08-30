@@ -167,7 +167,7 @@ export default class TextEditor {
 
 class Caret {
     constructor(containerElement, textAreaTLx, textAreaTLy) {
-      this.NO_BEHAVIOUR = ["Unidentified", "Shift", "Alt", "Control", "AltGraph", "CapsLock", "Escape", "NumLock", "Home", "PageUp", "Clear", "End", "PageDown", "Insert", "Meta"];
+      this.ACCEPTED = ["enter", "backspace", "tab", "arrowup", "arrowdown", "arrowleft", "arrowright", " ", ..."abcdefghijklmnopqrstuvwxyz0123456789._-,;<>!\"£$%&/()='?^ìèé+*à°òç@#{}[]\\|~"];//["Unidentified", "Shift", "Alt", "Control", "AltGraph", "CapsLock", "Escape", "NumLock", "Home", "PageUp", "Clear", "End", "PageDown", "Insert", "Meta"];
       
       this.worldX = textAreaTLx;
       this.worldY = textAreaTLy;
@@ -203,7 +203,7 @@ class Caret {
     }
 
     on_keyWritten_inputEvent(caretObj, event) {
-      if(caretObj.NO_BEHAVIOUR.includes(event.key)) return false;
+      if(!caretObj.ACCEPTED.includes(event.key.toLowerCase())) return false;
       switch(event.key) {
         case "Enter"      : caretObj.go_newLine(); break;
         case "Backspace"  : caretObj.delete(); break;

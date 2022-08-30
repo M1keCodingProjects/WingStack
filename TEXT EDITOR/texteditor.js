@@ -48,8 +48,9 @@ export default class TextEditor {
     printText() {
       return this.text.map(l => l.join("")).join("\n").replace("\\n", "\n");
     }
+
     set_textSize(ctx, size) {
-        ctx.font = `bold ${TEXT_SIZE}px monospace`;
+        ctx.font = `bold ${size}pt monospace`;
     }
 
     set_textAlign(ctx, alignConstH, alignConstV) {
@@ -71,7 +72,7 @@ export default class TextEditor {
         ctx.translate(0, OVERALL_TRANSL_Y);
         ctx.fillStyle = getRGBA(200, 40);
         this.set_textAlign(ctx, "center", "top");
-        this.set_textSize(ctx, TEXT_SIZE);
+        this.set_textSize(ctx, TEXT_SIZE * 0.8);
         
         for(let y = 0; y < this.canvas.height / TEXT_SPACING_V; y++) {
             const scrolledY = y + this.scrollY.y;
@@ -104,7 +105,7 @@ export default class TextEditor {
               let ch = lineArr[x];
               if(ch in this.styleFile["delimiters"] && delimiterOpen == false) delimiterOpen = [ch, x];
               if(delimiterOpen == false) {
-                if(ch == " " || ch == "\n") { 
+                if([" ", "\n", "."].includes(ch)) {
                   if(word != "") this.colorcode_word(ctx, word, x, y);
                   word = "";
                 }
@@ -131,7 +132,10 @@ export default class TextEditor {
         else if(!isNaN(word)) ctx.fillStyle = this.styleFile["numbers"];
         else return;
         word = word.split("");
-        for(let i = 0; i < word.length; i++) ctx.fillText(word[i], (x - (word.length - i)) * TEXT_SPACING_H, y * TEXT_SPACING_V);
+        for(let i = 0; i < word.length; i++) {
+          ctx.strokeText(word[i], (x - (word.length - i)) * TEXT_SPACING_H, y * TEXT_SPACING_V);
+          ctx.fillText(word[i], (x - (word.length - i)) * TEXT_SPACING_H, y * TEXT_SPACING_V);
+        }
     }
 
     display_lineHighlight(ctx, lineID, fromXID, toXID) {
@@ -161,6 +165,7 @@ export default class TextEditor {
         ctx.scale(this.scl, this.scl);
         this.set_textAlign(ctx, "left", "top");
         this.set_textSize(ctx, TEXT_SIZE * 0.8);
+        ctx.strokeStyle = "#222";
         this.draw();
     }
 }

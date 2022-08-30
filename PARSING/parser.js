@@ -45,6 +45,7 @@ export default class Parser {
             default            : throw new CompileTimeError(this._lineID, `Unrecognized statement "${this._lookahead.value}" as any known <Expression> token type`);
         }
 
+        if(this._lookahead !== null && this._lookahead.type === "SPACE") this._eat("SPACE");
         if(this._lookahead !== null && this._lookahead.type !== "}") this._eat("NEWLINE");
         return token;
     }

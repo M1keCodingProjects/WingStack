@@ -1,32 +1,41 @@
 use "std GLib" with std
 
 # VECTOR2D CLASS #
-def new_Vec2 => _x _y {
-  make Vec2 = {
-    make x = _x
-    make y = _y
+make Vec2 = {
+  make x
+  make y
+  
+  def new => x y {
+    me.x = x
+    me.y = y
+    exit me.copy( )
   }
-  exit Vec2
+  
+  def add => vec2 {
+    me.x += vec2.x
+    me.y += vec2.y
+    exit me
+  }
+  
+  def mult => n {
+    me.x *= n
+    me.y *= n
+    exit me
+  }
+  
+  def sub => vec2 {
+    vec2 = vec2 obj
+    exit me.add( vec2.mult( -1 ) )
+  }
+
+  def mag {
+    exit 2 dup me.x me.y over ** swap over ** + sqrt
+  }
+  
+  def copy { exit me obj }
 }
 
-def add_Vec2 => vec1 vec2 {
-  vec1.x += vec2.x
-  vec1.y += vec2.y
-  exit vec1
-}
-
-def sub_Vec2 => vec1 vec2 {
-  vec1.x -= vec2.x
-  vec1.y -= vec2.y
-  exit vec1
-}
-
-def mult_Vec2 => n {
-  vec1.x *= n
-  vec1.y *= n
-  exit vec1
-}
-
-def mag_Vec2 => vec {
-  exit 2 dup vec.x vec.y over ** swap over ** + sqrt
-}
+# STATIC VERSIONS
+def add  => vec1 vec2 { exit vec1.copy( ).add(  vec2 ) }
+def sub  => vec1 vec2 { exit vec1.copy( ).sub(  vec2 ) }
+def mult => vec1 vec2 { exit vec1.copy( ).mult( vec2 ) }

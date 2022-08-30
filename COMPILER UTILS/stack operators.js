@@ -414,7 +414,7 @@ export class LstCast_stackOp extends Cast_stackOp {
   cast(el, type) {
     switch(type) {
       case "many"   : return [...el];
-      case "object" : return Object.entries(el);
+      case "object" : return Object.entries(el).filter(entry => ! (entry[1] instanceof Function));
       default       : return [el];
     }
   }

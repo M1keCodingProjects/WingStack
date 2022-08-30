@@ -1,5 +1,5 @@
 ## THIS IS THE BASIC GAMELANG LIBRARY MODULE ##
-use "basic stack ops"
+use "basic stack ops" with bso
 
 def typecheck => el typ msg {
   make elType = el type

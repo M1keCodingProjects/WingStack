@@ -1,18 +1,17 @@
 use "std GLib" with std
 
-make object = {
-  make a = 22
-  make b = "hi"
-  
-  def repr {
-    print object.repr2( )
-  }
-  
-  def repr2 {
-    exit "{ a : " object.a ", b : " object.b " }" str
+make ob = {
+  def add {
+    print "method add"
+    exit FALSE
   }
 }
 
-make obj2 = object
-object.b = 23
-print obj2
+def add { # needs to come after the method add, to avoid conflict
+  print "global add"
+  exit FALSE
+}
+
+add( )
+ob.add( )
+print std.add( 2 3 )

@@ -10,7 +10,7 @@ PrintProc ::= "print" StackExpr
 MakeProc  ::= "make" Assignment | "make" TargetArg
 FreeProc ::= "free" WORD
 ReplaceProc ::= "replace" WORD "=" StackExpr | "replace" WORD "with" StackExpr
-UseProc ::= "use" StringLiteral "with" WORD | "use" StringLiteral
+UseProc ::= "use" StringLiteral "with" WORD
 LoopProc ::= "loop" StackExpr Block | "loop" StackExpr "with" WORD Block
 WhenProc ::= "when" StackExpr Block | "when" StackExpr Block ElseProc
 ElseProc ::= "else" Block | "else" WhenProc

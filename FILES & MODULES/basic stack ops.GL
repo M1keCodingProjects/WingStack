@@ -16,3 +16,5 @@ replace sign2 with dup 0 > swap 31 >> +
 replace sign3 with dup 0 dup over swap > over over < -
 replace max   with 2dup > dup not over * over over * +
 replace min   with 2dup < dup not over * over over * +
+
+make value = "This serves as a property for this module object, without it it wouldn't compile"

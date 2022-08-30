@@ -110,13 +110,13 @@ export class UseProc extends Proc {
 
     getArguments(line) {
         const path = new StackValue(this.ID, line.value);
-        if(line.label) this.label = line.label; //for now it does nothing, it will when we add objects
-        this.block = new ArgClasses.BlockArg(this.ID, this.compiler, this.compiler.compileModule(path));
-        this.block.lines.forEach(line => line.ID += ` from module ${path.value}`);
+        this.label = new ArgClasses.StackCallArg(this.ID, this.compiler, line.label);
+        this.block = new ArgClasses.ObjBlockArg(this.ID, this.compiler, this.compiler.compileModule(path));
     }
 
     execute() {
-        this.block.execute();
+        this.compiler.makeVar(this.label);
+        this.label.execute(this.block.execute(), false);
     }
 }
 

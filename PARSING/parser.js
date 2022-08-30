@@ -168,23 +168,16 @@ export default class Parser {
         return token;
     }
 
-    UseProc() { // UseProc ::= "use" StringLiteral "with" WORD | "use" StringLiteral
+    UseProc() { // UseProc ::= "use" StringLiteral "with" WORD
         const token = {
             type: "use",
             value: this.StringLiteral().value,
         }
 
-        let label;
-        if(this._lookahead !== null) {
-            if(this._lookahead.type !== "NEWLINE") this._eat("SPACE");
-            if(!["NEWLINE", "}"].includes(this._lookahead.type)) {
-                if(this._eat("procKeyword").value !== "with") throw new SyntaxError("<use> procedure expected optional keyword \"with\" after target argument");
-                this._eat("SPACE");
-                label = this._eat("WORD").value;
-            }
-        }
-        
-        if(label) token.label = label;
+        this._eat("SPACE");
+        if(this._eat("procKeyword").value !== "with") throw new SyntaxError("<use> procedure expected keyword \"with\" after target argument");
+        this._eat("SPACE");
+        token.label = this._eat("WORD").value;
         return token;
     }
 

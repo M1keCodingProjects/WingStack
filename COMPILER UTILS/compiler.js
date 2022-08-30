@@ -84,14 +84,14 @@ export default class Compiler {
     }
     
     resetExec() {
-        this.currentID = 0;
-        this.EOF = this.lines.length;
-        this.vars = [];
+        this.currentID  = 0;
         this.scopeDepth = 0;
         this.skipIter   = false;
         this.exitStatus = false;
+        this.EOF = this.lines.length;
         this.callStack = [];
         this.openLoops = [];
+        this.vars      = [];
     }
     
     load(fileNameToken) {
@@ -158,6 +158,7 @@ export default class Compiler {
     makeFunc(defProc) {
       if(this.vars.find(v => v.name === defProc.name)) throw new Errors.RuntimeError(defProc.ID, `a declared variable also named "${defProc.name}" conflicts with the creation of this function`);
       if(defProc.name in this.stackOps) throw new Errors.RuntimeError(defProc.ID, `cannot use reserved <stackOperand> word "${defProc.name}" as function name`);
+      defProc.depth = this.scopeDepth;
       this.vars.push(defProc);
     }
 
@@ -180,7 +181,7 @@ export default class Compiler {
     }
 
     clearLocalDepth() {
-      this.vars = this.vars.filter(v => v instanceof ProcClasses.DefProc || v.depth < this.scopeDepth);
+      this.vars = this.vars.filter(v => v.depth < this.scopeDepth);
     }
 }
 

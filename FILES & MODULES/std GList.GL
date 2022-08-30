@@ -1,0 +1,100 @@
+## THIS IS THE BASIC LIST HELPER MODULE ##
+make List = {
+  make data
+  
+  def new => data {
+    me = me.copy( )
+    when len( data ) 1 == { data = data pack }
+    me.data = data
+    exit me
+  }
+  
+  def newRange => from step to {
+    exit me.new( rangeList( from step to ) )
+  }
+  
+  def newFill => value sz {
+    exit me.new( fillList( value sz ) )
+  }
+  
+  def copy { exit me obj }
+  
+  def repr {
+    def put, => el { exit el ", " str }
+    make data = me.data
+    exit "[ " put,( @data ) spill spill swap drop "]" str
+  }
+  
+  def getPos => el { exit getPos( me.data el ) } #num
+
+  def len     { exit len(     me.data ) } #num
+  def findMax { exit findMax( me.data ) } #any
+  def findMin { exit findMin( me.data ) } #any
+  def sumAll  { exit sumAll(  me.data ) } #num
+  def avg     { exit avg(     me.data ) } #num
+  
+  def flip    { exit me.new( flip(    me.data ) ) } #List
+}
+
+def len => arr {
+  when arr type "list" == { exit arr range }
+  exit 1
+}
+
+def rangeList => from step to {
+  make arr = from pack
+  when step not { exit arr }
+  when step 0 < dup not from to 2dup < rot> > and rot> and or { # ((step>=0)&&(from>to))||((from<to)&&(step<0))
+    flag "Invalid range: from " from " to " to " with step = " step str
+  }
+  
+  loop to from - step // { arr = arr spill dup step + }
+  exit arr
+}
+
+def fillList => value sz {
+  make arr = value pack
+  loop sz 1 - { arr = arr spill dup }
+  exit arr
+}
+
+def getPos => arr el {
+  loop arr range with i {
+    when arr[ i ] el == { exit i }
+  }
+  exit -1
+}
+
+def findMax => arr {
+  make m = arr spill
+  loop arr range 1 - { m = m spill max }
+  exit m
+}
+
+def findMin => arr {
+  make m = arr spill
+  loop arr range 1 - { m = m spill min }
+  exit m
+}
+
+def sumAll => arr {
+  make s = 0
+  loop arr range with i { s += arr[ i ] }
+  exit s
+}
+
+def avg => arr {
+  exit arr range sumAll( arr ) swap /
+}
+
+def flip => arr {
+  when arr range 1 == { exit arr }
+  make j = arr range
+  make arr2 = arr spill
+  loop j with i {
+    j -= 1
+    arr[ i ] = arr2[ j ]
+  }
+  
+  exit arr
+}

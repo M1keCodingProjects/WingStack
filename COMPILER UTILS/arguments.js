@@ -72,7 +72,7 @@ export class StackCallArg extends Arg {
                     if(variable instanceof Array) throw new Errors.RuntimeError(this.ID, `item "${name.join("")}" does not contain data at index ${property}`);
                     throw new Errors.RuntimeError(this.ID, `item "${name.join("")}" does not contain a property named ${property}`);
                 }
-                if(variable[property].constructor.name === "DefProc") throw new Errors.RuntimeError(this.ID, `"${name}" is a method and should be called as such`); 
+                if(variable[property] instanceof Function) throw new Errors.RuntimeError(this.ID, `"${name.join("")}" is a method and should be called as such`); 
                 if(!isReading && i == this.properties.length - 1) return variable[property] = stack; //unused return value
                 variable = variable[property];
             }
@@ -82,17 +82,7 @@ export class StackCallArg extends Arg {
             if(this.isPseudoCall) return;
             if(variable.constructor.name === "Variable") variable = variable.value;
             if(variable === null) throw new Errors.RuntimeError(this.ID, `cannot push a null value to the stack, this may have happened because a variable was called before finishing its initialization`);
-            else {
-                if(StackValue.prototype.get_type(variable) === "object") {
-                    let restVar = {...variable};
-                    for(let key in variable) {
-                        if(!Object.hasOwn(variable, key)) continue;
-                        if(variable[key].constructor.name === "DefProc") delete restVar[key];
-                    }
-                    variable = restVar;
-                }
-                stack.data.push(variable);
-            }
+            else stack.data.push(variable);
         }
         else variable.value = stack; // this only happens when writing to variables without properties. StackCalls property-chains ending in a FuncCall are not allowed to be a target by the parser
     }
@@ -192,12 +182,11 @@ export class ObjBlockArg extends BlockArg {
                 for(let i = 0; i < newVarsAmt; i++) {
                     const property = this.compiler.vars.pop();
                     if(property.constructor.name === "Variable") returnValue[property.name] = property.value;
-                    else returnValue[property.name] = property; // we save the whole DefProc
+                    else returnValue[property.name] = (() => property); // we save the whole DefProc, but hide it for security reasons
                 }
             }
         }
         if(!Object.keys(returnValue).length) throw new Errors.RuntimeError(this.ID, `an empty <object> type item was created, with no properties nor methods`);
-        //this.compiler.clearLocalDepth();
         this.compiler.scopeDepth--;
         return returnValue;
     }
@@ -238,7 +227,8 @@ export class FuncCall extends Arg {
     }
 
     execute(stack = null, objectRef = null) {
-        const func = objectRef ? objectRef[this.name] : this.compiler.searchFunc(this.name, this.ID);
+        let func = objectRef ? objectRef[this.name] : this.compiler.searchFunc(this.name, this.ID);
+        if(func instanceof Function) func = func();
         if(func.constructor.name !== "DefProc") throw new Errors.RuntimeError(this.ID, `tried calling non-method property "${this.name}"`);
 
         let returnValue = [];
@@ -289,4 +279,4 @@ class Stack {
     len() {
         return this.data.length - this.fetchID;
     }
-  }
+}

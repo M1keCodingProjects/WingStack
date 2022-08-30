@@ -13,6 +13,6 @@ make object = {
   }
 }
 
-print object.repr2( )
-#print object.repr( )  --> !! error: repr( ) doesn't exit properly
-object.repr( )
+make obj2 = object
+object.b = 23
+print obj2

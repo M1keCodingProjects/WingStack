@@ -528,7 +528,7 @@ class Caret {
       if(this.selection) this.show_selection(ctx);
       ctx.save();
       this.container.set_textAlign(ctx, "center", "top");
-      this.container.set_textSize(ctx, TEXT_SIZE);
+      this.container.set_textSize(ctx, TEXT_SIZE * 0.8);
       if(!this.animationBuffer) ctx.fillStyle = getRGBA(220, 255 * (Math.sin(this.flickerAnimation) > 0));
       ctx.translate(this.x * TEXT_SPACING_H + this.worldX, this.y * TEXT_SPACING_V + this.worldY);
       ctx.fillText("|", 0, 0);

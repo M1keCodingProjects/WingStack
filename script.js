@@ -25,14 +25,14 @@ textEditor.begin_draw();
 
 /* TODO:
     Utmost priority:
-      use object syntax to load modules and apply labels to function names
+      create "List" class, and its relative loadable modules
 
     Mid priority:
-      finish std GLib
+      
       fix the fucking editor: add manual scrolling
 
     Low priority:
-      
+      finish std GLib
 
     Vague ideas:
       

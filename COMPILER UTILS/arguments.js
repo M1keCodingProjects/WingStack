@@ -230,16 +230,16 @@ export class FuncCall extends Arg {
         let func = objectRef ? objectRef[this.name] : this.compiler.searchFunc(this.name, this.ID);
         if(func instanceof Function) func = func();
         if(func.constructor.name !== "DefProc") throw new Errors.RuntimeError(this.ID, `tried calling non-method property "${this.name}"`);
-
+  
         let returnValue = [];
         if(this.iterator) {
             const iterable = this.compiler.searchVar(this.iterator);
             if(StackValue.prototype.get_type(iterable.value) !== "list") throw new Errors.RuntimeError(this.ID, `cannot iterate over non-list type item ${this.iterator.name}`);
             
-            for(let el of iterable.value) returnValue.push(func.call([el]));
+            for(let el of iterable.value) returnValue.push(func.call([el], objectRef));
             if(returnValue.includes(null)) returnValue = null;
         }
-        else returnValue = func.call(this.stackExpr ? this.stackExpr.execute() : []);
+        else returnValue = func.call(this.stackExpr ? this.stackExpr.execute() : [], objectRef);
 
         if(stack instanceof Stack) {
             if(returnValue === null) throw new Errors.RuntimeError(this.ID, `the function ${this.name} didn't have an exit ready for the particular control-flow path that happened at runtime, and thus produced an invalid stack value`);

@@ -61,6 +61,7 @@ export class ReplaceProc extends Proc {
     }
 
     getArguments(line) {
+        if(line.target === "me") throw new Errors.CompileTimeError(this.ID, `cannot use reserved word "me" as target argument for <replace> procedure`);
         this.target = new ArgClasses.StackCallArg(this.ID, this.compiler, line.target);
         this.stackExpr = new ArgClasses.StackExprArg(this.ID, this.compiler, line.value);
 
@@ -218,9 +219,14 @@ export class DefProc extends Proc {
         this.compiler.makeFunc(this);
     }
 
-    call(inputEval = []) {
+    call(inputEval = [], meInstance = null) {
         if(inputEval.length !== this.args.length) throw new Errors.RuntimeError(this.ID, `${inputEval.length > this.args.length ? "too many" : "not enough"} arguments passed to function "${this.name}"`);
         this.compiler.scopeDepth++;
+        if(meInstance) {
+            const meObj = this.compiler.createVariableInstance("me");
+            this.compiler.vars.push(meObj);
+            meObj.value = meInstance;
+        }   
         for(let i = 0; i < inputEval.length; i++) {
             let arg = this.compiler.makeVar(this.args[i]);
             arg.value = inputEval[i];

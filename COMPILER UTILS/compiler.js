@@ -147,17 +147,23 @@ export default class Compiler {
         console.log("Execution terminated successfully.");
     }
 
-    makeVar(targetToken) {
-      if(this.vars.filter(v => v.name === targetToken.name && v.depth === this.scopeDepth).length) throw new Errors.RuntimeError(targetToken.ID, `a variable named "${targetToken.name}" already exists in this scope`);
-      if(targetToken.name in this.stackOps) throw new Errors.RuntimeError(targetToken.ID, `cannot use reserved <stackOperand> word "${targetToken.name}" as variable name`);
-      const variable = new Variable(targetToken.name, this.scopeDepth);
+    createVariableInstance(name) {
+      const variable = new Variable(name, this.scopeDepth);
       this.vars.push(variable);
       return variable;
+    }
+
+    makeVar(targetToken) {
+      if(targetToken.name === "me") throw new Errors.RuntimeError(targetToken.ID, `cannot use reserved word "me" as variable name`);
+      if(this.vars.filter(v => v.name === targetToken.name && v.depth === this.scopeDepth).length) throw new Errors.RuntimeError(targetToken.ID, `a variable named "${targetToken.name}" already exists in this scope`);
+      if(targetToken.name in this.stackOps) throw new Errors.RuntimeError(targetToken.ID, `cannot use reserved <stackOperand> word "${targetToken.name}" as variable name`);
+      return this.createVariableInstance(targetToken.name);
     }
 
     makeFunc(defProc) {
       if(this.vars.find(v => v.name === defProc.name)) throw new Errors.RuntimeError(defProc.ID, `a declared variable also named "${defProc.name}" conflicts with the creation of this function`);
       if(defProc.name in this.stackOps) throw new Errors.RuntimeError(defProc.ID, `cannot use reserved <stackOperand> word "${defProc.name}" as function name`);
+      if(defProc.name === "me") throw new Errors.RuntimeError(defProc.ID, `cannot use reserved word "me" as function name`);
       defProc.depth = this.scopeDepth;
       this.vars.push(defProc);
     }

@@ -1,20 +1,4 @@
-use "Vector2D" with v2
+use "std GList" with lst
+make std = lst.std
 
-make std  = v2.std
-make Vec2 = v2.Vec2
-
-make Rect = {
-  make pos = Vec2.new( 0 0 )
-  make w
-  make h
-  
-  def new => pos w h {
-    when pos type "list" == { me.pos = Vec2.new( pos[ 0 ] pos[ 1 ] )
-    } else { me.pos = pos }
-    me.w = w
-    me.h = h
-    exit me obj
-  }
-}
-
-print Rect.new( 1 1 pack 3 4 )
+print lst.List.repr( )

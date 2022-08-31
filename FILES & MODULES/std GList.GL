@@ -1,6 +1,8 @@
 ## THIS IS THE BASIC LIST HELPER MODULE ##
+use "std GLib" with std
+
 make List = {
-  make data
+  make data = 0 pack
   
   def new => data {
     me = me.copy( )
@@ -20,7 +22,7 @@ make List = {
   def copy { exit me obj }
   
   def repr {
-    def put, => el { exit el ", " str }
+    def put, $temp => el { exit el ", " str }
     make data = me.data
     exit "[ " put,( @data ) spill spill swap drop "]" str
   }

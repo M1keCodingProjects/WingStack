@@ -18,7 +18,9 @@ WhenLoopProc ::= "when" StackExpr "loop" Block | "when" StackExpr "loop" Block E
 NextProc ::= "next"
 ExitProc ::= "exit" | "exit" StackExpr
 FlagProc ::= "flag" StackExpr
-FuncProc ::= "def" WORD "with" InputList Block | "def" WORD "=>" InputList Block
+FuncProc ::= "def" (optional : Helper) WORD "with" InputList Block | "def" WORD "=>" InputList Block
+
+Helper ::= "$"WORD
 
 InputList ::= WORD | InputList WORD
 

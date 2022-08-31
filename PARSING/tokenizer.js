@@ -10,6 +10,7 @@ const Specs = [  // a series of RegExp rules to be mapped to specific token type
     [/^\(/, "("],
     [/^\)/, ")"],
     [/^\@/, "@"],
+    [/^\$/, "$"],
     [/^"[^"]*"/, "STRING"],
 ];
 

@@ -229,7 +229,7 @@ export class FuncCall extends Arg {
     execute(stack = null, objectRef = null) {
         let func = objectRef ? objectRef[this.name] : this.compiler.searchFunc(this.name, this.ID);
         if(func instanceof Function) func = func();
-        if(func.constructor.name !== "DefProc") throw new Errors.RuntimeError(this.ID, `tried calling non-method property "${this.name}"`);
+        if(func?.constructor.name !== "DefProc") throw new Errors.RuntimeError(this.ID, `tried calling non-method property "${this.name}"`);
   
         let returnValue = [];
         if(this.iterator) {

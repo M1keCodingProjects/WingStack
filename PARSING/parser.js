@@ -469,7 +469,7 @@ export default class Parser {
         if(token.value.match(/\n/) !== null) throw new CompileTimeError(this._lineID, "<StringLiteral> tokens cannot span multiple lines");
         return {
             type  : 'StringLiteral',
-            value : token.value.slice(1, -1).replace("&new", '\n'), // strip quotes, escape newlines
+            value : token.value.slice(1, -1).replace(/&new/g, '\n'), // strip quotes, escape newlines
         };
     }
 

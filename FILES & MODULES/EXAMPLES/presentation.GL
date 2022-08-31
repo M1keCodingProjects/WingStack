@@ -2,12 +2,14 @@
 # press the button on the left to Build & Run your code, or the one on the right to print it to the console!
 # the one below is a quick example showcasing a game of "tic tac toe" made in GameLang:
 
-use "std GLib" with std
+use "std GList" with lst
+make std  = lst.std
+make List = lst.List
 
 def _abs  => el { exit el abs }
 def toNum => el { exit el num }
 
-def makeStack => el _size { # specific case in which this method is faster / better than std.fillList
+def makeStack => el _size { # specific case in which this method is faster / better than lst.fillList
   make arr = el str
   loop _size 1 - { arr += el }
   arr = arr spill pack
@@ -29,12 +31,12 @@ def printBoard {
 
 # CREATE GAME COMPONENTS
 make board = makeStack( 0 9 )
-make available = rangeList( 0 1 8 )
+make available = lst.rangeList( 0 1 8 )
 
 # FIRST-ITERATION-ONLY THINGS:
 print "Welcome to tic-tac-toe in GLide!&newFirst, let's see who goes first..."
 make PgoesFirst = 0 1 rand pop
-print ?( PgoesFirst "Player" "Bot" ) " goes first!" str
+print std.?( PgoesFirst "Player" "Bot" ) " goes first!" str
 
 # GAME LOOP
 loop 9 with turn {
@@ -45,7 +47,7 @@ loop 9 with turn {
     when move dup 8 > swap 0 < or loop {
       print "Make a move! (0-8)"
       move = inp
-      pos = getPos( available move )
+      pos = lst.getPos( available move )
       when pos -1 == { move = 9 }
     }
     board[ move ] = 1
@@ -53,7 +55,7 @@ loop 9 with turn {
     print "Bot is deciding.."
     when available type "list" == {
       move = available spill rand pop
-      pos = getPos( available move )
+      pos = lst.getPos( available move )
     } else {
       move = available
     } # no need to update pos here, it's 0
@@ -77,8 +79,8 @@ loop 9 with turn {
   }
   
   rows = rows spill cols spill diag spill pack
-  when getPos( _abs( @rows ) 3 ) -1 > {
-    print "TRIS! " ?( turn PgoesFirst + 2 % "Player" "Bot" ) " has won!" str
+  when lst.getPos( _abs( @rows ) 3 ) -1 > {
+    print "TRIS! " std.?( turn PgoesFirst + 2 % "Player" "Bot" ) " has won!" str
     exit
   }
   

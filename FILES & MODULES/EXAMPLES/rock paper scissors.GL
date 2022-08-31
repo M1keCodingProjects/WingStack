@@ -1,4 +1,6 @@
-use "std GLib" with std
+use "std GList" with lst
+make std  = lst.std
+make List = lst.List
 
 make valids = "rock" "paper" "scissors"
 
@@ -6,19 +8,19 @@ print "Let's play rock, paper, scissors!&newInput either of these to pick your m
 when TRUE loop {
   print "Make a move:"
   make move = inp
-  when getPos( valids move ) 0 >= {
+  when lst.getPos( valids move ) 0 >= {
     make botMove = valids spill rand pop
     print "You chose " move ", the bot chose " botMove str
     when move botMove == {
       print "It's a tie!"
     } else when move "rock" == {
-      print ?( botMove "paper" == "bot" "player" ) " wins" str
+      print std.?( botMove "paper" == "bot" "player" ) " wins" str
     
     } else when move "paper" == {
-      print ?( botMove "scissors" == "bot" "player" ) " wins" str
+      print std.?( botMove "scissors" == "bot" "player" ) " wins" str
     
     } else {
-      print ?( botMove "rock" == "bot" "player" ) " wins!" str
+      print std.?( botMove "rock" == "bot" "player" ) " wins!" str
     }
   } else { exit }
 }

@@ -15,7 +15,7 @@ const printAction = () => {
   console.log(textEditor.printText());
 }
 
-const usedFilePath = "test"; //"EXAMPLES/presentation";
+const usedFilePath = "EXAMPLES/presentation";
 
 const GLC = new Compiler(usedFilePath, preloadedModuleList);
 const textEditor = new TextEditor(await loadFile(usedFilePath));
@@ -27,7 +27,7 @@ textEditor.begin_draw();
 /* TODO:
     Utmost priority:
 
-    
+
     Mid priority:
       fix the fucking editor: add manual scrolling
 

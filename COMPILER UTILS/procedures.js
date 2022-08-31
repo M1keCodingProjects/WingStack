@@ -112,7 +112,7 @@ export class UseProc extends Proc {
     getArguments(line) {
         const path = new StackValue(this.ID, line.value);
         this.label = new ArgClasses.StackCallArg(this.ID, this.compiler, line.label);
-        this.block = new ArgClasses.ObjBlockArg(this.ID, this.compiler, this.compiler.compileModule(path));
+        this.block = new ArgClasses.ObjBlockArg(this.ID, this.compiler, this.compiler.compileModule(path, line.label));
     }
 
     execute() {

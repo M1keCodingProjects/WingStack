@@ -7,14 +7,25 @@ export default class Parser {
         this._tokenizer = new Tokenizer(compilerRef);
     }
     
-    parse(string) { // Parses a string into a JSON object AST
+    parse(string, label = null) { // Parses a string into a JSON object AST
         this._string = string;
+        if(label) this.label = label;
         this._tokenizer.init(string);
         this._lookahead = this._tokenizer.getNextToken(); // used for predictive parsing
         this._lineID = 0;
+        this.tempFunctions = [];
         const program = this.Program();
         if(this._lookahead !== null) throw new CompileTimeError(this._lineID, "expected EOF but got trailing content outside of main program");
+        //console.log(program); // used for debugging
         return program;
+    }
+
+    _addLabel(token, wasExpression = false) {
+        if(!this.label || this.tempFunctions.includes(token.name)) return token;
+        return {
+            type  : "StackCall",
+            value : [this.label, token],
+        };
     }
 
     Program() { // Parses the main entry point, Program ::= Expression | Program Expression
@@ -255,10 +266,17 @@ export default class Parser {
         }
     }
 
-    FuncProc() { // FuncProc ::= "def" WORD "with" InputList Block | "def" WORD "=>" InputList Block
+    FuncProc() { // FuncProc ::= "def" WORD (optional : Helper) "with" InputList Block | "def" WORD "=>" InputList Block
         const name = this._eat("WORD").value;
         this._eat("SPACE");
-        
+
+        if(this._lookahead.type === "$") {
+            const help = this.Helper().value;
+            if(help !== "temp") throw new CompileTimeError(this._lineID, `received invalid <HelperKeyword> in context, expected "temp" but got ${help}`);
+            this.tempFunctions.push(name);
+            this._eat("SPACE");
+        }
+
         const argStream = [];
         if(this._lookahead !== null && this._lookahead.type !== "{") {
             const symbol = this._eat(this._lookahead?.type === "procKeyword" ? "procKeyword" : "WORD").value;
@@ -281,6 +299,11 @@ export default class Parser {
 
         if(argStream.length) token.args = argStream;
         return token;
+    }
+
+    Helper() {
+        this._eat("$");
+        return this._eat("WORD");
     }
 
     Block() { // Block ::= "{" Program "}"
@@ -371,7 +394,7 @@ export default class Parser {
     StackElement() { // StackElement ::= StackOp | Literal | StackCall | FuncCall
         switch(this._lookahead.type) {
             case "StackOp" : return this.StackOp();
-            case "WORD"    : return this._lookahead.value.slice(-1) === "(" ? this.FuncCall() : this.StackCall();
+            case "WORD"    : return this._lookahead.value.slice(-1) === "(" ? this._addLabel(this.FuncCall()) : this.StackCall();
             default        : return this.Literal().value;
         }
     }

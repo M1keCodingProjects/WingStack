@@ -123,8 +123,8 @@ export default class Compiler {
         console.log("Compilation terminated successfully.");
     }
 
-    compileModule(moduleNameToken) {
-      return new Parser(this).parse(this.load(moduleNameToken)).body;
+    compileModule(moduleNameToken, flag) {
+      return new Parser(this).parse(this.load(moduleNameToken), flag).body;
     }
     
     tokenize(lines) {

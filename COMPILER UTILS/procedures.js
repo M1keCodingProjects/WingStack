@@ -178,7 +178,7 @@ export class ExitProc extends Proc {
         if(this.stackExpr) {
             if(!this.compiler.callStack.length) throw new Errors.RuntimeError(this.ID, "<exit> procedures called outside of functions cannot carry <stackExpr> arguments");
             const evaluation = this.stackExpr.execute();
-            this.compiler.exitStatus = evaluation instanceof Array ? [...evaluation] : [evaluation];
+            this.compiler.exitStatus = [evaluation];
         }
         else {
             if(!this.compiler.openLoops.length) throw new Errors.RuntimeError(this.ID, `cannot use <exit> procedure outside of a looping block`);

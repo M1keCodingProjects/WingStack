@@ -6,8 +6,7 @@ make List = {
   
   def new => data {
     me = me.copy( )
-    when len( data ) 1 == { data = data pack }
-    me.data = data
+    me.data = coerce( data )
     exit me
   }
   
@@ -23,13 +22,30 @@ make List = {
   
   def repr {
     def put, $temp => el { exit el ", " str }
-    make data = me.data
-    exit "[ " put,( @data ) spill spill swap drop "]" str
+    exit "[ " put,( me.@data ) spill spill swap drop "]" str
   }
   
   def getPos => el { exit getPos( me.data el ) } #num
+  
+  def push => el {
+    me.data = push( me.data el )
+    exit me
+  } #List
+
+  def popLast {
+    make save = me.data spill pop
+    me.data = popLast( me.data )
+    me.coerce( )
+    exit save
+  } #any
+  
+  def coerce {
+    me.data = coerce( me.data )
+    exit me
+  } #List
 
   def len     { exit len(     me.data ) } #num
+  def random  { exit random(  me.data ) } #any
   def findMax { exit findMax( me.data ) } #any
   def findMin { exit findMin( me.data ) } #any
   def sumAll  { exit sumAll(  me.data ) } #num
@@ -41,6 +57,17 @@ make List = {
 def len => arr {
   when arr type "list" == { exit arr range }
   exit 1
+}
+
+def coerce => data { exit std.?( len( data ) 1 == , data pack data ) }
+
+def push => arr el {
+  exit arr spill el
+}
+
+def popLast => arr {
+  when len( arr ) 1 == { exit arr }
+  exit arr spill drop
 }
 
 def rangeList => from step to {
@@ -65,6 +92,10 @@ def getPos => arr el {
     when arr[ i ] el == { exit i }
   }
   exit -1
+}
+
+def random => arr {
+  exit arr spill rand pop
 }
 
 def findMax => arr {

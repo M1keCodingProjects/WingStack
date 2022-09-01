@@ -27,7 +27,6 @@ textEditor.begin_draw();
 /* TODO:
     Utmost priority:
 
-
     Mid priority:
       fix the fucking editor: add manual scrolling
 

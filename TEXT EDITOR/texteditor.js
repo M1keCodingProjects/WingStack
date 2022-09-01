@@ -105,7 +105,7 @@ export default class TextEditor {
               let ch = lineArr[x];
               if(ch in this.styleFile["delimiters"] && delimiterOpen == false) delimiterOpen = [ch, x];
               if(delimiterOpen == false) {
-                if([" ", "\n", "."].includes(ch)) {
+                if([" ", "\n", ".", "["].includes(ch)) {
                   if(word != "") this.colorcode_word(ctx, word, x, y);
                   word = "";
                 }

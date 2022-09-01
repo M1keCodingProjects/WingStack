@@ -1,22 +1,9 @@
-use "std GList" with lst
-use "Vector2D"  with v2
-make std  = lst.std
-make Vec2 = v2.Vec2
+use "std GLib" with lst
 
-make SIZE   = 10
-make screen = lst.fillList( " " SIZE 2 ** )
-make ball   = {
-  make pos = Vec2.new( )
-}
+make ob = {
+  make a
 
-def printScreen {
-  loop SIZE with y {
-    make row = ""
-    loop SIZE with x {
-      row += screen[ x y SIZE * + ]
-    }
-    print row
+  def idk {
+    me[ "a" ] = "this used to not highlight properly"
   }
 }
-
-printScreen( )

@@ -330,12 +330,14 @@ export default class Parser {
         const name = this._eat("WORD").value.slice(0, -1);
         this._eat("SPACE");
         let value;
-        if(this._lookahead !== null && this._lookahead.type === "@") { // Iterator ::= "@"WORD
-            this._eat("@");
-            value = this._eat("WORD").value;
+        if(this._lookahead !== null && this._lookahead.type === "@") {
+            value = this.Iterator(); // necessary
             this._eat("SPACE");
         }
-        else if(this._lookahead !== null && this._lookahead.type !== ")") value = this.StackExpr().value;
+        else if(this._lookahead !== null && this._lookahead.type !== ")") {
+            value = this.StackExpr(true).value;
+            if(value[0].endsIter === true) value = value[0];
+        }
         this._eat(")");
 
         return {
@@ -345,8 +347,16 @@ export default class Parser {
         };
     }
 
+    Iterator() { // Iterator ::= "@"WORD
+        this._eat("@");
+        return {
+            type  : "Iterator",
+            value : this._eat("WORD").value,
+        };
+    }
+
     Assignment(canOmit = false) { // Assignment ::= Target | Target AssignmentSymbol StackExpr | Target AssignmentSymbol Block
-        const target = this.Target().value;
+        const target = this._checkIterator(this.Target(), false).value;
         let value;
         if(target[target.length - 1]?.type === "FuncCall") value = "omitted";
         
@@ -381,22 +391,31 @@ export default class Parser {
         };
     }
 
-    StackExpr() { // StackExpr ::= StackElement | StackExpr StackElement
+    StackExpr(allowsIterator = false) { // StackExpr ::= StackElement | StackExpr StackElement
         const StackElementList = [];
+        let found = false;
         while(this._lookahead !== null && !["]", "{", "}", "NEWLINE", "procKeyword", ")"].includes(this._lookahead.type)) {
-            StackElementList.push(this.StackElement()); // no further extraction needed, it's useful to have the whole token to differentiate them
+            const stackElement = this.StackElement(allowsIterator); // no further extraction needed, it's useful to have the whole token to differentiate them
+            if(allowsIterator && !found && stackElement.endsIter) found = true;
+            StackElementList.push(stackElement);
             if(this._lookahead !== null && this._lookahead.type !== "NEWLINE") this._eat("SPACE");
         }
-        if(!StackElementList.length) throw new SyntaxError("Empty <StackExpr>");
+        if(!StackElementList.length) throw new CompileTimeError(this._lineID, "Empty <StackExpr>");
+        if(found && StackElementList.length !== 1) throw new CompileTimeError(this._lineID, "cannot have other arguments to <FuncCall> when an iterator is present");
         return { type: "StackExpr", value: StackElementList };
     }
 
-    StackElement() { // StackElement ::= StackOp | Literal | StackCall | FuncCall
+    StackElement(allowsIterator) { // StackElement ::= StackOp | Literal | StackCall | FuncCall
         switch(this._lookahead.type) {
             case "StackOp" : return this.StackOp();
-            case "WORD"    : return this._lookahead.value.slice(-1) === "(" ? this._addLabel(this.FuncCall()) : this.StackCall();
+            case "WORD"    : return this._lookahead.value.slice(-1) === "(" ? this._addLabel(this.FuncCall()) : this._checkIterator(this.StackCall(), allowsIterator);
             default        : return this.Literal().value;
         }
+    }
+
+    _checkIterator(token, allowsIterator) {
+        if(!allowsIterator && token.endsIter) throw new CompileTimeError(this._lineID, "cannot use iterators outside of <FuncCall> tokens");
+        return token;
     }
 
     StackOp() {
@@ -417,27 +436,36 @@ export default class Parser {
     }
 
     StackCall() {
-        const token = this._eat("WORD"); // no extraction here, Property is checked based on its type
+        let token = this._eat("WORD"); // no extraction here, Property is checked based on its type
         if(this._checkPropertyAhead()) {
             token.value = [token.value];
             while(this._checkPropertyAhead()) token.value.push(this.Property()); // same as above
         }
 
-        return {
+        token = {
             type  : 'StackCall',
             value : token.value,
         };
+        if(token.value[token.value.length - 1]?.type === "Iterator") {
+            token.value[token.value.length - 1].type = "WORD";
+            token.endsIter = true;
+        }
+        return token;
     }
 
     _checkPropertyAhead() {
         return this._lookahead !== null && ["DOT", "["].includes(this._lookahead.type);
     }
 
-    Property() { // Property ::= "." WORD | "." FuncCall | "[" " " StackExpr "]"
+    Property() { // Property ::= "." WORD | "." FuncCall | "[" " " StackExpr "]" | "." Iterator
         let res;
         if(this._lookahead.type === "DOT") {
             this._eat("DOT");
-            res = (this._lookahead !== null && this._lookahead.value.slice(-1) === "(") ? this.FuncCall() : this._eat("WORD");
+            if(this._lookahead !== null && this._lookahead.type === "@") {
+                res = this.Iterator();
+                if(this._checkPropertyAhead()) throw new CompileTimeError(this._lineID, "property chains containing an <Iterator> token must end with it");
+            }
+            else res = (this._lookahead !== null && this._lookahead.value.slice(-1) === "(") ? this.FuncCall() : this._eat("WORD");
         }
         else {
             this._eat("[");

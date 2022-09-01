@@ -223,7 +223,7 @@ export class FuncCall extends Arg {
         if(!content.value) return;
         
         if(content.value instanceof Array) this.stackExpr = new StackExprArg(this.ID, this.compiler, content.value, true);
-        else this.iterator = new StackCallArg(this.ID, this.compiler, content.value);
+        else this.iterator = new StackCallArg(this.ID, this.compiler, content.value.value);
     }
 
     execute(stack = null, objectRef = null) {
@@ -233,10 +233,12 @@ export class FuncCall extends Arg {
   
         let returnValue = [];
         if(this.iterator) {
-            const iterable = this.compiler.searchVar(this.iterator);
-            if(StackValue.prototype.get_type(iterable.value) !== "list") throw new Errors.RuntimeError(this.ID, `cannot iterate over non-list type item ${this.iterator.name}`);
+            let iterable = new Stack(this.ID);
+            this.iterator.execute(iterable);
+            iterable = iterable.pop();
+            if(StackValue.prototype.get_type(iterable) !== "list") throw new Errors.RuntimeError(this.ID, `cannot iterate over non-list type item ${this.iterator.name}`);
             
-            for(let el of iterable.value) returnValue.push(func.call([el], objectRef));
+            for(let el of iterable) returnValue.push(func.call([el], objectRef));
             if(returnValue.includes(null)) returnValue = null;
         }
         else returnValue = func.call(this.stackExpr ? this.stackExpr.execute() : [], objectRef);

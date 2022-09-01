@@ -1,4 +1,9 @@
-use "std GList" with lst
-make std = lst.std
+use "std GLib" with std
 
-print lst.List.repr( )
+make o = {
+  make list = 1 2 3 4 5 6
+}
+
+def twice => n { exit n 2 * }
+
+print twice( o.@list ) #should compile

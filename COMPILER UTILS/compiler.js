@@ -97,7 +97,10 @@ export default class Compiler {
     load(fileNameToken) {
       const fileName = fileNameToken.value;
       if(!this.modules[fileName]) throw new Error(`at line ${fileNameToken.ID}: couldn't find module "${fileName}" in the available modules list`);
-      if(this.loadedModules.includes(fileName)) throw new Error(`at line ${fileNameToken.ID}: module "${fileName}" already loaded`);
+      if(this.loadedModules.includes(fileName)) {
+        console.warn(`at line ${fileNameToken.ID}: module "${fileName}" already loaded`);
+        return false;
+      }
       this.loadedModules.push(fileName);
       return this.modules[fileName];
     }
@@ -124,7 +127,9 @@ export default class Compiler {
     }
 
     compileModule(moduleNameToken, flag) {
-      return new Parser(this).parse(this.load(moduleNameToken), flag).body;
+      const loadedModule = this.load(moduleNameToken);
+      if(!loadedModule) return null;
+      return new Parser(this).parse(loadedModule, flag).body;
     }
     
     tokenize(lines) {

@@ -6,9 +6,10 @@ make Vec2 = {
   make y
   
   def new => x y {
+    me = me.copy( )
     me.x = x
     me.y = y
-    exit me.copy( )
+    exit me
   }
   
   def add => vec2 {
@@ -24,8 +25,7 @@ make Vec2 = {
   }
   
   def sub => vec2 {
-    vec2 = vec2 obj
-    exit me.add( vec2.mult( -1 ) )
+    exit me.add( vec2.copy( ).mult( -1 ) )
   }
 
   def mag {

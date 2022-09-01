@@ -1,9 +1,22 @@
-use "std GLib" with std
+use "std GList" with lst
+use "Vector2D"  with v2
+make std  = lst.std
+make Vec2 = v2.Vec2
 
-make o = {
-  make list = 1 2 3 4 5 6
+make SIZE   = 10
+make screen = lst.fillList( " " SIZE 2 ** )
+make ball   = {
+  make pos = Vec2.new( )
 }
 
-def twice => n { exit n 2 * }
+def printScreen {
+  loop SIZE with y {
+    make row = ""
+    loop SIZE with x {
+      row += screen[ x y SIZE * + ]
+    }
+    print row
+  }
+}
 
-print twice( o.@list ) #should compile
+printScreen( )

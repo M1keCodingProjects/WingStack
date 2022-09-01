@@ -15,7 +15,7 @@ const printAction = () => {
   console.log(textEditor.printText());
 }
 
-const usedFilePath = "EXAMPLES/presentation";
+const usedFilePath = "test";//"EXAMPLES/presentation";
 
 const GLC = new Compiler(usedFilePath, preloadedModuleList);
 const textEditor = new TextEditor(await loadFile(usedFilePath));
@@ -26,6 +26,7 @@ textEditor.begin_draw();
 
 /* TODO:
     Utmost priority:
+      See if anything can be done for the way replace procedures "work"
 
     Mid priority:
       fix the fucking editor: add manual scrolling

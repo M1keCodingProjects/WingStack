@@ -31,7 +31,7 @@ def printBoard {
 
 # CREATE GAME COMPONENTS
 make board = makeStack( 0 9 )
-make available = lst.rangeList( 0 1 8 )
+make available = List.newRange( 0 1 8 )
 
 # FIRST-ITERATION-ONLY THINGS:
 print "Welcome to tic-tac-toe in GLide!&newFirst, let's see who goes first..."
@@ -47,18 +47,14 @@ loop 9 with turn {
     when move dup 8 > swap 0 < or loop {
       print "Make a move! (0-8)"
       move = inp
-      pos = lst.getPos( available move )
+      pos = available.getPos( move )
       when pos -1 == { move = 9 }
     }
     board[ move ] = 1
   } else { # Bot's turn
     print "Bot is deciding.."
-    when available type "list" == {
-      move = available spill rand pop
-      pos = lst.getPos( available move )
-    } else {
-      move = available
-    } # no need to update pos here, it's 0
+    move = available.random( )
+    pos  = available.getPos( move )
     board[ move ] = -1
   }
   
@@ -85,11 +81,9 @@ loop 9 with turn {
   }
   
   # REMOVE MOVE FROM AVAILABLES
-  when available type "list" == {
-    loop available range pos 1 + - with i {
-      make j = i pos +
-      available[ j ] = available[ j 1 + ]
-    }
-    available = available spill drop
+  loop available.len( ) pos 1 + - with i {
+    make j = i pos +
+    available.data[ j ] = available.data[ j 1 + ]
   }
+  available.popLast( )
 }

@@ -2,15 +2,15 @@ use "std GList" with lst
 make std  = lst.std
 make List = lst.List
 
-replace coerce with 2 * 1 -
+replace _coerce with 2 * 1 -
 
 make options = ">" "<" "." "," "[" "]" "+" "-"
 
 def eval => char {
   when lst.getPos( options char ) -1 == { flag "Unrecognized token " char str }
   
-  when char dup ">" == swap "<" == or { ptr += char ">" == coerce }
-  when char dup "+" == swap "-" == or { stack[ ptr ] += char "+" == coerce }
+  when char dup ">" == swap "<" == or { ptr += char ">" == _coerce }
+  when char dup "+" == swap "-" == or { stack[ ptr ] += char "+" == _coerce }
   when char "." == { print stack[ ptr ] }
   when char "," == { stack[ ptr ] = inp }
   when char "[" == {

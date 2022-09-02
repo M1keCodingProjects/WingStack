@@ -26,30 +26,31 @@ export class PrintProc extends Proc {
         };
 
         this.stackExpr = new ArgClasses.StackExprArg(this.ID, this.compiler, line.value);
-        if(line.style) {
-            this.style = "";
-            const styleArray = line.style.split(" ").filter(str => str.length);
-            if(styleArray.length < 1) throw new Errors.CompileTimeError(this.ID, `invalid style string : not enough arguments, minimum one`);
-            if(styleArray[0][0] === "#") {
-                if(styleArray[0].length !== 7) throw new Errors.CompileTimeError(this.ID, `invalid style string : hex-base colors must have exactly 6 digits`);
-                if(isNaN(Number(`0x${styleArray[0].slice(1)}`))) throw new Errors.CompileTimeError(this.ID, `invalid style string : hex-base colors must be valid hex numbers`);
-            }
-            else if(!this.colorOptions.includes(styleArray[0])) throw new Errors.CompileTimeError(this.ID, `invalid style string : "${styleArray[0]}" is not an available color`);
-            this.style += `color : ${styleArray.shift()};`
+        if(line.style) this.style = new ArgClasses.StackExprArg(this.ID, this.compiler, line.style);
+    }
 
-            for(const style of styleArray) {
-                if(style in this.styleOptions) this.style += this.styleOptions[style];
-                else throw new Errors.CompileTimeError(this.ID, `invalid style string : "${style}" is not an available style marker`);
-            }
+    applyStyle() {
+        let evaluation = this.style.execute();
+        if(StackValue.prototype.get_type(evaluation) !== "string") throw new Errors.RuntimeError(this.ID, "tried to style <print> procedure with non-string type style argument");
+        const styleArray = evaluation.split(" ").filter(str => str.length);
+        if(styleArray.length < 1) throw new Errors.CompileTimeError(this.ID, `invalid style string : not enough arguments, minimum one`);
+        if(styleArray[0][0] === "#") {
+            if(styleArray[0].length !== 7) throw new Errors.CompileTimeError(this.ID, `invalid style string : hex-base colors must have exactly 6 digits`);
+            if(isNaN(Number(`0x${styleArray[0].slice(1)}`))) throw new Errors.CompileTimeError(this.ID, `invalid style string : hex-base colors must be valid hex numbers`);
         }
+        else if(!this.colorOptions.includes(styleArray[0])) throw new Errors.CompileTimeError(this.ID, `invalid style string : "${styleArray[0]}" is not an available color`);
+        evaluation = `color : ${styleArray.shift()};`
+
+        for(const style of styleArray) {
+            if(style in this.styleOptions) evaluation += this.styleOptions[style];
+            else throw new Errors.CompileTimeError(this.ID, `invalid style string : "${style}" is not an available style marker`);
+        }
+        return evaluation;
     }
 
     execute() {
         const evaluation = this.stackExpr.execute();
-        if(this.style) {
-            if(StackValue.prototype.get_type(evaluation) !== "string") throw new Errors.RuntimeError(this.ID, "cannot style non-string type content of <print> procedure");
-            console.log(`%c${evaluation}`, this.style);
-        }
+        if(this.style) console.log(`%c${evaluation}`, this.applyStyle());
         else console.log(evaluation);
     }
 }

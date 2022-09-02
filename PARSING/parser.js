@@ -86,10 +86,18 @@ export default class Parser {
     }
 
     PrintProc() { // PrintProc ::= "print" StackExpr ( "with" STRING )?
-        return {
+        const token = {
             type  : "print",
             value : this.StackExpr().value,
+        };
+
+        if(this._lookahead !== null && this._lookahead.type === "procKeyword") {
+            if(this._eat("procKeyword").value !== "with") throw new CompileTimeError(this._lineID, `<print> procedure expected optional keyword "with" or NEWLINE after <StackExpr> argument`);
+            this._eat("SPACE");
+            token.style = this.StringLiteral().value;
         }
+
+        return token;
     }
 
     MakeProc() { // MakeProc ::= "make" Assignment

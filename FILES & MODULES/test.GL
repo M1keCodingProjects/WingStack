@@ -1,9 +1,8 @@
-use "std GLib" with lst
+use "Vector2D" with v2
+make Vec2 = v2.Vec2
 
-make ob = {
-  make a
+make pos = Vec2.new( 3 4 )
 
-  def idk {
-    me[ "a" ] = "this used to not highlight properly"
-  }
-}
+print pos.repr( ) with "fuchsia bold italic underline"
+
+print " ###&new##&new ###&new # #" with "red"

@@ -352,8 +352,8 @@ export class Pop_stackOp extends StackOp {
   constructor(ID) { super(ID, "pop"); }
   
   execute(stack) {
-    this.check_minLength(stack, 2);
-    stack.data.push(stack.pop("all").pop());
+    this.check_minLength(stack, 1);
+    if(stack.len() > 1) stack.data.push(stack.pop("all").pop());
   }
 }
 

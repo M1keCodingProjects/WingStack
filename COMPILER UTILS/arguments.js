@@ -44,7 +44,7 @@ export class StackCallArg extends Arg {
                     property = property.execute();
                     switch(StackValue.prototype.get_type(property)) {
                         case "number" : if(!(variable instanceof Array)) throw new Errors.RuntimeError(this.ID, `cannot access index propery of non-list object`);
-                                        break;
+                                        if(property < 0 && -property <= variable.length) property += variable.length; break;
 
                         case "string" : if(variable instanceof Array) throw new Errors.RuntimeError(this.ID, `cannot access literal property of <list> type object`);
                                         break;

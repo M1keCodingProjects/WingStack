@@ -32,6 +32,10 @@ make Vec2 = {
     exit 2 dup me.x me.y over ** swap over ** + sqrt
   }
   
+  def repr {
+    exit "[ x : " me.x ", y : " me.y " ]" str
+  }
+
   def copy { exit me obj }
 }
 

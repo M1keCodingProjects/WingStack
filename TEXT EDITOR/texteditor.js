@@ -172,7 +172,7 @@ export default class TextEditor {
 
 class Caret {
     constructor(containerElement, textAreaTLx, textAreaTLy) {
-      this.ACCEPTED = ["enter", "backspace", "tab", "arrowup", "arrowdown", "arrowleft", "arrowright", " ", ..."abcdefghijklmnopqrstuvwxyz0123456789._-,;<>!\"£$%&/()='?^ìèé+*à°òç@#{}[]\\|~"];//["Unidentified", "Shift", "Alt", "Control", "AltGraph", "CapsLock", "Escape", "NumLock", "Home", "PageUp", "Clear", "End", "PageDown", "Insert", "Meta"];
+      this.ACCEPTED = ["enter", "backspace", "tab", "arrowup", "arrowdown", "arrowleft", "arrowright", " ", ..."abcdefghijklmnopqrstuvwxyz0123456789.:_-,;<>!\"£$%&/()='?^ìèé+*à°òç@#{}[]\\|~"];//["Unidentified", "Shift", "Alt", "Control", "AltGraph", "CapsLock", "Escape", "NumLock", "Home", "PageUp", "Clear", "End", "PageDown", "Insert", "Meta"];
       
       this.worldX = textAreaTLx;
       this.worldY = textAreaTLy;

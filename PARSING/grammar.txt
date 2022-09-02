@@ -1,54 +1,61 @@
-Program ::= Expression | Program Expression
+Program      ::= ( Expression )*
 
-LineEnder ::= "\n" | "}"
+LineEnder    ::= "\n" | "}"
 
-Expression ::= Procedure LineEnder | Assignment LineEnder | FuncCall LineEnder
+Expression   ::= ( Procedure | Assignment | FuncCall ) LineEnder
 
-Procedure ::= PrintProc | MakeProc | WhenProc | ...
+Procedure    ::= PrintProc | MakeProc | WhenProc | ...
 
-PrintProc ::= "print" StackExpr
-MakeProc  ::= "make" Assignment | "make" TargetArg
-FreeProc ::= "free" WORD
-ReplaceProc ::= "replace" WORD "=" StackExpr | "replace" WORD "with" StackExpr
-UseProc ::= "use" StringLiteral "with" WORD
-LoopProc ::= "loop" StackExpr Block | "loop" StackExpr "with" WORD Block
-WhenProc ::= "when" StackExpr Block | "when" StackExpr Block ElseProc
-ElseProc ::= "else" Block | "else" WhenProc
-WhenLoopProc ::= "when" StackExpr "loop" Block | "when" StackExpr "loop" Block ElseProc
-NextProc ::= "next"
-ExitProc ::= "exit" | "exit" StackExpr
-FlagProc ::= "flag" StackExpr
-FuncProc ::= "def" (optional : Helper) WORD "with" InputList Block | "def" WORD "=>" InputList Block
+PrintProc    ::= "print" StackExpr ( "with" STRING )?
 
-Helper ::= "$"WORD
+MakeProc     ::= "make" Assignment
 
-InputList ::= WORD | InputList WORD
+FreeProc     ::= "free" WORD
 
-Block ::= "{" Program "}"
+ReplaceProc  ::= "replace" WORD ( "=" | "with" ) StackExpr
 
-StackExpr ::= StackElement | StackExpr StackElement
+UseProc      ::= "use" STRING "with" WORD
+
+LoopProc     ::= "loop" StackExpr ( "with" WORD )? Block
+
+WhenProc     ::= "when" StackExpr ( "loop" )? Block ( ElseProc )?
+
+ElseProc     ::= "else" ( Block | WhenProc )
+
+NextProc     ::= "next"
+
+ExitProc     ::= "exit" ( StackExpr )?
+
+FlagProc     ::= "flag" StackExpr
+
+FuncProc     ::= "def" ( Helper )? WORD ( ( "with" | "=>" ) InputList )? Block
+
+Helper       ::= "$"WORD
+
+InputList    ::= WORD*
+
+Block        ::= "{" Program "}"
+
+StackExpr    ::= StackElement*
 
 StackElement ::= StackCall | Literal | StackOp | FuncCall
 
-FuncCall ::= WORD"(" StackExpr ")" | WORD"(" Iterator ")"
+FuncCall     ::= ( StackCall "." )? WORD"(" ( StackExpr | Iterator )? ")"
 
-Iterator ::= "@"WORD
+Iterator     ::= "@"WORD
 
-StackCall ::= WORD | WORD PropertyList
+StackCall    ::= WORD ( PropertyList )?
 
-PropertyList ::= Property | PropertyList Property
+PropertyList ::= Property*
 
-Property ::= Property ::= "." WORD | "." FuncCall | "[" " " StackExpr "]"
+Property     ::= "."( WORD | FuncCall ) | "[" StackExpr "]"
 
-Literal ::= NumericLiteral | StringLiteral
+Literal      ::= NUMBER | STRING
 
-NumericLiteral ::= NUMBER
-StringLiteral  ::= STRING
+StackOp      ::= "dup" | "drop" | "swap" | "rot<" | "rot>" | ...
 
-StackOp ::= "dup" | "drop" | "swap" | "rot<" | "rot>" | ...
+Assignment   ::= TargetArg ( ASSIGN ( StackExpr | Block ) )?
 
-Assignment ::= TargetArg AssignmentSymbol StackExpr | TargetArg AssignmentSymbol Block
+TargetArg    ::= StackCall
 
-TargetArg ::= StackCall
-
-AssignmentSymbol ::= "=" | "+=" | "-=" | "*=" | "/="
+ASSIGN       ::= ( "+" | "-" | "*" | "/" | "%" )?"="

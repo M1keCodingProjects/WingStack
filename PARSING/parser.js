@@ -7,11 +7,11 @@ export default class Parser {
         this._tokenizer = new Tokenizer(compilerRef);
     }
     
-    parse(string, label = null) { // Parses a string into a JSON object AST
+    parse(string, label = null) { // Parses a string into a JSON AST
         this._string = string;
         if(label) this.label = label;
         this._tokenizer.init(string);
-        this._lookahead = this._tokenizer.getNextToken(); // used for predictive parsing
+        this._lookahead = this._tokenizer.getNextToken();
         this._lineID = 0;
         this.tempFunctions = [];
         const program = this.Program();
@@ -28,7 +28,7 @@ export default class Parser {
         };
     }
 
-    Program() { // Parses the main entry point, Program ::= Expression | Program Expression
+    Program() { // Program ::= ( Expression )*
         let lines = [];
         if(this._lookahead !== null && this._lookahead.type === "NEWLINE") this._eat("NEWLINE");
         while(this._lookahead !== null && this._lookahead.type !== "}") {
@@ -45,7 +45,7 @@ export default class Parser {
         };
     }
 
-    Expression() { // Expression ::= Procedure LineEnder | Assignment LineEnder | FuncCall LineEnder
+    Expression() { // Expression ::= ( Procedure | Assignment | FuncCall ) LineEnder
         let token = null;
         
         switch(this._lookahead.type) {
@@ -57,7 +57,7 @@ export default class Parser {
         }
 
         if(this._lookahead !== null && this._lookahead.type === "SPACE") this._eat("SPACE");
-        if(this._lookahead !== null && this._lookahead.type !== "}") this._eat("NEWLINE");
+        if(this._lookahead !== null && this._lookahead.type !== "}") this._eat("NEWLINE");   // LineEnder ::= "\n" | "}"
         return token;
     }
 
@@ -85,17 +85,17 @@ export default class Parser {
         return token;
     }
 
-    PrintProc() { // PrintProc ::= "print" StackExpr
+    PrintProc() { // PrintProc ::= "print" StackExpr ( "with" STRING )?
         return {
             type  : "print",
             value : this.StackExpr().value,
         }
     }
 
-    MakeProc() { // MakeProc ::= "make" Assignment | "make" TargetArg
+    MakeProc() { // MakeProc ::= "make" Assignment
         return {
             type  : "make",
-            value : this.Assignment(true), // Assignment can have many things to consider, no further extraction
+            value : this.Assignment(true), // no further extraction
         }
     }
 
@@ -106,7 +106,7 @@ export default class Parser {
         }
     }
 
-    ReplaceProc() { // ReplaceProc ::= "replace" WORD "=" StackExpr | "replace" WORD "with" StackExpr
+    ReplaceProc() { // ReplaceProc ::= "replace" WORD ( "=" | "with" ) StackExpr
         const token = this._eat("WORD").value;
         this._eat("SPACE");
         if(this._lookahead === null) throw new SyntaxError(`at line ${this._lineID}: <replace> procedure expected <assignment>`);
@@ -124,7 +124,7 @@ export default class Parser {
         };
     }
 
-    LoopProc() { // LoopProc ::= "loop" StackExpr Block | "loop" StackExpr "with" WORD Block
+    LoopProc() { // LoopProc ::= "loop" StackExpr ( "with" WORD )? Block
         const value = this.StackExpr().value;
         if(this._lookahead !== null && this._lookahead.type === "procKeyword") {
             if(this._eat("procKeyword").value !== "with") throw new SyntaxError("<loop> procedure expected optional keyword \"with\" after <StackExpr> and before <block> declaration");
@@ -139,7 +139,7 @@ export default class Parser {
         }
     }
 
-    _handCraftLoop(target, value) { //come back here
+    _handCraftLoop(target, value) {
         this._eat("SPACE");
         const token = {
             type  : "when",
@@ -180,7 +180,7 @@ export default class Parser {
         return token;
     }
 
-    UseProc() { // UseProc ::= "use" StringLiteral "with" WORD
+    UseProc() { // UseProc ::= "use" STRING "with" WORD
         const token = {
             type: "use",
             value: this.StringLiteral().value,
@@ -193,7 +193,7 @@ export default class Parser {
         return token;
     }
 
-    WhenProc(canLoop = true) { // WhenProc ::= "when" StackExpr Block | "when" StackExpr Block ElseProc | WhenLoopProc
+    WhenProc(canLoop = true) { // WhenProc ::= "when" StackExpr ( "loop" )? Block ( ElseProc )?
         const value = this.StackExpr().value;
         const loops = (this._lookahead !== null && this._lookahead.type === "procKeyword") ? this._eat("procKeyword").value : false;
         if(this._lookahead?.type === "SPACE") this._eat("SPACE");
@@ -222,7 +222,7 @@ export default class Parser {
         return token;
     }
 
-    ElseProc() { // ElseProc ::= "else" Block | "else" WhenProc
+    ElseProc() { // ElseProc ::= "else" ( Block | WhenProc )
         this._eat("SPACE");
         if(this._lookahead !== null && this._lookahead.type === "procKeyword") {
             if(this._eat("procKeyword").value !== "when") throw new CompileTimeError(this._lineID, "<else> procedure token expected either block declaration or when statement");
@@ -246,7 +246,7 @@ export default class Parser {
         }
     }
 
-    ExitProc() { // ExitProc ::= "exit" | "exit" StackExpr
+    ExitProc() { // ExitProc ::= "exit" ( StackExpr )?
         let value = null;
         if(this._lookahead !== null && this._lookahead.type === "SPACE") {
             this._eat("SPACE");
@@ -266,7 +266,7 @@ export default class Parser {
         }
     }
 
-    FuncProc() { // FuncProc ::= "def" WORD (optional : Helper) "with" InputList Block | "def" WORD "=>" InputList Block
+    FuncProc() { // FuncProc ::= "def" ( Helper )? WORD ( ( "with" | "=>" ) InputList )? Block
         const name = this._eat("WORD").value;
         this._eat("SPACE");
 
@@ -301,7 +301,7 @@ export default class Parser {
         return token;
     }
 
-    Helper() {
+    Helper() { // Helper ::= "$"WORD
         this._eat("$");
         return this._eat("WORD");
     }
@@ -326,7 +326,7 @@ export default class Parser {
         }
     }
 
-    FuncCall() { // FuncCall ::= WORD"(" StackExpr ")" | WORD"(" Iterator ")"
+    FuncCall() { // FuncCall ::= ( StackCall "." )? WORD"(" ( StackExpr | Iterator )? ")"
         const name = this._eat("WORD").value.slice(0, -1);
         this._eat("SPACE");
         let value;
@@ -355,7 +355,7 @@ export default class Parser {
         };
     }
 
-    Assignment(canOmit = false) { // Assignment ::= Target | Target AssignmentSymbol StackExpr | Target AssignmentSymbol Block
+    Assignment(canOmit = false) { // Assignment ::= TargetArg ( ASSIGN ( StackExpr | Block ) )?
         const target = this._checkIterator(this.Target(), false).value;
         let value;
         if(target[target.length - 1]?.type === "FuncCall") value = "omitted";
@@ -391,7 +391,7 @@ export default class Parser {
         };
     }
 
-    StackExpr(allowsIterator = false) { // StackExpr ::= StackElement | StackExpr StackElement
+    StackExpr(allowsIterator = false) { // StackExpr ::= StackElement*
         const StackElementList = [];
         let found = false;
         while(this._lookahead !== null && !["]", "{", "}", "NEWLINE", "procKeyword", ")"].includes(this._lookahead.type)) {
@@ -418,7 +418,7 @@ export default class Parser {
         return token;
     }
 
-    StackOp() {
+    StackOp() { // StackOp ::= ::= "dup" | "drop" | ...
         const token = this._eat("StackOp");
         return {
             type  : 'StackOperand',
@@ -426,7 +426,7 @@ export default class Parser {
         };
     }
 
-    Target() { // Target ::= StackCall " "
+    Target() { // TargetArg ::= StackCall
         const token = this.StackCall();
         if(this._lookahead !== null && this._lookahead.type !== "NEWLINE") {
             try { this._eat("SPACE"); }
@@ -435,7 +435,7 @@ export default class Parser {
         return token;
     }
 
-    StackCall() {
+    StackCall() { // StackCall ::= WORD ( PropertyList )?
         let token = this._eat("WORD"); // no extraction here, Property is checked based on its type
         if(this._checkPropertyAhead()) {
             token.value = [token.value];
@@ -457,7 +457,7 @@ export default class Parser {
         return this._lookahead !== null && ["DOT", "["].includes(this._lookahead.type);
     }
 
-    Property() { // Property ::= "." WORD | "." FuncCall | "[" " " StackExpr "]" | "." Iterator
+    Property() { // Property ::= "."( WORD | FuncCall ) | "[" StackExpr "]"
         let res;
         if(this._lookahead.type === "DOT") {
             this._eat("DOT");
@@ -476,7 +476,7 @@ export default class Parser {
         return res;
     }
 
-    Literal() { // Literal ::= NumericLiteral | StringLiteral
+    Literal() { // Literal ::= NUMBER | STRING
         switch(this._lookahead.type) {
             case "NUMBER" : return this.NumericLiteral();
             case "STRING" : return this.StringLiteral();

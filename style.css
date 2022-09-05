@@ -8,20 +8,74 @@ html, body {
 }
 
 body {
-    overflow: hidden;
+    overflow-x: hidden;
     background-color: #122;
+    font-family: monospace;
+    color : #aaa;
 }
 
-#contentWrapper {
+h1 {
+    color: #00ccbc;
+}
+
+ul {
+    margin: .5em;
+    list-style-type: disc;
+}
+
+li {
+    margin-bottom: .5em;
+}
+
+#tutorialContent {
+    text-align: justify;
+    width : 80%;
+    font-size : 1.8em;
+}
+
+#section {
+    margin-bottom: .5em;
+}
+
+#sectionTitle {
+    color: #10a587;
+    font-weight: bold;
+    margin-bottom: .25em;
     margin-top: 1em;
-    margin-left: 1em;
+}
+
+#definition {
+    color: #3f605a;
+}
+
+#codeSnippet {
+    background-color: #222;
+    font-weight: bold;
+    color: rgb(220, 220, 220);
+    margin: .25em;
+    padding-left: .5em;
+    padding-bottom: .25em;
+    border: 1px solid #6bb;
+    border-radius: .14em;
+    font-size: 0.8em;
+}
+
+#procKeyword { color: #ffd53d; }
+#number      { color: #dc64aa; }
+#string      { color: #28ddfc; }
+#comment     { color: #4a4a4a; }
+
+#contentWrapper {
+    margin: 0;
+    margin-top: 1em;
     width: 100%;
     height: 100%;
+    overflow: hidden;
 }
 
 canvas {
     display: block;
-    margin-right: auto;
+    margin: 0;
     width:  98%;
     height: 90%;
     background-color: #222;

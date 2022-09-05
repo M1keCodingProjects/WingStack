@@ -1,0 +1,58 @@
+use "std GList" with lst
+make std  = lst.std
+make List = lst.List
+
+make Message = {
+  make content = ""
+  make color   = "black"
+  make style   = List.new( "" )
+  
+  def new => msg color style {
+    me.copy( )
+    me.content = msg str
+    when color "" != { me.color = color }
+    when style "" != { me.style = List.new( style ) }
+    exit me
+  }
+  
+  def copy {
+    me = me obj
+    exit me
+  }
+  
+  def say with msg { me.new( msg "" dup ).Print( ) } #prints your new message but keeps the saved style
+  
+  def Print {
+    def toStr $temp with el { exit el str }
+    print me.content with me.color " " toStr( me.style.data ) str
+  }
+  
+  def useColor with clr {
+    me.color = clr
+    exit me
+  }
+  
+  def useStyle with stl {
+    me.style = List.new( stl )
+    exit me
+  }
+  
+  def addStyle with stl {
+    when me.style.data spill "" == pop {
+      me.style = List.new( stl )
+    
+    } else { me.style.push( stl ) }
+    exit me
+  }
+  
+  def removeStyle with stl {
+    make id = me.style.getPos( stl )
+    when id 0 < { exit me }
+    loop id 1 + {
+      me.style.data = me.style.data spill rot<
+    }
+    
+    when me.style.len( ) 1 > { me.style.popLast( )
+    } else { me.style = List.new( "" ) }
+  }
+}

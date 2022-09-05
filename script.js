@@ -15,7 +15,7 @@ const printAction = () => {
   console.log(textEditor.printText());
 }
 
-const usedFilePath = "test";//"EXAMPLES/presentation";
+const usedFilePath = "EXAMPLES/presentation";
 
 const GLC = new Compiler(usedFilePath, preloadedModuleList);
 const textEditor = new TextEditor(await loadFile(usedFilePath));
@@ -26,7 +26,6 @@ textEditor.begin_draw();
 
 /* TODO:
     Utmost priority:
-      (...doing) add switch statements: fix newline else procedures and add "default" behaviour when in switch statements
       See if anything can be done for the way replace procedures "work"
 
     Mid priority:

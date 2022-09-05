@@ -1,11 +1,5 @@
 use "std GLib" with std
 
-loop 1 {
-  make $global a = 23
-}
-
-print a
-
 options inp {
   when 1 { print "case 1" }
   when 2 { print "case 2" }

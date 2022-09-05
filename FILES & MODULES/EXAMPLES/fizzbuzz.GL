@@ -1,8 +1,8 @@
 use "std GLib" with std
 
 def fizzbuzz with n { 
-  make options = n "Fizz" "Buzz" "FizzBuzz"
-  exit options[ n dup 3 % 0 dup rot> == rot> 5 % == 2 * + ]
+  make opts = n "Fizz" "Buzz" "FizzBuzz"
+  exit opts[ n dup 3 % 0 dup rot> == rot> 5 % == 2 * + ]
 }
 
 loop 100 with n {

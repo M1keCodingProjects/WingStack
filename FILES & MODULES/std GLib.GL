@@ -22,9 +22,8 @@ def mult => f1 f2 { # this is a type friendly function, repeating f2 times any f
   when f1 type "list" == {
     _f1 = _f1 spill #dereference
     loop f2 1 - { f1 = f1 spill _f1 spill }
-  } else {
-    loop f2 1 - { f1 += _f1 }
   }
+  else { loop f2 1 - { f1 += _f1 } }
   exit f1
 }
 

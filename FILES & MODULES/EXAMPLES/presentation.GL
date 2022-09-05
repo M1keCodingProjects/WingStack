@@ -51,7 +51,8 @@ loop 9 with turn {
       when pos -1 == { move = 9 }
     }
     board[ move ] = 1
-  } else { # Bot's turn
+  }
+  else { # Bot's turn
     print "Bot is deciding.."
     move = available.random( )
     pos  = available.getPos( move )

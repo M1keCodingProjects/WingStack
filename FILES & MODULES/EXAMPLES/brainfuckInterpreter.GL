@@ -4,20 +4,19 @@ make List = lst.List
 
 replace _coerce with 2 * 1 -
 
-make options = ">" "<" "." "," "[" "]" "+" "-"
+make tokens = ">" "<" "." "," "[" "]" "+" "-"
 
 def eval => char {
-  when lst.getPos( options char ) -1 == { flag "Unrecognized token " char str }
+  when lst.getPos( tokens char ) -1 == { flag "Unrecognized token " char str }
   
   when char dup ">" == swap "<" == or { ptr += char ">" == _coerce }
   when char dup "+" == swap "-" == or { stack[ ptr ] += char "+" == _coerce }
-  when char "." == { print stack[ ptr ] }
-  when char "," == { stack[ ptr ] = inp }
-  when char "[" == {
-    when stack[ ptr ] not { runID = search( 0 ) }
-  }
-  when char "]" == {
-    when stack[ ptr ] { runID = search( 1 ) }
+  
+  options char {
+    when "." { print stack[ ptr ] }
+    when "," { stack[ ptr ] = inp }
+    when "[" { when stack[ ptr ] not { runID = search( 0 ) } }
+    when "]" { when stack[ ptr ]     { runID = search( 1 ) } }
   }
 }
 

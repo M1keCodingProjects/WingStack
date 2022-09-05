@@ -33,7 +33,8 @@ export default class Parser {
         if(this._lookahead !== null && this._lookahead.type === "NEWLINE") this._eat("NEWLINE");
         while(this._lookahead !== null && this._lookahead.type !== "}") {
             if(this._lookahead.type === "SPACE") this._eat("SPACE");
-            lines.push(this.Expression());
+            const expr = this.Expression();
+            if(expr !== null) lines.push(expr);
         }
         lines = lines.filter(l => l);
         if(!lines.length) console.warn("Empty <Program>");
@@ -55,6 +56,8 @@ export default class Parser {
             case "NEWLINE"     : break;
             default            : throw new CompileTimeError(this._lineID, `Unrecognized statement "${this._lookahead.value}" as any known <Expression> token type`);
         }
+        
+        if(token === undefined) return null;
 
         if(this._lookahead !== null && this._lookahead.type === "SPACE") this._eat("SPACE");
         if(this._lookahead !== null && this._lookahead.type !== "}") this._eat("NEWLINE");   // LineEnder ::= "\n" | "}"
@@ -75,10 +78,16 @@ export default class Parser {
             case "when"    : this._eat("SPACE"); token = this.WhenProc();    break;
             case "flag"    : this._eat("SPACE"); token = this.FlagProc();    break;
             case "def"     : this._eat("SPACE"); token = this.FuncProc();    break;
+            case "options" : this._eat("SPACE"); token = this.OptionsProc(); break;
+            case "else"    : if(this.pendingWhenProc) this.pendingWhenProc.else = this.ElseProc();
+                             else throw new CompileTimeError(this._lineID, "invalid <ElseProc>"); return;
+
             case "next"    : token = this.NextProc(); break;
             case "exit"    : token = this.ExitProc(); break;
             default        : throw new CompileTimeError(this._lineID, `Unsupported <Procedure> token "${token.value}"`);
         }
+
+        if(this.pendingWhenProc && token.type !== "when") this.pendingWhenProc = false;
 
         token.ID = ID;
         token.type = ["Procedure", token.type];
@@ -220,17 +229,16 @@ export default class Parser {
         if(this._lookahead !== null) {
             if(!["NEWLINE", "}"].includes(this._lookahead.type)) {
                 if(this._eat("procKeyword").value !== "else") throw new SyntaxError(`at line ${this._lineID}: tried pairing <when> procedure to a block owned by a procedure other than <else>`);
-                const els = this.ElseProc();
-                token.else = { block: els.block };
-                if(els.value) token.else.value = els.value;
-                if(els.else)  token.else.else  = els.else;
+                token.else = this.ElseProc();
             }
         }
 
+        if(!token.else) this.pendingWhenProc = token;
         return token;
     }
 
     ElseProc() { // ElseProc ::= "else" ( Block | WhenProc )
+        this.pendingWhenProc = false;
         this._eat("SPACE");
         if(this._lookahead !== null && this._lookahead.type === "procKeyword") {
             if(this._eat("procKeyword").value !== "when") throw new CompileTimeError(this._lineID, "<else> procedure token expected either block declaration or when statement");
@@ -307,6 +315,14 @@ export default class Parser {
 
         if(argStream.length) token.args = argStream;
         return token;
+    }
+
+    OptionsProc() { // OptionsProc ::= "options" StackExpr Block
+        return {
+            type  : "options",
+            value : this.StackExpr().value,
+            block : this.Block().value,
+        };
     }
 
     Helper() { // Helper ::= "$"WORD

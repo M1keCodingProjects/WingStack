@@ -1,4 +1,4 @@
-import { StackValue } from "./stack operators.js";
+import { StackValue , Eqs_stackOp } from "./stack operators.js";
 import * as Errors from "./errors.js";
 
 class Arg {
@@ -189,6 +189,42 @@ export class ObjBlockArg extends BlockArg {
         if(!Object.keys(returnValue).length) throw new Errors.RuntimeError(this.ID, `an empty <object> type item was created, with no properties nor methods`);
         this.compiler.scopeDepth--;
         return returnValue;
+    }
+}
+
+export class OptionsBlockArg extends BlockArg {
+    constructor(ID, compilerRef, linesList) {
+        super(ID, compilerRef, linesList);
+    }
+
+    argumentize(linesList) {
+        super.argumentize(linesList);
+        for(let i = 0; i < this.lines.length; i++) {
+            const line = this.lines[i];
+            if(!(line.constructor.name === "WhenProc")) throw new Errors.CompileTimeError(this.ID, "an <OptionsProc> block can only contain <WhenProc> expressions and an optional <ElseProc>");
+            if(line.loops) throw new Errors.CompileTimeError(this.ID, "<WhenProc> expressions inside of an <OptionsProc> block cannot loop");
+            if(line.else) {
+                if(i < this.lines.length - 1) throw new Errors.CompileTimeError(this.ID, "an <OptionsProc> block can only contain an optional <ElseProc> as the final case");
+                if(line.else.constructor.name === "WhenProc") throw new Errors.CompileTimeError(this.ID, "an <ElseProc> option inside of an <OptionsProc> block cannot have a <StackExpression> argument");
+                this.default = line.else;
+            }
+        }
+
+        this.eqOp = new Eqs_stackOp(this.ID);
+        this.stack = new Stack(this.ID);
+    }
+
+    execute(evaluation) {
+        for(const line of this.lines) {
+            const caseEval = line.stackExpr.execute();
+            if(caseEval instanceof Object) throw new Errors.RuntimeError(this.ID, `a <WhenProc> <StackExpression> argument can only evaluate to a single comparable (NUMBER or STRING) value when part of an <OptionsProc>`);
+            this.stack.data.push(evaluation);
+            this.stack.data.push(caseEval);
+            this.eqOp.execute(this.stack);
+            if(this.stack.pop() === 1) return line.block.execute(); // unused return value
+        }
+        //if we get here, then default can run:
+        if(this.default) this.default.execute();
     }
 }
 

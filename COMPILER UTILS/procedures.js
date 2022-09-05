@@ -273,3 +273,20 @@ export class DefProc extends Proc {
         return returnValue;
     }
 }
+
+export class OptionsProc extends Proc {
+    constructor(compilerRef, line) {
+        super(compilerRef, line);
+    }
+
+    getArguments(line) {
+        this.stackExpr = new ArgClasses.StackExprArg(this.ID, this.compiler, line.value);
+        this.block     = new ArgClasses.OptionsBlockArg(this.ID, this.compiler, line.block);
+    }
+
+    execute() {
+        const evaluation = this.stackExpr.execute();
+        if(evaluation instanceof Object) throw new Errors.RuntimeError(this.ID, `an <OptionsProc> <StackExpression> argument can only evaluate to a single comparable (NUMBER or STRING) value`);
+        this.block.execute(evaluation);
+    }
+}

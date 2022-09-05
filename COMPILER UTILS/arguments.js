@@ -171,6 +171,11 @@ export class ObjBlockArg extends BlockArg {
         super(ID, compilerRef, linesList);
     }
 
+    argumentize(linesList) {
+        super.argumentize(linesList);
+        if(this.lines.find(line => line.isGlobal)) throw new Errors.CompileTimeError(this.ID, "Cannot instantiate globally when creating an object's property");
+    }
+
     execute() {
         this.compiler.scopeDepth++;
         let returnValue = {};

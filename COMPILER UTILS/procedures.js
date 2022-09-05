@@ -61,11 +61,12 @@ export class MakeProc extends Proc {
     }
 
     getArguments(line) {
+        if(line.isGlobal) this.isGlobal = true;
         this.assignment = new ArgClasses.Assignment(this.ID, this.compiler, line.value);
     }
 
     execute() {
-        this.compiler.makeVar(this.assignment.target);
+        this.compiler.makeVar(this.assignment.target, this.isGlobal);
         this.assignment.execute();
     }
 }

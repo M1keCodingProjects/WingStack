@@ -8,7 +8,7 @@ Procedure    ::= PrintProc | MakeProc | WhenProc | ...
 
 PrintProc    ::= "print" StackExpr ( "with" STRING )?
 
-MakeProc     ::= "make" Assignment
+MakeProc     ::= "make" ( Helper )? Assignment
 
 FreeProc     ::= "free" WORD
 
@@ -29,6 +29,8 @@ ExitProc     ::= "exit" ( StackExpr )?
 FlagProc     ::= "flag" StackExpr
 
 FuncProc     ::= "def" ( Helper )? WORD ( ( "with" | "=>" ) InputList )? Block
+
+OptionsProc  ::= "options" StackExpr Block
 
 Helper       ::= "$"WORD
 

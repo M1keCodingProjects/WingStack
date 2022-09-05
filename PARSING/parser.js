@@ -109,18 +109,28 @@ export default class Parser {
         return token;
     }
 
-    MakeProc() { // MakeProc ::= "make" Assignment
-        return {
+    MakeProc() { // MakeProc ::= "make" ( Helper )? Assignment
+        let isGlobal = false;
+        if(this._lookahead !== null && this._lookahead.type === "$") {
+            const help = this.Helper().value;
+            if(help !== "global") throw new CompileTimeError(this._lineID, `received invalid <HelperKeyword> in context, expected "global" but got ${help}`);
+            isGlobal = true;
+            this._eat("SPACE");
+        }
+        
+        const token = {
             type  : "make",
             value : this.Assignment(true), // no further extraction
-        }
+        };
+        if(isGlobal) token.isGlobal = true;
+        return token;
     }
 
     FreeProc() { // FreeProc ::= "free" WORD
         return {
             type : "free",
             value : this._eat("WORD").value,
-        }
+        };
     }
 
     ReplaceProc() { // ReplaceProc ::= "replace" WORD ( "=" | "with" ) StackExpr

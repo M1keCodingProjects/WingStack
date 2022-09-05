@@ -153,17 +153,19 @@ export default class Compiler {
         console.log("Execution terminated successfully.");
     }
 
-    createVariableInstance(name) {
-      const variable = new Variable(name, this.scopeDepth);
+    createVariableInstance(name, scope = this.scopeDepth) {
+      const variable = new Variable(name, scope);
       this.vars.push(variable);
       return variable;
     }
 
-    makeVar(targetToken) {
+    makeVar(targetToken, asGlobal = false) {
       if(targetToken.name === "me") throw new Errors.RuntimeError(targetToken.ID, `cannot use reserved word "me" as variable name`);
-      if(this.vars.filter(v => v.name === targetToken.name && v.depth === this.scopeDepth).length) throw new Errors.RuntimeError(targetToken.ID, `a variable named "${targetToken.name}" already exists in this scope`);
+      if(asGlobal && this.scopeDepth === 0) console.warn(`Warning at line ${targetToken.ID} : creating global instance in global scope is redundant`);
+      const usedScope = asGlobal ? 0 : this.scopeDepth;
+      if(this.vars.filter(v => v.name === targetToken.name && v.depth === usedScope).length) throw new Errors.RuntimeError(targetToken.ID, `a variable named "${targetToken.name}" already exists in this scope`);
       if(targetToken.name in this.stackOps) throw new Errors.RuntimeError(targetToken.ID, `cannot use reserved <stackOperand> word "${targetToken.name}" as variable name`);
-      return this.createVariableInstance(targetToken.name);
+      return this.createVariableInstance(targetToken.name, usedScope);
     }
 
     makeFunc(defProc) {

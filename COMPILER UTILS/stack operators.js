@@ -416,7 +416,9 @@ export class LstCast_stackOp extends Cast_stackOp {
   cast(el, type) {
     switch(type) {
       case "many"   : return [...el];
-      case "object" : return Object.entries(el).filter(entry => ! (entry[1] instanceof Function));
+      case "object" : const propertiesList = Object.entries(el).filter(entry => !(entry[1] instanceof Function));
+                      if(!propertiesList.length) throw new Errors.RuntimeError(this.ID, "Nothing to pack! A <pack> operation was performed on an OBJECT-type item with no properties, which results in an empty LIST");
+                      return propertiesList;
       default       : return [el];
     }
   }

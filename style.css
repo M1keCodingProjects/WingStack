@@ -14,12 +14,30 @@ body {
     color : #aaa;
 }
 
+::-webkit-scrollbar {
+    width: 1rem;
+}
+
+::-webkit-scrollbar-track {
+    background: #ffffff1e;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #ffffff1d;
+    border-radius: 1rem;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #ffffff2c;
+}
+
 h1 {
     color: #00ccbc;
 }
 
 ul {
     margin: .5em;
+    margin-bottom: 1em;
     list-style-type: disc;
 }
 
@@ -48,7 +66,7 @@ li {
     color: #3f605a;
 }
 
-#codeSnippet {
+.codeSnippet {
     background-color: #222;
     font-weight: bold;
     color: rgb(220, 220, 220);
@@ -64,6 +82,48 @@ li {
 #number      { color: #dc64aa; }
 #string      { color: #28ddfc; }
 #comment     { color: #4a4a4a; }
+
+.insertContent {
+    background-color: #122;
+    border: 3px solid #3f605a;
+    height: 23em;
+    width: 100%;
+    position: relative;
+}
+
+.insertContent #innerContainer {
+    overflow: auto;
+    width: 100%;
+    height: 100%;
+    padding: .5em;
+    padding-top: 0;
+}
+
+.insertContent:before {
+    --y : 0;
+	content: '';
+	position: absolute;
+	left: 0;
+	top: calc(.5% + var(--y) * (100% / 13.5));
+	width: 0;
+	height: 0;
+	border: 0.8em solid transparent;
+	border-right-color: #3f605a;
+	border-left: 0;
+	border-bottom: 0;
+	margin-top: -.2em;
+	margin-left: -.6em;
+    transform: rotate(35deg);
+    z-index: -1;
+}
+
+.insertContent p {
+    margin: 0;
+}
+
+.insertContent #innerContainer::-webkit-scrollbar {
+    width: .5rem;
+}
 
 #contentWrapper {
     margin: 0;

@@ -283,7 +283,9 @@ export class Spill_stackOp extends StackOp {
     let el1 = stack.pop();
     let type1 = StackValue.prototype.get_type(el1);
     switch(type1) {
-      case "string" : stack.data.push(...el1.split("")); break;
+      case "string" : if(el1 === "") console.warn(`Warning from line ${this.ID}: stack operator <spill> has no effect on empty strings`);
+                      else stack.data.push(...el1.split("")); break;
+      
       case "list" :   stack.data.push(...el1); break;
       default :       return this.throw_unsupportedTypes_error(["<list>", "<string>"], [type1]);
     }

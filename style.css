@@ -78,12 +78,26 @@ li {
     font-size: 0.8em;
 }
 
-#procKeyword { color: #ffd53d; }
-#number      { color: #dc64aa; }
-#string      { color: #28ddfc; }
-#comment     { color: #4a4a4a; }
+.procKeyword { color: #ffd53d; }
+.number      { color: #dc64aa; }
+.string      { color: #28ddfc; }
+.comment     { color: #4a4a4a; }
+
+.chapter:hover {
+    transform: scale(1.1);
+}
+
+.chapter:active:hover {
+    transform: scale(.9);
+}
+
+.chapter:hover strong, .chapter[selected="true"] strong {
+    color: #ffeab0;
+    cursor: pointer;
+}
 
 .insertContent {
+    --y : 0;
     background-color: #122;
     border: 3px solid #3f605a;
     height: 23em;
@@ -99,8 +113,7 @@ li {
     padding-top: 0;
 }
 
-.insertContent:before {
-    --y : 0;
+.insertContent::before {
 	content: '';
 	position: absolute;
 	left: 0;
@@ -115,10 +128,6 @@ li {
 	margin-left: -.6em;
     transform: rotate(35deg);
     z-index: -1;
-}
-
-.insertContent p {
-    margin: 0;
 }
 
 .insertContent #innerContainer::-webkit-scrollbar {

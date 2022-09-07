@@ -71,75 +71,208 @@
                         <table><tr>
                             <td width="15%">
                                 <ul class="chapterList">
-                                    <li class="chapter" selected="true"><strong class="procKeyword">print</strong></li>
-                                    <li class="chapter"><strong class="procKeyword">make    </strong></li>
-                                    <li class="chapter"><strong class="procKeyword">free    </strong></li>
-                                    <li class="chapter"><strong class="procKeyword">when    </strong></li>
-                                    <li class="chapter"><strong class="procKeyword">else    </strong></li>
-                                    <li class="chapter"><strong class="procKeyword">options </strong></li>
-                                    <li class="chapter"><strong class="procKeyword">loop    </strong></li>
-                                    <li class="chapter"><strong class="procKeyword">next    </strong></li>
-                                    <li class="chapter"><strong class="procKeyword">exit    </strong></li>
-                                    <li class="chapter"><strong class="procKeyword">def     </strong></li>
-                                    <li class="chapter"><strong class="procKeyword">use     </strong></li>
-                                    <li class="chapter"><strong class="procKeyword">with    </strong></li>
-                                    <li class="chapter"><strong class="procKeyword">replace </strong></li>
-                                    <li class="chapter"><strong class="procKeyword">flag    </strong></li>
+                                    <li class="chapter procKeyword" selected="true">print</li>
+                                    <li class="chapter procKeyword">make    </strong></li>
+                                    <li class="chapter procKeyword">free    </strong></li>
+                                    <li class="chapter procKeyword">when    </strong></li>
+                                    <li class="chapter procKeyword">else    </strong></li>
+                                    <li class="chapter procKeyword">options </strong></li>
+                                    <li class="chapter procKeyword">loop    </strong></li>
+                                    <li class="chapter procKeyword">next    </strong></li>
+                                    <li class="chapter procKeyword">exit    </strong></li>
+                                    <li class="chapter procKeyword">def     </strong></li>
+                                    <li class="chapter procKeyword">use     </strong></li>
+                                    <li class="chapter procKeyword">with    </strong></li>
+                                    <li class="chapter procKeyword">replace </strong></li>
+                                    <li class="chapter procKeyword">flag    </strong></li>
                                 </ul>
                             </td>
 
                             <td>
-                                <div class="insertContent"><div id="innerContainer">
+                                <div class="insertContent" id="CHAPTERCONTAINER-procedures"><div id="innerContainer">
                                     <div id="print" style="display: inline;">
-                                        <strong>Definition: </strong><font id="definition">&ltPrint&gt := print &ltStackExpression&gt</font><br>
+                                        <strong>Definition: </strong><font class="definition">&ltPrint&gt := print &ltStackExpression&gt</font><br>
                                         <strong>Usage:      </strong> Prints its value to the console.<br><br>
 
-                                        This is the first procedure we tackle, so let's look at a couple examples:<br>
+                                        This is the first procedure we tackle, so let's begin by looking at a couple examples:<br>
                                         <div class="codeSnippet"><pre>
                                             print 2 &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp # this value is a NUMBER
                                             print "2" &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp# this value is a STRING
                                             print 1 2 "hi" 3 # these values are MANY >> [ 1, 2, hi, 3 ]
                                         </pre></div><br>
                                         As you can see in example #3, multiple values can share the same space with no separators.
-                                        Moreover, since we aren't performing any operations on them that leaves us with many values to process,
-                                        and when this happens what you obtain is a <strong>LIST</strong><br><br>
+                                        Moreover, since we aren't performing any operations on them we're left with many values to process,
+                                        and when this happens what you obtain is a <strong>LIST</strong>. To understand why this happens, we need to talk
+                                        about the only (not entirely true) argument this procedure takes in: a <strong>stack expression</strong>.<br><br>
 
-                                        To understand why this happens, we need to talk about the only (not entirely true) argument this procedure takes
-                                        in: a <strong>Stack Expression</strong>:<br>
                                         Stack expressions are the way values are created, changed and manipulated in this language. Anytime a value is written,
-                                        transferred, changed, calculated or even taken as an input from the user, it's bound to pass through a stack expression.<br>
-                                        So how does it work?<br>
-                                        Every time a stack expression argument is executed, 3 things happen in order:<br><br>
-
-                                        1) An empty stack is created. A <strong>stack</strong> in computer science is a very common abstract data structure defined as a pile 
-                                        of elements that can only be accessed from its "top", removing or adding one element at a time. In this particular implementation, many more
-                                        operations are possible, however the core limitation of not being able to access any of the elements at a moment's notice is still present, and
-                                        it makes for an original and compelling coding style.
-                                        <br><br>
-                                        
-                                        2) All the items in the stack expression are evaluated in writing order. A direct consequence of using a stack to store values is what's known in
-                                        Mathematics as <strong>Reverse Polish Notation</strong>, a particular way of writing expressions where each operator goes after all of its operands.<br>
-                                        This means that to perform an addition we must first push both inputs on the stack, and only then the "+" follows.<br>
-                                        Reverse polish notation ensures linear priority in evaluating mathematical and logical operations, making them always inequivocably objective.
-                                        How many times have people been fooled by "simple operations" such as this one: <strong>1 + 12 / 2 * 3</strong> ? Does this equal 19 or 3? Depends who you ask,
-                                        because "/" is a terrible way of indicating division given it's <strong>unclear</strong> what the numerator and denominator are.
-                                        Most programming languages solve this problem by relying on parentheses, forcing you to use them everywhere in fear of messing up the
-                                        order of operations in complex expressions. Here there are no parentheses, you don't need them, priority is <strong>linear</strong>.
-                                        <br><br>
-                                        
-                                        3) decide how to "cast" the output based on its length: no &ltStackExpression&gt is ever allowed to end its evaluation empty in this language, but besides that
-                                        if more than one element is left on the stack after all operations have performed, the return value of that &ltStackExpression&gt will be a list of all remaining elements
-                                    
-                                        A few examples:
-                                        <div class="codeSnippet"><pre>
-                                            print 1 2 + &nbsp&nbsp# >> 3
-                                            print 1 "2" + # >> "12"
-                                            print 1 2 3 &nbsp&nbsp# >> [ 1, 2, 3 ]
-                                        </pre></div>
+                                        transferred, changed, calculated or even taken as an input from the user, it's bound to pass through a stack expression..
+                                        so how does it work?<br>
+                                        Every time a stack expression argument is executed, 3 things happen in order:<br>
+                                        <div class="manualList">
+                                            1) An empty stack is created. A <strong>stack</strong> in computer science is a very common abstract data structure defined as a pile 
+                                            of elements that can only be accessed from its "top", removing or adding one element at a time. In this particular implementation, many more
+                                            operations are possible, however the core limitation of not being able to access any of the elements at a moment's notice is still present, and
+                                            it makes for an original and compelling coding style.
+                                            <br><br>
+                                            
+                                            2) All the items in the stack expression are evaluated in writing order. A direct consequence of using a stack to store values is what's known in
+                                            Mathematics as <strong>Reverse Polish Notation</strong>, a particular way of writing expressions where each operator goes after all of its operands.<br>
+                                            This means that to perform an addition we must first push both inputs on the stack, and only then the "+" follows.<br>
+                                            Reverse polish notation ensures linear priority in evaluating mathematical and logical operations, making them always inequivocably objective.
+                                            How many times have people been fooled by "simple operations" such as this one: <strong>1 + 12 / 2 * 3</strong> ? Does this equal 19 or 3? Depends who you ask,
+                                            because "/" is a terrible way of indicating division given it's <strong>unclear</strong> what the numerator and denominator are.
+                                            Most programming languages solve this problem by relying on parentheses, forcing you to use them everywhere in fear of messing up the
+                                            order of operations in complex expressions. Here there are no parentheses, you don't need them, priority is <strong>linear</strong>.
+                                            <br><br>
+                                            
+                                            3) What remains in the stack is "dumped" into its container element, which in this case is the print procedure. The so-called "dumping" phase does
+                                            different things based on the amount of elements left on the stack: since there is no NULL type no stack expression is ever allowed to end its evaluation
+                                            empty, but besides that everytime the output of a stack expression is comprised of multiple elements it gets automatically cast to a LIST.
+                                        </div>
                                     </div>
 
                                     <div id="make" style="display: none">
-                                        Lmao text
+                                        <strong>Definition: </strong><font class="definition">&lt&gt := </font><br>
+                                        <strong>Usage:      </strong> ??.<br><br>
+
+                                        Examples:<br>
+                                        <div class="codeSnippet"><pre>
+                                            
+                                        </pre></div><br>
+                                        ??
+                                    </div>
+
+                                    <div id="free" style="display: none">
+                                        <strong>Definition: </strong><font class="definition">&lt&gt := </font><br>
+                                        <strong>Usage:      </strong> ??.<br><br>
+
+                                        Examples:<br>
+                                        <div class="codeSnippet"><pre>
+                                            
+                                        </pre></div><br>
+                                        ??
+                                    </div>
+
+                                    <div id="when" style="display: none">
+                                        <strong>Definition: </strong><font class="definition">&lt&gt := </font><br>
+                                        <strong>Usage:      </strong> ??.<br><br>
+
+                                        Examples:<br>
+                                        <div class="codeSnippet"><pre>
+                                            
+                                        </pre></div><br>
+                                        ??
+                                    </div>
+
+                                    <div id="else" style="display: none">
+                                        <strong>Definition: </strong><font class="definition">&lt&gt := </font><br>
+                                        <strong>Usage:      </strong> ??.<br><br>
+
+                                        Examples:<br>
+                                        <div class="codeSnippet"><pre>
+                                            
+                                        </pre></div><br>
+                                        ??
+                                    </div>
+
+                                    <div id="options" style="display: none">
+                                        <strong>Definition: </strong><font class="definition">&lt&gt := </font><br>
+                                        <strong>Usage:      </strong> ??.<br><br>
+
+                                        Examples:<br>
+                                        <div class="codeSnippet"><pre>
+                                            
+                                        </pre></div><br>
+                                        ??
+                                    </div>
+
+                                    <div id="loop" style="display: none">
+                                        <strong>Definition: </strong><font class="definition">&lt&gt := </font><br>
+                                        <strong>Usage:      </strong> ??.<br><br>
+
+                                        Examples:<br>
+                                        <div class="codeSnippet"><pre>
+                                            
+                                        </pre></div><br>
+                                        ??
+                                    </div>
+
+                                    <div id="next" style="display: none">
+                                        <strong>Definition: </strong><font class="definition">&lt&gt := </font><br>
+                                        <strong>Usage:      </strong> ??.<br><br>
+
+                                        Examples:<br>
+                                        <div class="codeSnippet"><pre>
+                                            
+                                        </pre></div><br>
+                                        ??
+                                    </div>
+
+                                    <div id="exit" style="display: none">
+                                        <strong>Definition: </strong><font class="definition">&lt&gt := </font><br>
+                                        <strong>Usage:      </strong> ??.<br><br>
+
+                                        Examples:<br>
+                                        <div class="codeSnippet"><pre>
+                                            
+                                        </pre></div><br>
+                                        ??
+                                    </div>
+
+                                    <div id="def" style="display: none">
+                                        <strong>Definition: </strong><font class="definition">&lt&gt := </font><br>
+                                        <strong>Usage:      </strong> ??.<br><br>
+
+                                        Examples:<br>
+                                        <div class="codeSnippet"><pre>
+                                            
+                                        </pre></div><br>
+                                        ??
+                                    </div>
+
+                                    <div id="use" style="display: none">
+                                        <strong>Definition: </strong><font class="definition">&lt&gt := </font><br>
+                                        <strong>Usage:      </strong> ??.<br><br>
+
+                                        Examples:<br>
+                                        <div class="codeSnippet"><pre>
+                                            
+                                        </pre></div><br>
+                                        ??
+                                    </div>
+
+                                    <div id="with" style="display: none">
+                                        <strong>Definition: </strong><font class="definition">&lt&gt := </font><br>
+                                        <strong>Usage:      </strong> ??.<br><br>
+
+                                        Examples:<br>
+                                        <div class="codeSnippet"><pre>
+                                            
+                                        </pre></div><br>
+                                        ??
+                                    </div>
+
+                                    <div id="replace" style="display: none">
+                                        <strong>Definition: </strong><font class="definition">&lt&gt := </font><br>
+                                        <strong>Usage:      </strong> ??.<br><br>
+
+                                        Examples:<br>
+                                        <div class="codeSnippet"><pre>
+                                            
+                                        </pre></div><br>
+                                        ??
+                                    </div>
+
+                                    <div id="flag" style="display: none">
+                                        <strong>Definition: </strong><font class="definition">&lt&gt := </font><br>
+                                        <strong>Usage:      </strong> ??.<br><br>
+
+                                        Examples:<br>
+                                        <div class="codeSnippet"><pre>
+                                            
+                                        </pre></div><br>
+                                        ??
                                     </div>
                                 </div></div>
                             </td>

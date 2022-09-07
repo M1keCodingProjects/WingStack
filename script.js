@@ -59,21 +59,25 @@ for(const snippet of allSnippets) {
 }
 
 function selectChapter(event) {
-  const chapter = event.target.parentNode;
-  const chaptersList = chapter.parentNode;
-  const chapters = chaptersList.querySelectorAll("li");
-  const insertedContent = chaptersList.parentNode.parentNode.querySelectorAll("td")[1].querySelectorAll("div")[0];
-  insertedContent.style.setProperty("--y", Array.prototype.indexOf.call(chapters, chapter));
-  insertedContent.querySelectorAll("div[style^=display]").forEach(textP => textP.style.setProperty("display", "none"));
-  insertedContent.querySelectorAll(`#${chapter.innerText}`)[0].style.setProperty("display", "inline");
+  const chapter = event.target;
+  const chapters = [...chapter.parentNode.children];
+  const insertedContent = document.getElementById("CHAPTERCONTAINER-procedures");
+  const chapterTexts = [...insertedContent.firstChild.children];
 
-  chapters.forEach(ch => ch.setAttribute("selected", "false"));
+  const oldSelectedID = Number(getComputedStyle(insertedContent).getPropertyValue("--y"));
+  const currentSelectedID = chapters.indexOf(chapter);
+  insertedContent.style.setProperty("--y", currentSelectedID);
+
+  chapterTexts[oldSelectedID].style.setProperty("display", "none");
+  chapterTexts[currentSelectedID].style.setProperty("display", "inline");
+
+  chapters[oldSelectedID].setAttribute("selected", "false");
   chapter.setAttribute("selected", "true");
 }
 
 const allChapterLists = document.getElementsByClassName("chapterList");
 for(const chapterList of allChapterLists) {
-  chapterList.querySelectorAll("li").forEach(ch => {
+  [...chapterList.children].forEach(ch => {
     ch.setAttribute("onclick", "(() => false)()");
     ch.onclick = selectChapter;
   });

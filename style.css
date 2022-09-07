@@ -38,11 +38,19 @@ h1 {
 ul {
     margin: .5em;
     margin-bottom: 1em;
-    list-style-type: disc;
+    list-style: none;
 }
 
 li {
     margin-bottom: .5em;
+}
+
+li::before {
+    content: "•";
+    color: #aaa;
+    display: inline-block;
+    width: 1em;
+    margin-left: -1em
 }
 
 #tutorialContent {
@@ -62,8 +70,13 @@ li {
     margin-top: 1em;
 }
 
-#definition {
+.definition {
     color: #3f605a;
+}
+
+.manualList {
+    padding: .5em;
+    padding-right: 0;
 }
 
 .codeSnippet {
@@ -83,6 +96,10 @@ li {
 .string      { color: #28ddfc; }
 .comment     { color: #4a4a4a; }
 
+.chapter {
+    font-weight: bold;
+}
+
 .chapter:hover {
     transform: scale(1.1);
 }
@@ -91,7 +108,7 @@ li {
     transform: scale(.9);
 }
 
-.chapter:hover strong, .chapter[selected="true"] strong {
+.chapter:hover, .chapter[selected="true"] {
     color: #ffeab0;
     cursor: pointer;
 }

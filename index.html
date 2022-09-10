@@ -33,8 +33,8 @@
                 GAMELANG is a dynamicly typed, interpreted and synchronous language with only four proper primitive types:
                 <ul>
                     <li>
-                        <strong>NUMBER</strong> - GAMELANG does not distinguish between numbers and booleans, namely:<br>
-                        0 ←→ false , 1 ←→ true.
+                        <strong>NUMBER</strong> - GAMELANG does not distinguish between numbers and booleans, namely:
+                        0 ←→ false,<br> 1 ←→ true.
                     </li>
                     
                     <li>
@@ -42,7 +42,7 @@
                         which replaces the much more common "\n".
                         <div class="codeSnippet"><pre>
                             "Hello, World!&newWhat's up?" # >> Hello, World!
-                                                          #    What's up?
+                            # What's up?
                         </pre></div>
                     </li>
                     
@@ -51,7 +51,7 @@
                     </li>
                     
                     <li>
-                        <strong>OBJECT</strong> - A collection of "property : value" pairs that have to be indexed by name and are not positional.<br>
+                        <strong>OBJECT</strong> - A collection of "property : value" pairs that have to be indexed by name and are not positional.
                         Object properties are more precisely called "methods" if their access operation corresponds to a "Function call", but we'll get
                         to that later.
                     </li>
@@ -91,13 +91,13 @@
                             <td>
                                 <div class="insertContent" id="CHAPTERCONTAINER-procedures"><div id="innerContainer">
                                     <div id="print" style="display: inline;">
-                                        <strong>Definition: </strong><font class="definition">&ltPrint&gt := print &ltStackExpression&gt</font><br>
-                                        <strong>Usage:      </strong> Prints its value to the console.<br><br>
+                                        <strong>Syntax: </strong><font class="definition">&ltPrint&gt := print &ltStackExpression&gt</font><br>
+                                        <strong>Usage:  </strong> Prints its value to the console.<br><br>
 
                                         This is the first procedure we tackle, so let's begin by looking at a couple examples:<br>
                                         <div class="codeSnippet"><pre>
-                                            print 2 &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp # this value is a NUMBER
-                                            print "2" &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp# this value is a STRING
+                                            print 2 # this value is a NUMBER
+                                            print "Hello, World!" # this value is a STRING
                                             print 1 2 "hi" 3 # these values are MANY >> [ 1, 2, hi, 3 ]
                                         </pre></div><br>
                                         As you can see in example #3, multiple values can share the same space with no separators.
@@ -130,33 +130,120 @@
                                             different things based on the amount of elements left on the stack: since there is no NULL type no stack expression is ever allowed to end its evaluation
                                             empty, but besides that everytime the output of a stack expression is comprised of multiple elements it gets automatically cast to a LIST.
                                         </div>
+                                        <div class="deeper">Going deeper:</div> the optional syntax: <font class="definition">&ltPrint&gt := print &ltStackExpression&gt with &ltStackExpression&gt</font>
+                                        allows you to style the printed text to some degree, here's how:
+                                        <ul>
+                                            <li>The stack expression containing style specifications must evaluate to a string to be valid.</li>
+                                            <li>A valid style-string starts with a colour, which can be either in full hexadecimal notation (#rrbbgg) or written with its common name.
+                                            This last approach, although valid, is discouraged because I can't be bothered to waste space listing all the available colours.
+                                            </li>
+                                            <li>After the colour has been specified, there are a few modifiers you can add to your string (in no particular order), separated from
+                                                the colour and each other by a space:
+                                                <ul>
+                                                    <li><strong>bold</strong></li>
+                                                    <li><i>italic</i></li>
+                                                    <li><u>underline</u></li>
+                                                </ul>
+                                            </li>
+                                        </ul>
+                                        Here's how an example featuring all the styling options might look like:
+                                        <div class="codeSnippet"><pre>
+                                            print "Hello, world!" with "red bold italic underline"
+                                        </pre></div>
                                     </div>
 
                                     <div id="make" style="display: none">
-                                        <strong>Definition: </strong><font class="definition">&lt&gt := </font><br>
-                                        <strong>Usage:      </strong> ??.<br><br>
+                                        <strong>Syntax: </strong><font class="definition">&ltMake&gt := make &ltAssignment&gt </font><br>
+                                        <strong>Usage:  </strong> Creates a new variable.<br><br>
 
-                                        Examples:<br>
-                                        <div class="codeSnippet"><pre>
+                                        If you take a peek further down in this chapter about expressions, you will find that assignments are, just like procedures,
+                                        a valid expression type. For this very reason we won't spend too much time explaining how this procedure's only argument works
+                                        in detail, but in a nutshell an assignment follows this syntax:<br>
+                                        <font class="definition">&ltAssignment&gt := &ltTarget&gt &ltAssignmentSymbol&gt &ltStackExpression&gt</font><br>
+                                        Where the <strong>target</strong>, for simplicity, can be interpreted as the name you want to give to your variable. To be exact,
+                                        you could also assign values to properties inside of an object or to specific elements inside a list, however this is not allowed in
+                                        a make procedure, whose only purpose is to create a new, indipendent piece of data.<br><br>
+
+                                        There are 2 more things regarding assignments that you have to watch out for when using a make procedure:
+                                        <ul>
+                                            <li><strong>Strict assignment</strong> - the simplest kind of assignment, where the so-called <strong>assignment symbol</strong>
+                                            is "=", and the only one allowed in make procedures. Without going into too much detail, any non-strict assignment needs its target
+                                            argument to already have a value to start from so that it can get modified, and this is obviously not possible if the variable hasn't
+                                            been fully declared yet.
+                                            </li>
                                             
+                                            <li><strong>Implicit assignment</strong> - by omitting the assignment symbol and the stack expression, the value of your newly created
+                                            variable is automatically set to 0. This is simply syntax sugar that looks no different from any other strict assignment to zero after the
+                                            parsing phase, and while nothing "logically" stops this from existing even outside of make procedures, I feel like an expression only containing
+                                            one word (the name of your variable) would be ugly and unclear.
+                                            </li>
+                                        </ul>
+                                        
+                                        With all this in mind, let's see some examples:<br>
+                                        <div class="codeSnippet"><pre>
+                                            make foo = "bar" # the variable 'foo' has been created
+                                            print foo &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp # >> bar
+
+                                            make a &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp # implicit assignment
+                                            make b = 0 &nbsp&nbsp&nbsp&nbsp&nbsp # this is equivalent to the previous line
                                         </pre></div><br>
-                                        ??
+
+                                        One last thing: we've learned that we can control both the name and the value of any variable we create, however variables also have a third parameter
+                                        called "depth", which simply refers to the <strong>scope</strong> they were created in. So far, all the variables we can declare are part of the so-called
+                                        <strong>global</strong> scope, because to be fair we don't even know what a scope is... let's change that. A scope is simply the space enclosed by a 
+                                        <strong>block</strong>, an argument common to many procedures we have yet to see and that is defined as:
+                                        <font class="definition">&ltBlock&gt := { ( &ltExpression&gt )* }</font> , so basically a chunk of code within curly brackets.<br>
+                                        Every time a block is opened a private scope is created, and any variable declared inside of it will have a depth equal to how many levels of nesting separate
+                                        it from the global scope. Furthermore, when the block closes all the variables that were declared inside of it are automatically deleted, they disappear together with their scope.
+                                        In a practical sense, this means that wherever you are in your code you are only allowed to access variables whose depth is bigger or equal to the current scope, 
+                                        or in other words "less private" variables.<br>
+                                        This is important because it's not possible to have two variables with the same name <strong>defined in the same scope</strong>, but when legal name collisions do occur
+                                        the program will always prioritize the variable with the most depth:<br>
+                                        <div class="codeSnippet"><pre>
+                                            make a = 14  # depth : global(0)
+                                            make a = 15  # this is not allowed! this new "a" is in the same scope as another variable with the same name
+
+                                            { # you are not actually allowed to treat blocks as expressions, just imagine this is a private scope
+                                            &nbsp print a &nbsp&nbsp&nbsp # >> 14
+                                            &nbsp make a = 26 # this is fine, this new "a" has a depth of 1
+                                            &nbsp print a &nbsp&nbsp&nbsp # >> 26 , the more private "a" is prioritized
+                                            }
+
+                                            print a # >> 14 , the other "a" was deleted when the block closed
+                                        </pre></div><br>
+
+                                        <div class="deeper">Going deeper:</div> Use the <strong>$global</strong> specifier to make sure your variable is instanciated
+                                        in the global scope no matter what:
+                                        <div class="codeSnippet"><pre>
+                                            {
+                                            &nbsp make $global foo = 25 # depth : 0
+                                            &nbsp make foo = 9 &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp # depth : 1
+                                            &nbsp print foo &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp # >> 9
+                                            }
+
+                                            print foo # >> 25
+                                        </pre></div>
                                     </div>
 
                                     <div id="free" style="display: none">
-                                        <strong>Definition: </strong><font class="definition">&lt&gt := </font><br>
-                                        <strong>Usage:      </strong> ??.<br><br>
+                                        <strong>Syntax: </strong><font class="definition">&ltFree&gt := free WORD</font><br>
+                                        <strong>Usage:  </strong> Deletes an existing variable.<br><br>
 
+                                        Cannot be used to delete properties of objects or specific items in lists. Scope priority works the same everytime you write a variable's
+                                        name in a stack expression, and in this case if multiple variables with the same name are present, the deleted one will be the most private.
                                         Examples:<br>
                                         <div class="codeSnippet"><pre>
-                                            
+                                            make foo = "bar"
+                                            print foo # >> bar
+                                            free foo
+                                            print foo # Error!
                                         </pre></div><br>
-                                        ??
                                     </div>
 
                                     <div id="when" style="display: none">
-                                        <strong>Definition: </strong><font class="definition">&lt&gt := </font><br>
-                                        <strong>Usage:      </strong> ??.<br><br>
+                                        <strong>Syntax: </strong><font class="definition">&ltWhen&gt := when &ltStackExpression&gt ( loop )? &ltBlock&gt</font><br>
+                                        <strong>Usage:  </strong> Conditional or iterative statement, encapsulates code to be run only when a condition is met.
+                                        If the "loop" argument is present, the condition is evaluated at every iteration, stopping the loop upon failure.</br><br>
 
                                         Examples:<br>
                                         <div class="codeSnippet"><pre>
@@ -166,8 +253,8 @@
                                     </div>
 
                                     <div id="else" style="display: none">
-                                        <strong>Definition: </strong><font class="definition">&lt&gt := </font><br>
-                                        <strong>Usage:      </strong> ??.<br><br>
+                                        <strong>Syntax: </strong><font class="definition">&ltElse&gt := else ( &ltWhen&gt | &ltBlock&gt ) </font><br>
+                                        <strong>Usage:  </strong> Conditional statement, encapsulates code to be run only when a previous conditional statement has failed.<br><br>
 
                                         Examples:<br>
                                         <div class="codeSnippet"><pre>
@@ -177,8 +264,8 @@
                                     </div>
 
                                     <div id="options" style="display: none">
-                                        <strong>Definition: </strong><font class="definition">&lt&gt := </font><br>
-                                        <strong>Usage:      </strong> ??.<br><br>
+                                        <strong>Syntax: </strong><font class="definition">&ltOptions&gt := options &ltStackExpression&gt &ltBlock&gt</font><br>
+                                        <strong>Usage:  </strong> Switch statement, encapsulates conditional statements that act as alternatives for a value. The matching conditional statement will run.<br><br>
 
                                         Examples:<br>
                                         <div class="codeSnippet"><pre>
@@ -188,8 +275,8 @@
                                     </div>
 
                                     <div id="loop" style="display: none">
-                                        <strong>Definition: </strong><font class="definition">&lt&gt := </font><br>
-                                        <strong>Usage:      </strong> ??.<br><br>
+                                        <strong>Syntax: </strong><font class="definition">&ltLoop&gt := loop &ltStackExpression&gt &ltBlock&gt</font><br>
+                                        <strong>Usage:  </strong> Iterative statement, encapsulates code to be run a set number of times.<br><br>
 
                                         Examples:<br>
                                         <div class="codeSnippet"><pre>
@@ -199,8 +286,8 @@
                                     </div>
 
                                     <div id="next" style="display: none">
-                                        <strong>Definition: </strong><font class="definition">&lt&gt := </font><br>
-                                        <strong>Usage:      </strong> ??.<br><br>
+                                        <strong>Syntax: </strong><font class="definition">&ltNext&gt := next</font><br>
+                                        <strong>Usage:  </strong> Inside of an iterative statement it skips to the next iteration.<br><br>
 
                                         Examples:<br>
                                         <div class="codeSnippet"><pre>
@@ -210,8 +297,9 @@
                                     </div>
 
                                     <div id="exit" style="display: none">
-                                        <strong>Definition: </strong><font class="definition">&lt&gt := </font><br>
-                                        <strong>Usage:      </strong> ??.<br><br>
+                                        <strong>Syntax: </strong><font class="definition">&ltExit&gt := exit ( &ltStackExpression&gt )?</font><br>
+                                        <strong>Usage:  </strong> Inside of an iterative statement it forcefully terminates it, inside of a function
+                                        it acts as a return statement.<br><br>
 
                                         Examples:<br>
                                         <div class="codeSnippet"><pre>
@@ -221,8 +309,8 @@
                                     </div>
 
                                     <div id="def" style="display: none">
-                                        <strong>Definition: </strong><font class="definition">&lt&gt := </font><br>
-                                        <strong>Usage:      </strong> ??.<br><br>
+                                        <strong>Syntax: </strong><font class="definition">&ltDefine&gt := def WORD ( ( => | with ) &ltStackExpression&gt )? &ltBlock&gt</font><br>
+                                        <strong>Usage:  </strong> Defines a function, encapsulating code to be run when a call is executed.<br><br>
 
                                         Examples:<br>
                                         <div class="codeSnippet"><pre>
@@ -232,8 +320,8 @@
                                     </div>
 
                                     <div id="use" style="display: none">
-                                        <strong>Definition: </strong><font class="definition">&lt&gt := </font><br>
-                                        <strong>Usage:      </strong> ??.<br><br>
+                                        <strong>Syntax: </strong><font class="definition">&ltUse&gt := use STRING with WORD</font><br>
+                                        <strong>Usage:  </strong> Loads a module in the form of a variable of type OBJECT.<br><br>
 
                                         Examples:<br>
                                         <div class="codeSnippet"><pre>
@@ -243,8 +331,7 @@
                                     </div>
 
                                     <div id="with" style="display: none">
-                                        <strong>Definition: </strong><font class="definition">&lt&gt := </font><br>
-                                        <strong>Usage:      </strong> ??.<br><br>
+                                        <strong>Usage:</strong> As argument.<br><br>
 
                                         Examples:<br>
                                         <div class="codeSnippet"><pre>
@@ -254,8 +341,8 @@
                                     </div>
 
                                     <div id="replace" style="display: none">
-                                        <strong>Definition: </strong><font class="definition">&lt&gt := </font><br>
-                                        <strong>Usage:      </strong> ??.<br><br>
+                                        <strong>Syntax: </strong><font class="definition">&ltReplace&gt := replace WORD ( with | = ) &ltStackExpression&gt</font><br>
+                                        <strong>Usage:  </strong> Creates a macro stack operator.<br><br>
 
                                         Examples:<br>
                                         <div class="codeSnippet"><pre>
@@ -265,8 +352,8 @@
                                     </div>
 
                                     <div id="flag" style="display: none">
-                                        <strong>Definition: </strong><font class="definition">&lt&gt := </font><br>
-                                        <strong>Usage:      </strong> ??.<br><br>
+                                        <strong>Syntax: </strong><font class="definition">&ltFlag&gt := flag &ltStackExpression&gt </font><br>
+                                        <strong>Usage:  </strong> Raises an exception to the console.<br><br>
 
                                         Examples:<br>
                                         <div class="codeSnippet"><pre>

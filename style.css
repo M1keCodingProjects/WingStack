@@ -38,14 +38,18 @@ h1 {
 ul {
     margin: .5em;
     margin-bottom: 1em;
-    list-style: none;
+    list-style-type: disc;
+}
+
+ul[class="custom"] {
+    list-style-type: none;
 }
 
 li {
     margin-bottom: .5em;
 }
 
-li::before {
+.custom li >::before {
     content: "•";
     color: #aaa;
     display: inline-block;
@@ -70,6 +74,15 @@ li::before {
     margin-top: 1em;
 }
 
+.deeper {
+    color: rgb(173, 37, 10);
+    background-color: #232325;
+    padding-left: .25em;
+    padding-right: .25em;
+    width: fit-content;
+    display: inline;
+}
+
 .definition {
     color: #3f605a;
 }
@@ -85,6 +98,7 @@ li::before {
     color: rgb(220, 220, 220);
     margin: .25em;
     padding-left: .5em;
+    padding-right: .5em;
     padding-bottom: .25em;
     border: 1px solid #6bb;
     border-radius: .14em;
@@ -98,6 +112,7 @@ li::before {
 
 .chapter {
     font-weight: bold;
+    transition: all .1s;
 }
 
 .chapter:hover {

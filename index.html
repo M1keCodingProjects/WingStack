@@ -232,7 +232,8 @@
                                         <strong>Usage:  </strong> Deletes an existing variable.<br><br>
 
                                         Cannot be used to delete properties of objects or specific items in lists. Scope priority works the same everytime you write a variable's
-                                        name in a stack expression, and in this case if multiple variables with the same name are present, the deleted one will be the most private.
+                                        name in a stack expression, and in this case if multiple variables with the same name are present, the deleted one will be the most private.<br><br>
+                                        
                                         Examples:<br>
                                         <div class="codeSnippet"><pre>
                                             \make  foo = "bar"
@@ -247,11 +248,31 @@
                                         <strong>Usage:  </strong> Conditional or iterative statement, encapsulates code to be run only when a condition is met.
                                         If the "loop" argument is present, the condition is evaluated at every iteration, stopping the loop upon failure.</br><br>
 
-                                        Examples:<br>
+                                        This is one of the most confusing procedures when starting out with this language due to the fact that it stands in for both an
+                                        "if" statement and a "while" loop, but why would I even choose to aggregate these two behaviours in the first place?<br>
+                                        At its core, the when procedure is a way of executing some code (contained in its block argument) conditionally, or in other words
+                                        only if its stack expression evaluates to a truthy value. But wait: if there are no booleans, then what is true? The only thing that matters
+                                        is that the stack expression argument ultimately evaluates to a NUMBER, then anything different from 0 is considered true. If the condition
+                                        turns out to be false instead, then the evaluation continues down the so-called <strong>else chain</strong> (if present), explained in
+                                        detail in the next procedure chapter of this list.<br><br>
+                                        If you think about it, a "while" loop is nothing more than a conditional statement that repeats as long as it evaluates truthfully, which
+                                        is why I opted for this condensed syntactical approach; and it's not confusing either, with the <strong>loop</strong> argument acting as a
+                                        clear distinction between the two types of statements. Moreover, the possibility to have an else chain even after a conditional loop seems
+                                        less weird with this approach. Keep in mind however, that else procedures can never loop.<br><br>
+                                        
+                                        Here are some examples:<br>
                                         <div class="codeSnippet"><pre>
-                                            
+                                            \make password = "secretKey"
+                                            \when password "secretKey" == { # the arguments to this equality (==) operation are STRINGs, but the operation itself can result in either 1 or 0, which makes the stack expression valid as a condition
+                                            \   print "correct password entered!"
+                                            \}
+                                            \
+                                            \make a = 5
+                                            \when a loop {
+                                            \   print a # >> 5 >> 4 >> 3 >> 2 >> 1
+                                            \   a = a 1 -
+                                            \}
                                         </pre></div><br>
-                                        ??
                                     </div>
 
                                     <div id="else" style="display: none">

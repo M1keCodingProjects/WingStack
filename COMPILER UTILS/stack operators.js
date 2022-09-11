@@ -194,7 +194,7 @@ export class Eqs_stackOp extends Math_stackOp {
   
   execute(stack) {
     let [el1, el2] = super.execute(stack);
-    this.checkNaN(stack, 1 * (el1 == el2));
+    this.checkNaN(stack, 1 * (el1 === el2));
   }
 }
 

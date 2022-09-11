@@ -26,10 +26,10 @@ textEditor.begin_draw();
 const allSnippets    = Array.from(document.getElementsByClassName("codeSnippet"));
 const wordDelimiters = [" ", ".", "[", "\n"];
 
-const coerceChar = (char) => char == "\n" ? "<br>" : char;
+const coerceChar = (char) => char == "\n" ? "<br>" : char == " " ? "&nbsp" : char;
 
 for(const snippet of allSnippets) {
-  const text = snippet.firstChild.innerHTML.replace(/<br>/g, "\n");
+  const text = snippet.firstChild.innerHTML.replace(/<br>/g, "\n").replace(/\s*\\(.*\n)/g, "$1").replace(/\n\s*$/, "\n");
   snippet.innerHTML = "";
   let word = "";
   let insideDelimiter = false;
@@ -64,6 +64,7 @@ function selectChapter(event) {
   const insertedContent = document.getElementById("CHAPTERCONTAINER-procedures");
   const chapterTexts = [...insertedContent.firstChild.children];
 
+  insertedContent.firstChild.scrollTop = 0;
   const oldSelectedID = Number(getComputedStyle(insertedContent).getPropertyValue("--y"));
   const currentSelectedID = chapters.indexOf(chapter);
   insertedContent.style.setProperty("--y", currentSelectedID);

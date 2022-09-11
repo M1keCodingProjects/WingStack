@@ -41,8 +41,8 @@
                         <strong>STRING</strong> - Currently, support for escaping characters is limited to "&new",
                         which replaces the much more common "\n".
                         <div class="codeSnippet"><pre>
-                            "Hello, World!&newWhat's up?" # >> Hello, World!
-                            # What's up?
+                            \"Hello, World!&newWhat's up?" # >> Hello, World!
+                            \                              # What's up?
                         </pre></div>
                     </li>
                     
@@ -96,9 +96,9 @@
 
                                         This is the first procedure we tackle, so let's begin by looking at a couple examples:<br>
                                         <div class="codeSnippet"><pre>
-                                            print 2 # this value is a NUMBER
-                                            print "Hello, World!" # this value is a STRING
-                                            print 1 2 "hi" 3 # these values are MANY >> [ 1, 2, hi, 3 ]
+                                            \print 2               # this value is a NUMBER
+                                            \print "Hello, World!" # this value is a STRING
+                                            \print 1 2 "hi" 3      # these values are MANY >> [ 1, 2, hi, 3 ]
                                         </pre></div><br>
                                         As you can see in example #3, multiple values can share the same space with no separators.
                                         Moreover, since we aren't performing any operations on them we're left with many values to process,
@@ -148,7 +148,7 @@
                                         </ul>
                                         Here's how an example featuring all the styling options might look like:
                                         <div class="codeSnippet"><pre>
-                                            print "Hello, world!" with "red bold italic underline"
+                                            \print "Hello, world!" with "red bold italic underline"
                                         </pre></div>
                                     </div>
 
@@ -181,11 +181,11 @@
                                         
                                         With all this in mind, let's see some examples:<br>
                                         <div class="codeSnippet"><pre>
-                                            make foo = "bar" # the variable 'foo' has been created
-                                            print foo &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp # >> bar
+                                            \make  foo = "bar" # the variable 'foo' has been created
+                                            \print foo         # >> bar
 
-                                            make a &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp # implicit assignment
-                                            make b = 0 &nbsp&nbsp&nbsp&nbsp&nbsp # this is equivalent to the previous line
+                                            \make a     # implicit assignment
+                                            \make b = 0 # this is equivalent to the previous line
                                         </pre></div><br>
 
                                         One last thing: we've learned that we can control both the name and the value of any variable we create, however variables also have a third parameter
@@ -200,28 +200,30 @@
                                         This is important because it's not possible to have two variables with the same name <strong>defined in the same scope</strong>, but when legal name collisions do occur
                                         the program will always prioritize the variable with the most depth:<br>
                                         <div class="codeSnippet"><pre>
-                                            make a = 14  # depth : global(0)
-                                            make a = 15  # this is not allowed! this new "a" is in the same scope as another variable with the same name
-
-                                            { # you are not actually allowed to treat blocks as expressions, just imagine this is a private scope
-                                            &nbsp print a &nbsp&nbsp&nbsp # >> 14
-                                            &nbsp make a = 26 # this is fine, this new "a" has a depth of 1
-                                            &nbsp print a &nbsp&nbsp&nbsp # >> 26 , the more private "a" is prioritized
-                                            }
-
-                                            print a # >> 14 , the other "a" was deleted when the block closed
+                                            \make a = 14  # depth : global(0)
+                                            \make a = 15  # this is not allowed! this new "a" is in the same scope as another 
+                                            \             # variable with the same name
+                                            \
+                                            \{ # you are not actually allowed to treat blocks as expressions, just imagine this is a private scope
+                                            \
+                                            \   print a      # >> 14
+                                            \   make  a = 26 # this is fine, this new "a" has a depth of 1
+                                            \   print a      # >> 26 , the more private "a" is prioritized
+                                            \}
+                                            \
+                                            \print a # >> 14 , the other "a" was deleted when the block closed
                                         </pre></div><br>
 
                                         <div class="deeper">Going deeper:</div> Use the <strong>$global</strong> specifier to make sure your variable is instanciated
                                         in the global scope no matter what:
                                         <div class="codeSnippet"><pre>
-                                            {
-                                            &nbsp make $global foo = 25 # depth : 0
-                                            &nbsp make foo = 9 &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp # depth : 1
-                                            &nbsp print foo &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp # >> 9
-                                            }
-
-                                            print foo # >> 25
+                                            \{
+                                            \   make $global foo = 25 # depth : 0
+                                            \   make  foo = 9         # depth : 1
+                                            \   print foo             # >> 9
+                                            \}
+                                            \
+                                            \print foo # >> 25
                                         </pre></div>
                                     </div>
 
@@ -233,10 +235,10 @@
                                         name in a stack expression, and in this case if multiple variables with the same name are present, the deleted one will be the most private.
                                         Examples:<br>
                                         <div class="codeSnippet"><pre>
-                                            make foo = "bar"
-                                            print foo # >> bar
-                                            free foo
-                                            print foo # Error!
+                                            \make  foo = "bar"
+                                            \print foo # >> bar
+                                            \free  foo
+                                            \print foo # Error!
                                         </pre></div><br>
                                     </div>
 

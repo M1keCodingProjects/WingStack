@@ -105,10 +105,10 @@ li {
     font-size: 0.8em;
 }
 
-.procKeyword { color: #ffd53d; }
-.number      { color: #dc64aa; }
-.string      { color: #28ddfc; }
-.comment     { color: #4a4a4a; }
+.pk  { color: #ffd53d; }
+.num { color: #dc64aa; }
+.str { color: #28ddfc; }
+.com { color: #4a4a4a; }
 
 .chapter {
     font-weight: bold;

@@ -71,20 +71,20 @@
                         <table><tr>
                             <td width="15%">
                                 <ul class="chapterList">
-                                    <li class="chapter procKeyword" selected="true">print</li>
-                                    <li class="chapter procKeyword">make    </strong></li>
-                                    <li class="chapter procKeyword">free    </strong></li>
-                                    <li class="chapter procKeyword">when    </strong></li>
-                                    <li class="chapter procKeyword">else    </strong></li>
-                                    <li class="chapter procKeyword">options </strong></li>
-                                    <li class="chapter procKeyword">loop    </strong></li>
-                                    <li class="chapter procKeyword">next    </strong></li>
-                                    <li class="chapter procKeyword">exit    </strong></li>
-                                    <li class="chapter procKeyword">def     </strong></li>
-                                    <li class="chapter procKeyword">use     </strong></li>
-                                    <li class="chapter procKeyword">with    </strong></li>
-                                    <li class="chapter procKeyword">replace </strong></li>
-                                    <li class="chapter procKeyword">flag    </strong></li>
+                                    <li class="chapter pk" selected="true">print</li>
+                                    <li class="chapter pk">make    </strong></li>
+                                    <li class="chapter pk">free    </strong></li>
+                                    <li class="chapter pk">when    </strong></li>
+                                    <li class="chapter pk">else    </strong></li>
+                                    <li class="chapter pk">options </strong></li>
+                                    <li class="chapter pk">loop    </strong></li>
+                                    <li class="chapter pk">next    </strong></li>
+                                    <li class="chapter pk">exit    </strong></li>
+                                    <li class="chapter pk">def     </strong></li>
+                                    <li class="chapter pk">use     </strong></li>
+                                    <li class="chapter pk">with    </strong></li>
+                                    <li class="chapter pk">replace </strong></li>
+                                    <li class="chapter pk">flag    </strong></li>
                                 </ul>
                             </td>
 
@@ -126,7 +126,7 @@
                                             order of operations in complex expressions. Here there are no parentheses, you don't need them, priority is <strong>linear</strong>.
                                             <br><br>
                                             
-                                            3) What remains in the stack is "dumped" into its container element, which in this case is the print procedure. The so-called "dumping" phase does
+                                            3) What remains in the stack is "dumped" into its container element, which in this case is the <font class="pk">print</font> procedure. The so-called "dumping" phase does
                                             different things based on the amount of elements left on the stack: since there is no NULL type no stack expression is ever allowed to end its evaluation
                                             empty, but besides that everytime the output of a stack expression is comprised of multiple elements it gets automatically cast to a LIST.
                                         </div>
@@ -162,20 +162,20 @@
                                         <font class="definition">&ltAssignment&gt := &ltTarget&gt &ltAssignmentSymbol&gt &ltStackExpression&gt</font><br>
                                         Where the <strong>target</strong>, for simplicity, can be interpreted as the name you want to give to your variable. To be exact,
                                         you could also assign values to properties inside of an object or to specific elements inside a list, however this is not allowed in
-                                        a make procedure, whose only purpose is to create a new, indipendent piece of data.<br><br>
+                                        a <font class="pk">make</font> procedure, whose only purpose is to create a new, indipendent piece of data.<br><br>
 
-                                        There are 2 more things regarding assignments that you have to watch out for when using a make procedure:
+                                        There are 2 more things regarding assignments that you have to watch out for when using a <font class="pk">make</font> procedure:
                                         <ul>
                                             <li><strong>Strict assignment</strong> - the simplest kind of assignment, where the so-called <strong>assignment symbol</strong>
-                                            is "=", and the only one allowed in make procedures. Without going into too much detail, any non-strict assignment needs its target
+                                            is "=", and the only one allowed in <font class="pk">make</font> procedures. Without going into too much detail, any non-strict assignment needs its target
                                             argument to already have a value to start from so that it can get modified, and this is obviously not possible if the variable hasn't
                                             been fully declared yet.
                                             </li>
                                             
                                             <li><strong>Implicit assignment</strong> - by omitting the assignment symbol and the stack expression, the value of your newly created
                                             variable is automatically set to 0. This is simply syntax sugar that looks no different from any other strict assignment to zero after the
-                                            parsing phase, and while nothing "logically" stops this from existing even outside of make procedures, I feel like an expression only containing
-                                            one word (the name of your variable) would be ugly and unclear.
+                                            parsing phase, and while nothing "logically" stops this from existing even outside of <font class="pk">make</font> procedures, I feel like an expression only containing
+                                            one word (the name of your variable) would look ugly and unclear.
                                             </li>
                                         </ul>
                                         
@@ -250,15 +250,15 @@
 
                                         This is one of the most confusing procedures when starting out with this language due to the fact that it stands in for both an
                                         "if" statement and a "while" loop, but why would I even choose to aggregate these two behaviours in the first place?<br>
-                                        At its core, the when procedure is a way of executing some code (contained in its block argument) conditionally, or in other words
+                                        At its core, the <font class="pk">when</font> procedure is a way of executing some code (contained in its block argument) conditionally, or in other words
                                         only if its stack expression evaluates to a truthy value. But wait: if there are no booleans, then what is true? The only thing that matters
                                         is that the stack expression argument ultimately evaluates to a NUMBER, then anything different from 0 is considered true. If the condition
-                                        turns out to be false instead, then the evaluation continues down the so-called <strong>else chain</strong> (if present), explained in
+                                        turns out to be false instead, the evaluation continues down the so-called <strong>else chain</strong> (if present), explained in
                                         detail in the next procedure chapter of this list.<br><br>
                                         If you think about it, a "while" loop is nothing more than a conditional statement that repeats as long as it evaluates truthfully, which
-                                        is why I opted for this condensed syntactical approach; and it's not confusing either, with the <strong>loop</strong> argument acting as a
-                                        clear distinction between the two types of statements. Moreover, the possibility to have an else chain even after a conditional loop seems
-                                        less weird with this approach. Keep in mind however, that else procedures can never loop.<br><br>
+                                        is why I opted for this condensed syntactical approach; and it's not confusing either, with the <font class="pk">loop</font> argument acting as a
+                                        clear distinction between the two types of statements. Moreover, the possibility to have an <font class="pk">else</font> chain even after a conditional loop seems
+                                        less weird with this approach. Keep in mind however, that <font class="pk">else</font> procedures can never loop.<br><br>
                                         
                                         Here are some examples:<br>
                                         <div class="codeSnippet"><pre>
@@ -279,11 +279,35 @@
                                         <strong>Syntax: </strong><font class="definition">&ltElse&gt := else ( &ltWhen&gt | &ltBlock&gt ) </font><br>
                                         <strong>Usage:  </strong> Conditional statement, encapsulates code to be run only when a previous conditional statement has failed.<br><br>
 
-                                        Examples:<br>
+                                        <font class="pk">Else</font> procedures only exist as an extension to <font class="pk">when</font> procedures, in no case can they appear without a prior conditional statement. As the syntax
+                                        suggests, <font class="pk">else</font> procedures can be followed by either a whole other <font class="pk">when</font> procedure, which is simply a way of saying they can have a condition of
+                                        their own, or by just a block, and in the latter case the <font class="pk">else</font> procedure will run anytime the prior condition fails.<br>
+                                        This informal distinction between "else when" and "else" is made in many other programming languages as well, and just like in all of them it's
+                                        perfectly fine to have a sequence of fallback conditions forming an <strong>else chain</strong> that, logically, must place all the optional
+                                        "else when"s before the "else" (which, again by pure logic, can only appear once).<br><br>
+
+                                        As I've already mentioned, <font class="pk">when</font> procedures that act as arguments in else chains cannot loop, and the else chain on a "when-loop" procedure is only
+                                        ever considered if the loop never starts because the condition was false from the start. For example:<br>
                                         <div class="codeSnippet"><pre>
-                                            
+                                            \make a = 3
+                                            \when a 2 == {
+                                            \   print "a is 2"
+                                            \}
+                                            \else when a 0 &lt; == {
+                                            \   print "a is negative"
+                                            \}
+                                            \else {
+                                            \   print "a is between 0 and 2 or bigger than 2" # this will run
+                                            \}
+                                            \
+                                            \when a loop {
+                                            \   print a
+                                            \   a = a 1 -
+                                            \}
+                                            \else {
+                                            \   print "this only runs if a is 0 when the loop first runs" # in our case it won't
+                                            \}
                                         </pre></div><br>
-                                        ??
                                     </div>
 
                                     <div id="options" style="display: none">

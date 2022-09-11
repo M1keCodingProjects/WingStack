@@ -171,7 +171,7 @@ export class WhenProc extends Proc {
         }
     }
 
-    execute() {
+    execute(isFirst = true) {
         const condition = this.stackExpr.execute();
         if(StackValue.prototype.get_type(condition) !== "number") throw new Errors.RuntimeError(this.ID, "this <whenProc> <stackExpression> evaluated to a result not compatible with a conditional evaluation: must be NUMBER");
         if(condition !== 0) {
@@ -181,10 +181,10 @@ export class WhenProc extends Proc {
                     this.compiler.exitStatus = false;
                     return;
                 }
-                this.execute();
+                this.execute(false); // this makes when-loop elses useful: they only run if the when block never runs.
             }
         }
-        else if(this.else) this.else.execute();
+        else if(this.else && isFirst) this.else.execute();
     }
 }
 

@@ -56,6 +56,7 @@
                         to that later.
                     </li>
                 </ul>
+                Items of types LIST or OBJECT aren't just values, they have a sort of "identity" to them, which means that they can be passed by reference other than by value.<br>
                 What you can also notice is the absence of a <strong>NULL</strong> type of sorts. In fact, such values aren't allowed in the language and while it's possible
                 to create an empty string ("") similar structures for other types, such as an empty list ([]) or object ({}), are impossible to obtain.
             </div>
@@ -314,11 +315,55 @@
                                         <strong>Syntax: </strong><font class="definition">&ltOptions&gt := options &ltStackExpression&gt &ltBlock&gt</font><br>
                                         <strong>Usage:  </strong> Switch statement, encapsulates conditional statements that act as alternatives for a value. The matching conditional statement will run.<br><br>
 
-                                        Examples:<br>
+                                        The <font class="pk">options</font> procedure is a relatively new addition to the language, still it manages to handle switch-like logic recycling familiar syntax and
+                                        arguments from other very common procedures. To achieve this, some strict requirements are to be met to ensure that this procedure's arguments
+                                        are valid:
+                                        <ul>
+                                            <li>
+                                                <strong>The stack expression must evaluate to a single value</strong> - this argument is supposed to provide a value for the cases
+                                                to check against (the option value), and to do so behind the scenes an equality operation occurs using the == stack operator. At this
+                                                point you might have no idea of what I'm talking about, but all you need to know is that this operation only accepts items of type NUMBER
+                                                or STRING, which means that our stack expression (and all of those in the different cases too) must also produce a value of either type.
+                                            </li>
+
+                                            <li>
+                                                <strong>The block must only contain valid "case" expressions</strong> - where a "case" is none other than a <font class="pk">when</font>
+                                                procedure whose stack expression is bound by the same rule from before. Moreover, the only <font class="pk">when</font> procedure allowed
+                                                to have an <font class="pk">else</font> is the last one, where the <font class="pk">else</font> acts as the "default" case of the switch
+                                                statement and thus cannot have a condition of his own. Cases are checked one by one against the option value in order from top to bottom,
+                                                until a match is found: then, the code inside of that case's block can run. Whenever nothing matches, the <font class="pk">else</font>
+                                                procedure acting as the default case will run if present.<br>
+                                                <div class="codeSnippet"><pre>
+                                                    \{
+                                                    \   when 2 { ... }
+                                                    \   else   { ... } # this is WRONG: the default else case is not at the end
+                                                    \   when 3 { ... }
+                                                    \}
+                                                    \
+                                                    \{
+                                                    \   when 2 { ... }
+                                                    \   when 3 { ... }
+                                                    \   else when 4 { ... } # this is WRONG: the default else case has a condition 
+                                                    \}
+                                                    \
+                                                    \{
+                                                    \   when 2 loop { ... } # this is WRONG: when procedures used as cases cannot loop
+                                                    \   when 3 { ... }    
+                                                    \}
+                                                </pre></div><br>
+                                            </li>
+                                        </ul>
+
+                                        Here's an example with correct syntax to clarify what it should look like:<br>
                                         <div class="codeSnippet"><pre>
-                                            
-                                        </pre></div><br>
-                                        ??
+                                            \make i = 1
+                                            \options i {
+                                            \   when 0 { print "i was zero" }
+                                            \   when 1 { print "i was one"  } # this will run
+                                            \   when 2 { print "i was two"  }
+                                            \   else   { print "i was negative or bigger than two" }
+                                            \}
+                                        </pre></div>
                                     </div>
 
                                     <div id="loop" style="display: none">

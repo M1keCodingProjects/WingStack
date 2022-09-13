@@ -5,7 +5,6 @@ def fizzbuzz with n {
   exit opts[ n dup 3 % 0 dup rot> == rot> 5 % == 2 * + ]
 }
 
-loop 100 with n {
-  when n not { next }
+loop 99 with n = 1 {
   print fizzbuzz( n )
 }

@@ -16,7 +16,7 @@ ReplaceProc  ::= "replace" WORD ( "=" | "with" ) StackExpr
 
 UseProc      ::= "use" STRING "with" WORD
 
-LoopProc     ::= "loop" StackExpr ( "with" WORD )? Block
+LoopProc     ::= "loop" StackExpr ( "with" Assignment )? Block
 
 WhenProc     ::= "when" StackExpr ( "loop" )? Block ( ElseProc )?
 

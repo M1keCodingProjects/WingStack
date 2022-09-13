@@ -152,12 +152,12 @@ export default class Parser {
         };
     }
 
-    LoopProc() { // LoopProc ::= "loop" StackExpr ( "with" WORD )? Block
+    LoopProc() { // LoopProc ::= "loop" StackExpr ( "with" Assignment )? Block
         const value = this.StackExpr().value;
         if(this._lookahead !== null && this._lookahead.type === "procKeyword") {
             if(this._eat("procKeyword").value !== "with") throw new SyntaxError("<loop> procedure expected optional keyword \"with\" after <StackExpr> and before <block> declaration");
             this._eat("SPACE");
-            return this._handCraftLoop(this._eat("WORD").value, value);
+            return this._handCraftLoop(this.Assignment(true), value);
         }
         
         return {
@@ -167,8 +167,8 @@ export default class Parser {
         }
     }
 
-    _handCraftLoop(target, value) {
-        this._eat("SPACE");
+    _handCraftLoop(assignmentToken, value) {
+        assignmentToken.value.value.push(1, { type : "StackOperand", value : "-" });
         const token = {
             type  : "when",
             value : [ 1 ],
@@ -176,15 +176,7 @@ export default class Parser {
                 {
                     ID    : this._lineID,
                     type  : ["Procedure", "make"],
-                    value : {
-                        ID     : this._lineID,
-                        type   : "Assignment",
-                        target : target,
-                        value  : {
-                            type  : "StackExpr",
-                            value : [ -1 ], // this init value allows to solve problems with the <next> procedure
-                        }
-                    },
+                    value : assignmentToken,
                 },
                 {
                     ID    : this._lineID,
@@ -198,10 +190,10 @@ export default class Parser {
         token.block[1].block.unshift({
             ID     : this._lineID,
             type   : "Assignment",
-            target : target,
+            target : assignmentToken.target,
             value  : {
                 type : "StackExpr", // necessary because it could be a block
-                value : [ { type: "StackCall", value : target }, 1, { type  : "StackOperand", value : "+" } ],
+                value : [ { type: "StackCall", value : assignmentToken.target }, 1, { type  : "StackOperand", value : "+" } ],
             },
         });
 
@@ -399,7 +391,7 @@ export default class Parser {
         let value;
         if(target[target.length - 1]?.type === "FuncCall") value = "omitted";
         
-        if(this._lookahead === null || this._lookahead.type === "NEWLINE" || this._lookahead.type === "}") {
+        if(this._lookahead === null || ["{", "}", "NEWLINE"].includes(this._lookahead.type)) {
             if(value !== "omitted") {
                 if(!canOmit) throw new SyntaxError(`at line ${this._lineID}: lazy assignment is only valid inside of a <make> procedure`);   
                 value = { type : "StackExpr", value : [0] };

@@ -1,2 +1,21 @@
 use "std GLib" with std
 
+make a = 4
+print "when-else time:"
+$time_exec_start
+when      a 0 == { print "0" }
+else when a 1 == { print "1" }
+else when a 2 == { print "2" }
+else when a 3 == { print "3" }
+else             { print  a  }
+$time_exec_end
+
+$time_exec_start
+options a {
+  when 0 { print "0" }
+  when 1 { print "1" }
+  when 2 { print "2" }
+  when 3 { print "3" }
+  else   { print  a  }
+}
+$time_exec_end

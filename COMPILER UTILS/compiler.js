@@ -141,6 +141,7 @@ export default class Compiler {
           case "Procedure"  : tokenizedLines.push(this.procKeywords[line.type.pop()](this, line)); break;
           case "Assignment" : tokenizedLines.push(new Assignment(line.ID, this, line));            break;
           case "FuncCall"   : tokenizedLines.push(new FuncCall(line.ID, this, line));              break;
+          case "Helper"     : tokenizedLines.push(new ProcClasses.HelperExpr(this, line));         break;
           default           : throw new Error(`AST contains line I cannot yet tokenize of type ${line.type}`);
         }
       }

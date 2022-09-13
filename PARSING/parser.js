@@ -52,6 +52,7 @@ export default class Parser {
         switch(this._lookahead.type) {
             case "procKeyword" : token = this.Procedure();  break;
             case "WORD"        : token = this._lookahead.value.slice(-1) === "(" ? this.FuncCall() : this.Assignment(); break;
+            case "$"           : token = this.Helper(); break;
             case "}"           : break;
             case "NEWLINE"     : break;
             default            : throw new CompileTimeError(this._lineID, `Unrecognized statement "${this._lookahead.value}" as any known <Expression> token type`);
@@ -337,7 +338,11 @@ export default class Parser {
 
     Helper() { // Helper ::= "$"WORD
         this._eat("$");
-        return this._eat("WORD");
+        return {
+            ID    : this._lineID,
+            type  : "Helper",
+            value : this._eat("WORD").value,
+        };
     }
 
     Block() { // Block ::= "{" Program "}"

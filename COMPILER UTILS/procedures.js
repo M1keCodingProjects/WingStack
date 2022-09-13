@@ -290,3 +290,27 @@ export class OptionsProc extends Proc {
         this.block.execute(evaluation);
     }
 }
+
+export class HelperExpr extends Proc {
+    constructor(compilerRef, line) {
+        super(compilerRef, line);
+    }
+
+    getArguments(line) {
+        const allowed_helper_expressions = {
+            time_exec_start : this.onTimeExecStart,
+            time_exec_end   : this.onTimeExecEnd,
+        };
+
+        if(!(line.value in allowed_helper_expressions)) throw new Errors.CompileTimeError(this.ID, `<Helper> token "${line.value}" is not a valid <Expression>`);
+        this.execute = allowed_helper_expressions[line.value];
+    }
+
+    onTimeExecStart() {
+        console.time("Global Helper Timer");
+    }
+
+    onTimeExecEnd() {
+        console.timeEnd("Global Helper Timer");
+    }
+}

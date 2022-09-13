@@ -2,7 +2,7 @@ Program      ::= ( Expression )*
 
 LineEnder    ::= "\n" | "}"
 
-Expression   ::= ( Procedure | Assignment | FuncCall ) LineEnder
+Expression   ::= ( Procedure | Assignment | FuncCall | Helper ) LineEnder
 
 Procedure    ::= PrintProc | MakeProc | WhenProc | ...
 
@@ -30,7 +30,7 @@ FlagProc     ::= "flag" StackExpr
 
 FuncProc     ::= "def" ( Helper )? WORD ( ( "with" | "=>" ) InputList )? Block
 
-OptionsProc  ::= "options" StackExpr Block
+MatchProc   ::= "match" StackExpr Block
 
 Helper       ::= "$"WORD
 

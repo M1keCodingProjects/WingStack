@@ -79,7 +79,7 @@ export default class Parser {
             case "when"    : this._eat("SPACE"); token = this.WhenProc();    break;
             case "flag"    : this._eat("SPACE"); token = this.FlagProc();    break;
             case "def"     : this._eat("SPACE"); token = this.FuncProc();    break;
-            case "options" : this._eat("SPACE"); token = this.OptionsProc(); break;
+            case "match"   : this._eat("SPACE"); token = this.MatchProc();   break;
             case "else"    : if(this.pendingWhenProc) this.pendingWhenProc.else = this.ElseProc();
                              else throw new CompileTimeError(this._lineID, "invalid <ElseProc>"); return;
 
@@ -328,7 +328,7 @@ export default class Parser {
         return token;
     }
 
-    OptionsProc() { // OptionsProc ::= "options" StackExpr Block
+    MatchProc() { // MatchProc ::= "match" StackExpr Block
         return {
             type  : "options",
             value : this.StackExpr().value,

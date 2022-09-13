@@ -12,7 +12,7 @@ def eval => char {
   when char dup ">" == swap "<" == or { ptr += char ">" == _coerce }
   when char dup "+" == swap "-" == or { stack[ ptr ] += char "+" == _coerce }
   
-  options char {
+  match char {
     when "." { print stack[ ptr ] }
     when "," { stack[ ptr ] = inp }
     when "[" { when stack[ ptr ] not { runID = search( 0 ) } }

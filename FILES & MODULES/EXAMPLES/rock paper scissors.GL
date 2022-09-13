@@ -12,7 +12,7 @@ when TRUE loop {
     make botMove = valids spill rand pop
     print "You chose " move ", the bot chose " botMove str
     
-    options move {
+    match move {
       when botMove    { print "It's a tie!" }
       when "rock"     { print std.?( botMove "paper" == "bot" "player" ) " wins"    str }
       when "paper"    { print std.?( botMove "scissors" == "bot" "player" ) " wins" str }

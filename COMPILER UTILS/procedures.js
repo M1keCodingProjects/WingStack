@@ -274,7 +274,7 @@ export class DefProc extends Proc {
     }
 }
 
-export class OptionsProc extends Proc {
+export class MatchProc extends Proc {
     constructor(compilerRef, line) {
         super(compilerRef, line);
     }

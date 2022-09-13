@@ -16,6 +16,7 @@
         <div id="ButtonsGUI">
             <button id="run_button" class="GUIbtn"></button>
             <button id="print_button" class="GUIbtn"></button>
+            <button id="clear_button" class="GUIbtn"></button>
         </div>
 
         <h1>GAMELANG : an overview</h1>
@@ -270,8 +271,8 @@
                                             \
                                             \make a = 5
                                             \when a loop {
-                                            \   print a # >> 5 >> 4 >> 3 >> 2 >> 1
-                                            \   a = a 1 -
+                                            \   print a   # >> 5 >> 4 >> 3 >> 2 >> 1
+                                            \   a = a 1 - # very important, otherwise the loop never stops!
                                             \}
                                         </pre></div><br>
                                     </div>
@@ -350,8 +351,10 @@
                                                     \   when 2 loop { ... } # this is WRONG: when procedures used as cases cannot loop
                                                     \   when 3 { ... }    
                                                     \}
-                                                </pre></div><br>
+                                                </pre></div>
                                             </li>
+
+                                            <li><strong>There cannot be two or more cases that evaluate to the same value</strong></li>
                                         </ul>
 
                                         Here's an example with correct syntax to clarify what it should look like:<br>
@@ -370,22 +373,81 @@
                                         <strong>Syntax: </strong><font class="definition">&ltLoop&gt := loop &ltStackExpression&gt &ltBlock&gt</font><br>
                                         <strong>Usage:  </strong> Iterative statement, encapsulates code to be run a set number of times.<br><br>
 
-                                        Examples:<br>
+                                        This basic procedure implements the age old "for" loop with a simpler syntax, asking you to specify directly the number of times your
+                                        loop is supposed to run via its stack expression argument. This obviously implies that said argument must evaluate to a single numeric value to
+                                        classify as valid.<br><br>
+
+                                        Keep in mind that all the blocks we've seen so far act the same as far as scope privacy is concerned, which means that declaring variables inside of
+                                        loops does not result in any collision, as all inner variables are freed before the next iteration starts:<br>
                                         <div class="codeSnippet"><pre>
-                                            
+                                            \make i
+                                            \loop 5 {
+                                            \   make y = i 3 *   
+                                            \   print y # >> 0 >> 3 >> 6 >> 9 >> 12
+                                            \   i = i 1 +
+                                            \}
                                         </pre></div><br>
-                                        ??
+                                        
+                                        <div class="deeper">Going deeper:</div> To be completely fair the more common for loop approach where you define an iterator variable and tell
+                                        the loop where to start and stop is not all that terrible, yet having a very straightforward and readable syntax is also very compelling.
+                                        The optional syntax <font class="definition">&ltLoop&gt := loop &ltStackExpression&gt with &ltAssignment&gt &ltBlock&gt</font> allows you to get the
+                                        best of both worlds by implicitly declaring a variable, entirely private within the loop, that will automatically count up by one after every
+                                        iteration. This is still a bit limited, but it works well for the most common cases. After all, it's just syntax sugar that disappears during the
+                                        parsing phase, and this is the kind of conversion that you're getting:<br>
+                                        <div class="codeSnippet"><pre>
+                                            \loop 5 with i = 2 { print i }
+                                            \
+                                            \# is converted to..
+                                            \
+                                            \when 1 {
+                                            \   make i = 1 # the initial value is 1 lower than expected, because we update i at the beginning of every iteration
+                                            \   loop 5 {
+                                            \      i = i 1 + # and we have to update it here to make sure the user cannot tamper with this process before it happens
+                                            \      print i
+                                            \   }
+                                            \}
+                                        </pre></div><br>
+
+                                        That always-true <font class="pk">when</font> procedure around the loop acts as a container, making sure that "i" is both deleted after the loop but
+                                        also created with a depth unique to itself so that there is no risk of name collisions. This is important, because the actual syntax makes it seem
+                                        like "i" exists only inside of the loop, and this is the only way to convey that.<br>
+                                        The assignment argument can be implicit and has to be strict, just like in any <font class="pk">make</font> procedure, and it cannot be globalized.<br><br>
+
+                                        To close the chapter neatly, let's look at a famous example that is also featured in the <strong>\EXAMPLES</strong> folder for this project,
+                                        although with a slightly different implementation:<br>
+                                        <div class="codeSnippet"><pre>
+                                            \# FizzBuzz!
+                                            \
+                                            \loop 99 with i = 1 { # when trying this yourself, mind that the % operator is not readily available
+                                            \   make buffer = ""
+                                            \   when i 3 % 0 ==   { buffer = "Fizz" }
+                                            \   when i 5 % 0 ==   { buffer = buffer "Buzz" + }
+                                            \   when buffer "" == { buffer = i }
+                                            \   print buffer
+                                            \}
+                                        </pre></div>
                                     </div>
 
                                     <div id="next" style="display: none">
                                         <strong>Syntax: </strong><font class="definition">&ltNext&gt := next</font><br>
                                         <strong>Usage:  </strong> Inside of an iterative statement it skips to the next iteration.<br><br>
 
-                                        Examples:<br>
+                                        A very straightforward "continue" implementation that cannot be used outside of loops. A couple of examples:<br>
                                         <div class="codeSnippet"><pre>
-                                            
+                                            \# print only positive numbers
+                                            \make nums = 3 -5 4 12 -8 0.4 0 13
+                                            \
+                                            \loop nums range with i { # the "range" stack operator tells you the length of a LIST item, but it's not readily available 
+                                            \   make n = nums[ i ] # don't panic! this is a sneak peek into list indexing
+                                            \   when n 0 &lt;= { next }
+                                            \   print n
+                                            \}
                                         </pre></div><br>
-                                        ??
+                                        
+                                        <div class="deeper">Going deeper:</div> As you can see, the <font class="pk">next</font> procedure in the example above is not <strong>directly</strong> inside of a looping
+                                        block, but as long as somewhere in the nesting such a structure exists, then it will work. At runtime, the compiler keeps track of all
+                                        currently open loops, and the one affected by control-flow procedures like <font class="pk">next</font> and <font class="pk">exit</font>
+                                        (next chapter) is the one that's closest to it, which is always the most "inner" one in code and the top one in the stack.
                                     </div>
 
                                     <div id="exit" style="display: none">

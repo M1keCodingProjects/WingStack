@@ -49,6 +49,10 @@ export default class TextEditor {
       return this.text.map(l => l.join("")).join("\n").replace("\\n", "\n");
     }
 
+    clearText() {
+      this.caret.flush();
+    }
+
     set_textSize(ctx, size) {
         ctx.font = `bold ${size}pt monospace`;
     }
@@ -292,12 +296,14 @@ class Caret {
       }
     }
     
-    flush() { //Unused
+    flush() {
       if(this.selection) this.delete_selection();
-      this.container.print(this.container.text.map(l => l.join("")).join(""));
       this.container.text = [[]];
       this.x = 0;
       this.y = 0;
+      this.updateLateralScroll();
+      this.updateVerticalScroll();
+      this.calibrate();
     }
     
     go_newLine() {

@@ -16,10 +16,8 @@ const GLC = new Compiler(usedFilePath, preloadedModuleList);
 const textEditor = new TextEditor(await loadFile(usedFilePath));
 
 document.getElementById("run_button").onclick   = (() => GLC.run(textEditor.printText()));
-document.getElementById("print_button").onclick = (() => {
-  console.clear();
-  console.log(textEditor.printText());
-});
+document.getElementById("print_button").onclick = (() => { console.clear(); console.log(textEditor.printText()); });
+document.getElementById("clear_button").onclick = (() => textEditor.clearText());
 
 textEditor.begin_draw();
 

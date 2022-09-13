@@ -182,12 +182,16 @@ canvas {
     background-color: #222;
 }
 
+#ButtonsGUI {
+    display: table;
+}
+
 .GUIbtn {
     background-color: #244;
     border: 2px solid #133;
     width: 5em;
     height: 2.5em;
-    margin-top: 0.4em;
+    margin-top: 1em;
     margin-right: 0.6em;
     position: relative;
     transition: 0.3s;
@@ -211,6 +215,16 @@ canvas {
 
 #print_button:hover::before {
     content: url(./ASSETS/print_hover.svg);
+}
+
+#clear_button::before {
+    content: url(./ASSETS/clear.svg);
+    width: 45%;
+    top: 2%;
+}
+
+#clear_button:hover::before {
+    content: url(./ASSETS/clear_hover.svg);
 }
 
 .GUIbtn::before {

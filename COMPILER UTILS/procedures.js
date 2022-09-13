@@ -286,7 +286,7 @@ export class MatchProc extends Proc {
 
     execute() {
         const evaluation = this.stackExpr.execute();
-        if(evaluation instanceof Object) throw new Errors.RuntimeError(this.ID, `an <OptionsProc> <StackExpression> argument can only evaluate to a single comparable (NUMBER or STRING) value`);
+        if(evaluation instanceof Object) throw new Errors.RuntimeError(this.ID, `a <MatchProc> <StackExpression> argument can only evaluate to a single comparable (NUMBER or STRING) value`);
         this.block.execute(evaluation);
     }
 }

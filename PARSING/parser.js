@@ -330,7 +330,7 @@ export default class Parser {
 
     MatchProc() { // MatchProc ::= "match" StackExpr Block
         return {
-            type  : "options",
+            type  : "match",
             value : this.StackExpr().value,
             block : this.Block().value,
         };

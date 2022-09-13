@@ -206,27 +206,24 @@ export class OptionsBlockArg extends BlockArg {
         super.argumentize(linesList);
         for(let i = 0; i < this.lines.length; i++) {
             const line = this.lines[i];
-            if(!(line.constructor.name === "WhenProc")) throw new Errors.CompileTimeError(this.ID, "an <OptionsProc> block can only contain <WhenProc> expressions and an optional <ElseProc>");
-            if(line.loops) throw new Errors.CompileTimeError(this.ID, "<WhenProc> expressions inside of an <OptionsProc> block cannot loop");
+            if(!(line.constructor.name === "WhenProc")) throw new Errors.CompileTimeError(this.ID, "a <MatchProc> block can only contain <WhenProc> expressions and an optional <ElseProc>");
+            if(line.loops) throw new Errors.CompileTimeError(this.ID, "<WhenProc> expressions inside of a <MatchProc> block cannot loop");
             if(line.else) {
-                if(i < this.lines.length - 1) throw new Errors.CompileTimeError(this.ID, "an <OptionsProc> block can only contain an optional <ElseProc> as the final case");
-                if(line.else.constructor.name === "WhenProc") throw new Errors.CompileTimeError(this.ID, "an <ElseProc> option inside of an <OptionsProc> block cannot have a <StackExpression> argument");
+                if(i < this.lines.length - 1) throw new Errors.CompileTimeError(this.ID, "a <MatchProc> block can only contain an optional <ElseProc> as the final case");
+                if(line.else.constructor.name === "WhenProc") throw new Errors.CompileTimeError(this.ID, "an <ElseProc> option inside of a <MatchProc> block cannot have a <StackExpression> argument");
                 this.default = line.else;
             }
         }
-
-        this.eqOp = new Eqs_stackOp(this.ID);
-        this.stack = new Stack(this.ID);
     }
 
     execute(evaluation) {
+        const evals = [];
         for(const line of this.lines) {
             const caseEval = line.stackExpr.execute();
-            if(caseEval instanceof Object) throw new Errors.RuntimeError(this.ID, `a <WhenProc> <StackExpression> argument can only evaluate to a single comparable (NUMBER or STRING) value when part of an <OptionsProc>`);
-            this.stack.data.push(evaluation);
-            this.stack.data.push(caseEval);
-            this.eqOp.execute(this.stack);
-            if(this.stack.pop() === 1) return line.block.execute(); // unused return value
+            if(evals.includes(caseEval)) throw new Errors.RuntimeError(this.ID, `different <MatchProc> cases cannot evaluate to the same value, found "${caseEval}" twice`);
+            if(caseEval instanceof Object) throw new Errors.RuntimeError(this.ID, `a <WhenProc> <StackExpression> argument can only evaluate to a single comparable (NUMBER or STRING) value when part of a <MatchProc>`);
+            evals.push(caseEval);
+            if(caseEval === evaluation) return line.block.execute(); // unused return value
         }
         //if we get here, then default can run:
         if(this.default) this.default.execute();

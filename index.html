@@ -77,7 +77,7 @@
                                     <li class="chapter pk">free    </strong></li>
                                     <li class="chapter pk">when    </strong></li>
                                     <li class="chapter pk">else    </strong></li>
-                                    <li class="chapter pk">options </strong></li>
+                                    <li class="chapter pk">match   </strong></li>
                                     <li class="chapter pk">loop    </strong></li>
                                     <li class="chapter pk">next    </strong></li>
                                     <li class="chapter pk">exit    </strong></li>
@@ -311,11 +311,11 @@
                                         </pre></div><br>
                                     </div>
 
-                                    <div id="options" style="display: none">
-                                        <strong>Syntax: </strong><font class="definition">&ltOptions&gt := options &ltStackExpression&gt &ltBlock&gt</font><br>
+                                    <div id="match" style="display: none">
+                                        <strong>Syntax: </strong><font class="definition">&ltMatch&gt := match &ltStackExpression&gt &ltBlock&gt</font><br>
                                         <strong>Usage:  </strong> Switch statement, encapsulates conditional statements that act as alternatives for a value. The matching conditional statement will run.<br><br>
 
-                                        The <font class="pk">options</font> procedure is a relatively new addition to the language, still it manages to handle switch-like logic recycling familiar syntax and
+                                        The <font class="pk">match</font> procedure is a relatively new addition to the language, still it manages to handle switch-like logic recycling familiar syntax and
                                         arguments from other very common procedures. To achieve this, some strict requirements are to be met to ensure that this procedure's arguments
                                         are valid:
                                         <ul>
@@ -357,7 +357,7 @@
                                         Here's an example with correct syntax to clarify what it should look like:<br>
                                         <div class="codeSnippet"><pre>
                                             \make i = 1
-                                            \options i {
+                                            \match i {
                                             \   when 0 { print "i was zero" }
                                             \   when 1 { print "i was one"  } # this will run
                                             \   when 2 { print "i was two"  }

@@ -447,7 +447,7 @@
                                         <div class="deeper">Going deeper:</div> As you can see, the <font class="pk">next</font> procedure in the example above is not <strong>directly</strong> inside of a looping
                                         block, but as long as somewhere in the nesting such a structure exists, then it will work. At runtime, the compiler keeps track of all
                                         currently open loops, and the one affected by control-flow procedures like <font class="pk">next</font> and <font class="pk">exit</font>
-                                        (next chapter) is the one that's closest to it, which is always the most "inner" one in code and the top one in the stack.
+                                        (next chapter) is the one that's closest to it, which is always the inner most one in code and the top one in the stack.
                                     </div>
 
                                     <div id="exit" style="display: none">
@@ -455,9 +455,31 @@
                                         <strong>Usage:  </strong> Inside of an iterative statement it forcefully terminates it, inside of a function
                                         it acts as a return statement.<br><br>
 
-                                        Examples:<br>
+                                        The <font class="pk">exit</font> procedure combines the behaviour of what many languages call <strong>break</strong> and <strong>return</strong>,
+                                        two processes that are usually left distinct, in a way that doesn't feel arbitrary and that makes it impossible to confuse them. But why have them
+                                        together in the first place? Think about it: all "break" and "return" are doing is terminating the execution of a block, be it a function or a loop,
+                                        which means that at their core they can both be described as an "exiting" procedure.<br>
+                                        The <font class="pk">exit</font> procedure is obviously not allowed outside of loops or functions; at runtime the program keeps track of all open blocks
+                                        that can be affected by the <font class="pk">exit</font> procedure, which when executed will terminate the inner most one. This alone should be enough
+                                        to distinguish the two behaviours confidently, but the presence of an optional <strong>stack expression</strong> argument and the strict rule behind its
+                                        use make it even easier. At this point, we still have no idea how functions work in this language, but it seems pretty reasonable to think that their
+                                        exit value ends up in a stack expression once the function has terminated its call. Since null values aren't allowed, that means that a valid stack
+                                        expression argument <strong>cannot</strong> be omitted when using the <font class="pk">exit</font> procedure to return from a function. On the other hand,
+                                        when trying to break out of a loop there is no reason at all to carry around a value, and thus the stack expression argument is prohibited for the break
+                                        behaviour.<br><br> 
+                                        Let's clear things up with a couple examples:<br>
                                         <div class="codeSnippet"><pre>
-                                            
+                                            \{ # imagine this is a function's block
+                                            \   make a = 2
+                                            \   when a loop {
+                                            \      print a              # >> 2 >> 3 >> 4 >> 5 >> 6
+                                            \      a = a 1 +
+                                            \      when a 7 >= { exit } # the looping block is closer, this exits from it
+                                            \                           # this exit cannot have a stack expression argument
+                                            \   }
+                                            \
+                                            \   exit a # the exit value of this function will be 7
+                                            \}
                                         </pre></div><br>
                                         ??
                                     </div>

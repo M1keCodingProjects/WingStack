@@ -3,7 +3,7 @@ use "basic stack ops" with bso
 
 def typecheck => el typ msg {
   make elType = el type
-  when elType typ != { flag msg " expected " typ " but got " elType " instead." str }
+  when elType typ != { print msg " expected " typ " but got " elType " instead." str with "error" }
   exit el
 }
 

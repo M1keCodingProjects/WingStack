@@ -31,7 +31,7 @@
 
             <div id="section">
                 <p id="sectionTitle">Types</p>
-                GAMELANG is a dynamicly typed, interpreted and synchronous language with only four proper primitive types:
+                GAMELANG is a dynamically typed, interpreted and synchronous language with only four proper primitive types:
                 <ul>
                     <li>
                         <strong>NUMBER</strong> - GAMELANG does not distinguish between numbers and booleans, namely:
@@ -84,9 +84,8 @@
                                     <li class="chapter pk">exit    </strong></li>
                                     <li class="chapter pk">def     </strong></li>
                                     <li class="chapter pk">use     </strong></li>
-                                    <li class="chapter pk">with    </strong></li>
                                     <li class="chapter pk">replace </strong></li>
-                                    <li class="chapter pk">flag    </strong></li>
+                                    <li class="chapter pk">with    </strong></li>
                                 </ul>
                             </td>
 
@@ -147,10 +146,14 @@
                                                     <li><u>underline</u></li>
                                                 </ul>
                                             </li>
+                                            <li>A style-string containing only the word "error" is also valid, and allows the user to terminate the program's execution by throwing an exception
+                                                to the console.
+                                            </li>
                                         </ul>
-                                        Here's how an example featuring all the styling options might look like:
+                                        Here's how a print statement featuring all the styling options might look like:
                                         <div class="codeSnippet"><pre>
                                             \print "Hello, world!" with "red bold italic underline"
+                                            \print "something went wrong" with "error" # this throws a so-called "Flag Error"
                                         </pre></div>
                                     </div>
 
@@ -506,16 +509,6 @@
                                         ??
                                     </div>
 
-                                    <div id="with" style="display: none">
-                                        <strong>Usage:</strong> As argument.<br><br>
-
-                                        Examples:<br>
-                                        <div class="codeSnippet"><pre>
-                                            
-                                        </pre></div><br>
-                                        ??
-                                    </div>
-
                                     <div id="replace" style="display: none">
                                         <strong>Syntax: </strong><font class="definition">&ltReplace&gt := replace WORD ( with | = ) &ltStackExpression&gt</font><br>
                                         <strong>Usage:  </strong> Creates a macro stack operator.<br><br>
@@ -527,15 +520,27 @@
                                         ??
                                     </div>
 
-                                    <div id="flag" style="display: none">
-                                        <strong>Syntax: </strong><font class="definition">&ltFlag&gt := flag &ltStackExpression&gt </font><br>
-                                        <strong>Usage:  </strong> Raises an exception to the console.<br><br>
+                                    <div id="with" style="display: none">
+                                        <strong>Usage:</strong> As argument.<br><br>
 
-                                        Examples:<br>
+                                        The <font class="pk">with</font> keyword is the only one that doesn't have an associated procedure and that can only be used as an argument.<br><br>
+
+                                        The following examples show all the cases where with can be used:<br>
                                         <div class="codeSnippet"><pre>
-                                            
-                                        </pre></div><br>
-                                        ??
+                                            \print "Hello, world!" with "#f7df1e" # styled print statement
+                                            \
+                                            \loop 5 with i {                      # loop-with procedure
+                                            \   print i
+                                            \}
+                                            \
+                                            \def square with n {                  # argumented function
+                                            \   exit n 2 **
+                                            \}
+                                            \
+                                            \use "moduleName" with label          # use procedure
+                                            \
+                                            \replace sqrt with 0.5 **             # replace procedure
+                                        </pre></div>
                                     </div>
                                 </div></div>
                             </td>

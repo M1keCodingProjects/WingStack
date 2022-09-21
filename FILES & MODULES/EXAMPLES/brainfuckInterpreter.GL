@@ -7,7 +7,7 @@ replace _coerce with 2 * 1 -
 make tokens = ">" "<" "." "," "[" "]" "+" "-"
 
 def eval => char {
-  when lst.getPos( tokens char ) -1 == { flag "Unrecognized token " char str }
+  when lst.getPos( tokens char ) -1 == { print "Unrecognized token " char str with "error" }
   
   when char dup ">" == swap "<" == or { ptr += char ">" == _coerce }
   when char dup "+" == swap "-" == or { stack[ ptr ] += char "+" == _coerce }
@@ -39,7 +39,7 @@ make loopIDs   = 0 pack pack
 loop text range with i {
   when text[ i ] "[" == { openLoops = openLoops spill i }
   when text[ i ] "]" == {
-    when openLoops range 2 < { flag "Error: too many ] for the amount of [ present" }
+    when openLoops range 2 < { print "Error: too many ] for the amount of [ present" with "error" }
     loopIDs[ loopIDs range 1 - ] = openLoops[ openLoops range 1 - ] i pack
     openLoops = openLoops spill drop
   }
@@ -47,7 +47,7 @@ loop text range with i {
 
 when loopIDs range 1 > { loopIDs = loopIDs spill rot< drop }
 
-when openLoops type "list" == { flag "Error: not enough ] for the amount of [ present" }
+when openLoops type "list" == { print "Error: not enough ] for the amount of [ present" with "error" }
 
 when runID textSize < loop {
   eval( text[ runID ] )

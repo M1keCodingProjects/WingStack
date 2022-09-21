@@ -132,7 +132,7 @@ li {
     --y : 0;
     background-color: #122;
     border: 3px solid #3f605a;
-    height: 23em;
+    height: 21em;
     width: 100%;
     position: relative;
 }
@@ -149,7 +149,7 @@ li {
 	content: '';
 	position: absolute;
 	left: 0;
-	top: calc(.5% + var(--y) * (100% / 13.5));
+	top: calc(.5% + var(--y) * (100% / 12.7));
 	width: 0;
 	height: 0;
 	border: 0.8em solid transparent;

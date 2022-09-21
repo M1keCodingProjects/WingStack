@@ -74,7 +74,7 @@ def rangeList => from step to {
   make arr = from pack
   when step not { exit arr }
   when step 0 < dup not from to 2dup < rot> > and rot> and or { # ((step>=0)&&(from>to))||((from<to)&&(step<0))
-    flag "Invalid range: from " from " to " to " with step = " step str
+    print "Invalid range: from " from " to " to " with step = " step str with "error"
   }
   
   loop to from - step // { arr = arr spill dup step + }

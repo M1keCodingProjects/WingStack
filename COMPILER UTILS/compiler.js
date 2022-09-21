@@ -16,7 +16,6 @@ export default class Compiler {
           when    : ((compilerRef, line) => new ProcClasses.WhenProc(compilerRef,    line)),
           next    : ((compilerRef, line) => new ProcClasses.NextProc(compilerRef,    line)),
           exit    : ((compilerRef, line) => new ProcClasses.ExitProc(compilerRef,    line)),
-          flag    : ((compilerRef, line) => new ProcClasses.FlagProc(compilerRef,    line)),
           def     : ((compilerRef, line) => new ProcClasses.DefProc(compilerRef,     line)),
           match   : ((compilerRef, line) => new ProcClasses.MatchProc(compilerRef,   line)),
           else    : 0,

@@ -26,8 +26,6 @@ NextProc     ::= "next"
 
 ExitProc     ::= "exit" ( StackExpr )?
 
-FlagProc     ::= "flag" StackExpr
-
 FuncProc     ::= "def" ( Helper )? WORD ( ( "with" | "=>" ) InputList )? Block
 
 MatchProc   ::= "match" StackExpr Block

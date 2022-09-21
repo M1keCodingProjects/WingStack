@@ -24,7 +24,7 @@
     },
 
     "keywords" : {
-        "#FFD53D" : ["print", "make", "loop", "def", "when", "free", "use", "replace", "else", "with", "exit", "next", "flag", "match"],
+        "#FFD53D" : ["print", "make", "loop", "def", "when", "free", "use", "replace", "else", "with", "exit", "next", "match"],
         "#18F21F" : ["dup", "size", "rot<", "rot>", "swap", "drop", "inp", "spill", "rand", "over", "type", "pop", "and", "or", "xor", "not", "num", "str", "pack", "obj"],
         "#DC64AA" : [ "PI", "INF", "TRUE", "FALSE"],
         "#4F14FF" : ["me"]

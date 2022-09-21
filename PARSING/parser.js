@@ -278,13 +278,6 @@ export default class Parser {
         }
     }
 
-    FlagProc() { // FlagProc ::= "flag" StackExpr
-        return {
-            type  : "flag",
-            value : this.StackExpr().value,
-        }
-    }
-
     FuncProc() { // FuncProc ::= "def" ( Helper )? WORD ( ( "with" | "=>" ) InputList )? Block
         const name = this._eat("WORD").value;
         this._eat("SPACE");

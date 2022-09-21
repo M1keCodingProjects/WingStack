@@ -38,7 +38,13 @@ export class PrintProc extends Proc {
             if(styleArray[0].length !== 7) throw new Errors.CompileTimeError(this.ID, `invalid style string : hex-base colors must have exactly 6 digits`);
             if(isNaN(Number(`0x${styleArray[0].slice(1)}`))) throw new Errors.CompileTimeError(this.ID, `invalid style string : hex-base colors must be valid hex numbers`);
         }
-        else if(!this.colorOptions.includes(styleArray[0])) throw new Errors.CompileTimeError(this.ID, `invalid style string : "${styleArray[0]}" is not an available color`);
+        else if(!this.colorOptions.includes(styleArray[0])) {
+            if(styleArray[0] === "error") {
+                if(styleArray.length != 1) throw new Errors.CompileTimeError(this.ID, "invalid style string : cannot append any other markers after \"error\"");
+                return "error";
+            }
+            throw new Errors.CompileTimeError(this.ID, `invalid style string : "${styleArray[0]}" is not an available color`);
+        }
         evaluation = `color : ${styleArray.shift()};`
 
         for(const style of styleArray) {
@@ -50,7 +56,12 @@ export class PrintProc extends Proc {
 
     execute() {
         const evaluation = this.stackExpr.execute();
-        if(this.style) console.log(`%c${evaluation}`, this.applyStyle());
+        if(this.style) {
+            if(typeof evaluation !== "string") throw new Errors.RuntimeError(this.ID, `cannot style <StackExpression> result, expected STRING but got ${StackValue.prototype.get_type(evaluation).toUpperCase()}`);
+            const style = this.applyStyle();
+            if(style === "error") throw new Errors.FlagError(this.ID, evaluation);
+            else console.log(`%c${evaluation}`, style);
+        }
         else console.log(evaluation);
     }
 }
@@ -218,22 +229,6 @@ export class ExitProc extends Proc {
             if(!this.compiler.openLoops.length) throw new Errors.RuntimeError(this.ID, `cannot use <exit> procedure outside of a looping block`);
             this.compiler.exitStatus = true;
         }
-    }
-}
-
-export class FlagProc extends Proc {
-    constructor(compilerRef, line) {
-        super(compilerRef, line);
-    }
-
-    getArguments(line) {
-        this.stackExpr = new ArgClasses.StackExprArg(this.ID, this.compiler, line.value);
-    }
-
-    execute() {
-        const message = this.stackExpr.execute();
-        if(StackValue.prototype.get_type(message) !== "string") throw new Errors.RuntimeError(this.ID, "this <flagProc> <stackExpression> evaluated to a result not compatible with an error message: must be STRING");
-        throw new Errors.FlagError(this.ID, message);
     }
 }
 

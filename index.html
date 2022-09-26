@@ -117,7 +117,7 @@
                                             it makes for an original and compelling coding style.
                                             <br><br>
                                             
-                                            2) All the items in the stack expression are evaluated in writing order. A direct consequence of using a stack to store values is what's known in
+                                            2) All the items in the stack expression (generally referred to as "stack elements") are evaluated in writing order. A direct consequence of using a stack to store values is what's known in
                                             Mathematics as <strong>Reverse Polish Notation</strong>, a particular way of writing expressions where each operator goes after all of its operands.<br>
                                             This means that to perform an addition we must first push both inputs on the stack, and only then the "+" follows.<br>
                                             Reverse polish notation ensures linear priority in evaluating mathematical and logical operations, making them always inequivocably objective.
@@ -158,7 +158,7 @@
                                     </div>
 
                                     <div id="make" style="display: none">
-                                        <strong>Syntax: </strong><font class="definition">&ltMake&gt := make &ltAssignment&gt </font><br>
+                                        <strong>Syntax: </strong><font class="definition">&ltMake&gt := make ( &ltAssignment&gt | &ltBlock&gt )</font><br>
                                         <strong>Usage:  </strong> Creates a new variable.<br><br>
 
                                         If you take a peek further down in this chapter about expressions, you will find that assignments are, just like procedures,
@@ -193,6 +193,8 @@
                                             \make b = 0 # this is equivalent to the previous line
                                         </pre></div><br>
 
+                                        To avoid any confusion: the reason why the argument of a <font class="pk">make</font> procedure can also be a block has to do with how <strong>object</strong>
+                                        type variables are declared, which will be talked about in detail in the chapter about the <font class="pk">use</font> procedure.<br><br>
                                         One last thing: we've learned that we can control both the name and the value of any variable we create, however variables also have a third parameter
                                         called "depth", which simply refers to the <strong>scope</strong> they were created in. So far, all the variables we can declare are part of the so-called
                                         <strong>global</strong> scope, because to be fair we don't even know what a scope is... let's change that. A scope is simply the space enclosed by a 
@@ -440,7 +442,7 @@
                                             \# print only positive numbers
                                             \make nums = 3 -5 4 12 -8 0.4 0 13
                                             \
-                                            \loop nums range with i { # the "range" stack operator tells you the length of a LIST item, but it's not readily available 
+                                            \loop nums range with i { # the "range" stack operator tells you the length of a LIST or STRING item, but it's not readily available 
                                             \   make n = nums[ i ] # don't panic! this is a sneak peek into list indexing
                                             \   when n 0 &lt;= { next }
                                             \   print n
@@ -488,14 +490,70 @@
                                     </div>
 
                                     <div id="def" style="display: none">
-                                        <strong>Syntax: </strong><font class="definition">&ltDefine&gt := def WORD ( ( => | with ) &ltStackExpression&gt )? &ltBlock&gt</font><br>
+                                        <strong>Syntax: </strong><font class="definition">&ltDefine&gt := def WORD ( ( => | with ) &ltInputStream&gt )? &ltBlock&gt</font><br>
                                         <strong>Usage:  </strong> Defines a function, encapsulating code to be run when a call is executed.<br><br>
 
-                                        Examples:<br>
+                                        Running the <font class="pk">def</font> procedure (declarative statement) of a function is in many ways equivalent to creating a variable: the
+                                        name you chose for your function, represented syntactically by the <strong>WORD</strong> argument, must be unique inside of the scope where the
+                                        function is defined, as such no variable or other function can share both this name and depth. Similarly, if a function is defined privately it
+                                        will be deleted together with all the variables with the same depth once the scope closes. Besides all that, it is not possible to refer to a
+                                        function without <strong>calling</strong> it and to treat it like a variable type. In short, the language does not support higher-order operations.<br>
                                         <div class="codeSnippet"><pre>
-                                            
+                                            \def sayHi {
+                                            \   def doNothing { exit 0 }
+                                            \   doNothing( ) # fine 
+                                            \   exit "Hello, World!"
+                                            \}
+                                            \
+                                            \make  sayHi    # Error! name already used in scope
+                                            \print sayHi    # Error! "sayHi" is a function
+                                            \print sayHi( ) # >> "Hello, World!"
+                                            \doNothing( )   # Error! this function is not defined globally
                                         </pre></div><br>
-                                        ??
+
+                                        In the event of a proper call, the code inside of the function's block is executed until an <font class="pk">exit</font> is reached, where the return
+                                        value is evaluated and pushed to the stack expression from which the function was called. By looking ahead in the documentation, you may notice however
+                                        that function calls are also valid expressions, and in that case the return value is never read and is simply lost. This is why it's perfectly fine for
+                                        a function to "not return" explicitly with a value: once there is no more code to be run in the block the function will exit anyway; keep in mind though
+                                        that if the function call <strong>was</strong> in fact part of a stack expression, then a return value is to be expected, which if not provided will cause
+                                        an error. This is why providing functions with valid "exit paths" is often recommended, just to be safe.<br><br>
+
+                                        If a function is supposed to take some values as inputs, it's necessary to interpose a "=>" symbol (or alternatively the <font class="pk">with</font>
+                                        keyword) followed by an <strong>InputStream</strong> between the procedure's name and block arguments. An input stream is simply a list of WORD arguments
+                                        that will become names for variables, private inside the function, holding each the corrisponding value taken in input by the function call, in the same
+                                        order as they were passed. If the number of arguments passed to the function call does not match that of the input stream, an error occurs.<br>
+                                        <div class="codeSnippet"><pre>
+                                            \# the following function returns double its input n except when n is 3, where it prints "Foo"  
+                                            \def randomFunc => n {
+                                            \   when n 3 == { print "Foo" } # here the function doesn't exit with a value
+                                            \   else { exit n 2 * }
+                                            \}
+                                            \
+                                            \randomFunc( 3 ) # when called as an expression, this function will never fail
+                                            \make a = 12 randomFunc( 3 ) - # but it will here!
+                                        </pre></div><br>
+                                        
+                                        Functions can also be methods of object-type variables, that will be discussed in the next chapter, and can call each-other or themselves recursively:<br>
+                                        <div class="codeSnippet"><pre>
+                                            \def fib => n {
+                                            \   when n 2 &lt; { exit 1 }
+                                            \   exit fib( n 1 - ) fib( n 2 - ) +
+                                            \}
+                                            \
+                                            \print fib( 12 ) # >> 233
+                                        </pre></div><br>
+
+                                        <div class="deeper">Going deeper:</div> by passing a list-type variable to a function as its only argument and appending a "@" to the beginning of the
+                                        list's name, you create what is known as an iterator: the function will automatically call itself once for every item in the list, returning a list containing
+                                        all the results, in order, at the end. Obviously, the function itself must only accept one argument:
+                                        <div class="codeSnippet"><pre>
+                                            \def stringify => n {
+                                            \   exit n "" +
+                                            \}
+                                            \
+                                            \make arr = 11 2 -3 4 45
+                                            \print stringify( @arr ) # >> ["11", "2", "-3", "4", "45"]
+                                        </pre></div>
                                     </div>
 
                                     <div id="use" style="display: none">

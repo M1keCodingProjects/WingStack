@@ -1,0 +1,39 @@
+:root {
+    --console-bg-col: #1a1a1d;
+}
+
+.consoleContainer {
+    width: 30rem;
+    height: 100%;
+    background: var(--gui-bg-col);
+}
+
+.consoleContainer > * {
+    margin-inline: .25rem;
+}
+
+.consoleContainer .console-header {
+    text-align: center;
+    font-size: 1.5rem;
+    padding: .5rem;
+    margin-bottom: .25rem;
+    margin-top: 0;
+}
+
+.consoleContainer .console-log {
+    background: var(--console-bg-col);
+    color: var(--comment-col);
+    flex-grow: 1;
+    margin-bottom: 0;
+    padding-inline: .5rem;
+    padding-block: .25rem;
+    line-height: 1.5rem;
+    overflow: auto;
+    white-space: nowrap;
+}
+
+.consoleContainer .console-input {
+    width: calc(100% - .5rem);
+    background: var(--console-bg-col);
+    margin-bottom: .25rem;
+}

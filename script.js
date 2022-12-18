@@ -1,99 +1,43 @@
-import TextEditor from "./TEXT EDITOR/texteditor.js";
+import Console     from './EDITOR/console.js';
+import Editor      from './EDITOR/editor.js';
+import FileManager from './FILES/fileManager.js';
+
 import Compiler   from "./COMPILER UTILS/compiler.js";
-import { loadFile } from "./FILES & MODULES/file loader.js";
+import { loadFile } from "./FILES/file loader.js";
 
 const preloadedModuleList = {
-    "basic stack ops"   : (await(await fetch(`./FILES & MODULES/basic stack ops.GL`)).text()).split("\r").join(""),
-    "std GLib"          : (await(await fetch(`./FILES & MODULES/std GLib.GL`)).text()).split("\r").join(""),
-    "std GList"         : (await(await fetch(`./FILES & MODULES/std GList.GL`)).text()).split("\r").join(""),
-    "Vector2D"          : (await(await fetch(`./FILES & MODULES/Vector2D.GL`)).text()).split("\r").join(""),
-    //add here all the files you intend to load with the "use" procedure.
+    "basic stack ops"   : (await(await fetch(`./FILES/basic stack ops.GL`)).text()).split("\r").join(""),
+    "std GLib"          : (await(await fetch(`./FILES/std GLib.GL`)).text()).split("\r").join(""),
+    "std GList"         : (await(await fetch(`./FILES/std GList.GL`)).text()).split("\r").join(""),
+    "Vector2D"          : (await(await fetch(`./FILES/Vector2D.GL`)).text()).split("\r").join(""),
 };
-
 const usedFilePath = "EXAMPLES/presentation";
 
 const GLC = new Compiler(usedFilePath, preloadedModuleList);
-const textEditor = new TextEditor(await loadFile(usedFilePath));
 
-document.getElementById("run_button").onclick   = (() => GLC.run(textEditor.printText()));
-document.getElementById("print_button").onclick = (() => { console.clear(); console.log(textEditor.printText()); });
-document.getElementById("clear_button").onclick = (() => textEditor.clearText());
+const cconsole    = new Console();
+const editor      = new Editor(cconsole);
+const fileManager = new FileManager();
 
-textEditor.begin_draw();
+//GUI Buttons setup
+const openFileBtn   = document.getElementById("Open");
+const saveFileBtn   = document.getElementById("Save");
+const saveFileAsBtn = document.getElementById("SaveAs");
 
-const allSnippets    = Array.from(document.getElementsByClassName("codeSnippet"));
-const wordDelimiters = [" ", ".", "[", "\n"];
+openFileBtn.onclick = async _=> {
+    await fileManager.openFile();
+    const [fileName, fileContents] = await fileManager.readFile();
+    editor.loadText(fileName, fileContents);
+};
 
-const coerceChar = (char) => char == "\n" ? "<br>" : char == " " ? "&nbsp" : char;
+saveFileBtn.onclick = async _=> {
+    await fileManager.saveFile(editor.getText());
+};
 
-for(const snippet of allSnippets) {
-  const text = snippet.firstChild.innerHTML.replace(/<br>/g, "\n").replace(/\s*\\(.*\n)/g, "$1").replace(/\n\s*$/, "\n");
-  snippet.innerHTML = "";
-  let word = "";
-  let insideDelimiter = false;
+saveFileAsBtn.onclick = async _=> {
+    await fileManager.saveFileAs(editor.getText());
+};
 
-  for(const char of text.split("")) {
-    if(insideDelimiter) {
-      if(insideDelimiter.ends.includes(char)) {
-        snippet.innerHTML += `<font color="${insideDelimiter.color}">${word + coerceChar(char)}</font>`;
-        word = "";
-        insideDelimiter = false;
-        continue;
-      }
-    }
-    else {
-      if(char in textEditor.styleFile.delimiters) insideDelimiter = textEditor.styleFile.delimiters[char];
-      if(wordDelimiters.includes(char)) {
-        if(word in textEditor.styleFile.keywords) snippet.innerHTML += `<font color="${textEditor.styleFile.keywords[word]}">${word}</font>`;
-        else if(word.replace(/\s/g, "").length && !isNaN(word)) snippet.innerHTML += `<font color="${textEditor.styleFile.numbers}">${word}</font>`;
-        else snippet.innerHTML += word;
-        word = "";
-        snippet.innerHTML += coerceChar(char);
-        continue;
-      }
-    }
-    word += char;
-  }
-}
-
-function selectChapter(event) {
-  const chapter = event.target;
-  const chapters = [...chapter.parentNode.children];
-  const insertedContent = document.getElementById("CHAPTERCONTAINER-procedures");
-  const chapterTexts = [...insertedContent.firstChild.children];
-
-  insertedContent.firstChild.scrollTop = 0;
-  const oldSelectedID = Number(getComputedStyle(insertedContent).getPropertyValue("--y"));
-  const currentSelectedID = chapters.indexOf(chapter);
-  insertedContent.style.setProperty("--y", currentSelectedID);
-
-  chapterTexts[oldSelectedID].style.setProperty("display", "none");
-  chapterTexts[currentSelectedID].style.setProperty("display", "inline");
-
-  chapters[oldSelectedID].setAttribute("selected", "false");
-  chapter.setAttribute("selected", "true");
-}
-
-const allChapterLists = document.getElementsByClassName("chapterList");
-for(const chapterList of allChapterLists) {
-  [...chapterList.children].forEach(ch => {
-    ch.setAttribute("onclick", "(() => false)()");
-    ch.onclick = selectChapter;
-  });
-}
-
-
-
-/* TODO:
-    Utmost priority:
-      See if anything can be done for the way replace procedures "work"
-
-    Mid priority:
-      fix the fucking editor: add manual scrolling
-
-    Low priority:
-      finish std GLib
-
-    Vague ideas:
-      
-*/
+(_=> {
+    cconsole.requestInput(console.log);
+})();

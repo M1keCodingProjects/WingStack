@@ -8,7 +8,8 @@
     --idle-text-col: rgb(231, 231, 231);
     --keyword-col: rgb(255, 220, 80);
     --str-col: rgb(48, 253, 249);
-    --num-col: rgb(255, 42, 187);
+    --num-col: rgb(227, 93, 207);
+    --constant-col: var(--num-col);
     --stackOp-col: rgb(68, 255, 54);
     --iterator-col: rgb(0, 129, 121);
     --specifier-col: var(--keyword-col);
@@ -124,6 +125,7 @@ input[type="text"] {
     color: var(--idle-text-col);
     padding-right: .6rem;
     padding-bottom: .6rem;
+    white-space: nowrap;
 }
 
 .editorContainer > .editor.editor::-webkit-scrollbar {

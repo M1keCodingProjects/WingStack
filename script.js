@@ -37,7 +37,3 @@ saveFileBtn.onclick = async _=> {
 saveFileAsBtn.onclick = async _=> {
     await fileManager.saveFileAs(editor.getText());
 };
-
-(_=> {
-    cconsole.requestInput(console.log);
-})();

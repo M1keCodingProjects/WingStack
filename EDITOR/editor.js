@@ -27,18 +27,18 @@ export default class Editor {
             [/^\|/, "|"],
             [/^\"[^\"\n]*\"?/, "str"],
             [/^-?\d+(\.\d+)?/, "num"],
-            [/^(print|make|macro|expand|loop|when|else|fun|exit|next|typenum|use)[^\w]/, "keyword"],
-            [/^(with|global|dynamic|class|then)[^\w]/, "specifier"],
+            [/^(print|make|macro|expand|loop|when|else|free|fun|exit|next|typenum|use)[^\w]/, "keyword"],
+            [/^(with|global|dynamic|class|frozen|then)[^\w]/, "specifier"],
             [/^(FALSE|TRUE|PI|INF)/, "constant"],
-            [/^(me)[^\w]/, "me"],
+            [/^(me|origin)[^\w]/, "instance"],
             [/^(rot\<|rot\>|dup|drop|num|int|float|str|list|obj|void|spill|swap|over|and|or|not|type|size|pop|inp)[^\w]/, "stackOp"],
             [/^(\>|\<|\<\=|\>\=|\%|\+|\-|\*|\/)/, "op"],
-            [/^\@\w+/, "iterator"],
+            [/^((Type|Property|Value)?Error)/, "errorClass"],
             [/^-?[a-zA-Z_]\w*/, "WORD"],
             [/^[^ ]+ */, "any"],
         ];
 
-        this.colors = ["comment", "str", "num", "constant", "keyword", "stackOp", "me", "iterator", "specifier"];
+        this.colors = ["comment", "str", "num", "constant", "keyword", "stackOp", "instance", "errorClass", "specifier"];
 
         this.charSubstitutions = {
             "&"  : "&amp;",
@@ -119,6 +119,7 @@ export default class Editor {
             case "ArrowLeft"  : cursorPos--; break;
             case "ArrowUp"    : cursorPos -= event.target.value.substring(0, event.target.selectionStart).split("\n").pop().length + 1; break;
             case "ArrowDown"  : cursorPos += event.target.value.substring(event.target.selectionStart).split("\n").shift().length  + 1; break;
+            case "Tab"        : return;
         }
         this.currentLineID = event.target.value.substring(0, cursorPos).split("\n").length;
         this.textTarget.style.setProperty("--current-line-ID", this.currentLineID);

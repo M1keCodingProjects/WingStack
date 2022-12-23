@@ -1,0 +1,12 @@
+#what u write:
+loop 10 with i = 2 then print i
+
+#what the compiler expands:
+when 1 {
+  make i :int = 2 1 - # to ensure iteration safety, i is typechecked to int, thus you are not allowed to type-assign it yourself.
+  loop 10 {           # "then" is expanded to Block
+    i = i [1] +       # early increment avoids problems with "next" procs, expansion: -> i += 1 -> i = i [1] +
+    print i           # then the Block's original contents follow...
+  }
+  free i              # the typechecker keeps track of all private vars defined in a block and frees them at the end
+}

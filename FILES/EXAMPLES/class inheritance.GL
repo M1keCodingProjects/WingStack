@@ -1,0 +1,61 @@
+#base class:
+class Character {
+  fun new(name:str, health:num) {
+    make me.name   := name
+    make me.health := health
+  }
+
+  fun talk => print "I am " me.name str
+
+  fun isAlive:Bool => exit me.health 0 >
+}
+
+#the code u write:
+class AttackCharacter expand Character {
+  fun new(name:str, health:num, dmg:num) {
+    origin(name, health)
+    make me.dmg := dmg
+  }
+
+  fun hit(enemy:Character) => enemy.health -= me.dmg
+
+  fun talk => print origin.talk() " and I hit for " me.dmg " ATK" str
+}
+
+#the processed code:
+make frozen AttackCharacter = {
+  fun new(name:str, health:num, dmg:num):AttackCharacter {
+    me = me.copy()
+    origin = Character.new(name, health)
+    when 1 {
+      make fields = origin spill
+      when 1 { # loop fields len with i then make me[fields[i][0]] = fields[i][1]
+        make i = -1
+        loop fields len {
+          i = i [1] + # i += 1
+          make me[fields[i][0]] = fields[i][1]
+        }
+      }
+    }
+    make me.dmg := dmg
+    exit me
+  }
+
+  fun hit(enemy:Character) {
+    enemy.health -= me.dmg
+  }
+
+  fun talk {
+    print origin.talk() " and I hit for " me.dmg " ATK" str
+  }
+
+  fun copy:AttackCharacter {
+    exit me obj
+  }
+}
+
+#if I do this:
+make player = AttackCharacter("steve", 10, 2)
+when player.isAlive() not then print player.name " is dead!" str
+#first the compiler checks if "name" is a property of "player"
+#if it's not, it checks recursively on its origin property, until origin = void is found (baseclass)

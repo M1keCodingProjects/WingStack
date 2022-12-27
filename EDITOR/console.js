@@ -26,7 +26,9 @@ export default class Console {
 
     appendLog(text) {
         if(text == "") return;
+        text = text.replace(/\n/g, "<br>").replace(/ /g, "&nbsp;");
         this.log.innerHTML += `&gt;&gt;&nbsp;${text}<br>`;
+        if(text == "\\clear") this.clearLog();
         this.log.scrollTop  = this.log.scrollHeight;
         this.log.scrollLeft = 0;
     }
@@ -35,7 +37,7 @@ export default class Console {
         this.log.innerHTML = "";
     }
 
-    requestInput(callback) {
+    requestInput(callback, ...args) {
         this.inputRequested = true;
         this.appendLog(`The program requested input: `);    
         waitForResponse.call(this);
@@ -44,7 +46,7 @@ export default class Console {
             if(this.inputRequested) return setTimeout(waitForResponse.bind(this), 0);
             const response = this.savedInputResponse;
             this.savedInputResponse = "";
-            callback(response);
+            callback(...args, response);
         }
     }
 }

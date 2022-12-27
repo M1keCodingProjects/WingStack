@@ -1,8 +1,5 @@
-import Console     from './EDITOR/console.js';
-import Editor      from './EDITOR/editor.js';
 import FileManager from './FILES/fileManager.js';
-
-import Compiler   from "./COMPILER UTILS/compiler.js";
+import Compiler   from "./COMPILER/new_compiler.js";
 import { loadFile } from "./FILES/file loader.js";
 
 const preloadedModuleList = {
@@ -13,16 +10,14 @@ const preloadedModuleList = {
 };
 const usedFilePath = "EXAMPLES/presentation";
 
-const GLC = new Compiler(usedFilePath, preloadedModuleList);
-
-const cconsole    = new Console();
-const editor      = new Editor(cconsole);
 const fileManager = new FileManager();
+const GLC         = new Compiler();
 
 //GUI Buttons setup
 const openFileBtn   = document.getElementById("Open");
 const saveFileBtn   = document.getElementById("Save");
 const saveFileAsBtn = document.getElementById("SaveAs");
+const buildBtn      = document.getElementById("Build");
 
 openFileBtn.onclick = async _=> {
     await fileManager.openFile();
@@ -36,4 +31,8 @@ saveFileBtn.onclick = async _=> {
 
 saveFileAsBtn.onclick = async _=> {
     await fileManager.saveFileAs(editor.getText());
+};
+
+buildBtn.onclick =_=> {
+    GLC.build();
 };

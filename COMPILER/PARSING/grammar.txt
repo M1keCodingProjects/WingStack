@@ -1,0 +1,6 @@
+Program: "{" Expression* "}"
+Expression: Procedure (EOL_TOKEN | "}")
+Procedure: PrintProcedure
+PrintProcedure: "print" " " StackExpr
+StackExpr: (Value | STACKOP_TOKEN)* " "
+Value: NUM_TOKEN | STR_TOKEN

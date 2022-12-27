@@ -1,6 +1,6 @@
-import Tokenizer from "./tokenizer.js";
-import { CompileTimeError } from "../COMPILER UTILS/errors.js";
-
+/*import Tokenizer from "./tokenizer.js";
+import { CompileTimeError } from "../COMPILER/errors.js";
+*/
 export default class Parser {
     constructor(compilerRef) {
         this._string = "";

@@ -1,13 +1,15 @@
+import Console from '../EDITOR/console.js';
 const GUIfileTab = document.querySelector("#GUI .openFilesContainer .fileName");
 
 export default class Editor {
-    constructor(cconsole) {
+    constructor() {
        [this.textTarget,
         this.textContainer,
         this.lineCounter ] = document.querySelectorAll(".editorContainer > .shownEditor, .editor, .lineCounter");
-        this.console       = cconsole;
+        this.console       = new Console();
         this.fileIsSaved   = false;
         this.currentLineID = 0;
+        this.tokens        = [];
 
         this.tokenPatterns = [
             [/^ +/, "space"],
@@ -87,6 +89,15 @@ export default class Editor {
         return this.textContainer.value;
     }
 
+    sendTokens() {
+        if(this.tokens[this.tokens.length - 1]?.type == "space") this.tokens.pop();
+        return [
+            { type : "{", value : "{" },
+            ...this.tokens.map(token => ({...token})),
+            { type : "}", value : "}" },
+        ];
+    }
+
     onkeydown(event) {
         switch(event.key) {
             case "Tab" : this.insertTab(event); break;
@@ -135,14 +146,19 @@ export default class Editor {
     highlight(text) {
         let result = "";
         let cursor = 0;
+        this.tokens = [];
         while(cursor < text.length) {
             let stream = text.substring(cursor);
-            const oldCursor = cursor;    
+            const oldCursor = cursor;
             for(let [regExp, tokenType] of this.tokenPatterns) {
                 let match = stream.match(regExp);
                 if(match === null) continue;
                 match = match[1 * (match[1] != undefined && tokenType !== "num")];
                 cursor += match.length;
+                this.tokens.push({
+                    type  : tokenType,
+                    value : match,
+                });
 
                 let temp = "";
                 for(const char of match) {

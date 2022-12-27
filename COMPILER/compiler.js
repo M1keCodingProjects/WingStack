@@ -121,7 +121,7 @@ export default class Compiler {
         this.AST = this.parser.parse(fileContent).body;
         if(!this.AST.length) return;
         console.log("Done parsing");
-        //this.printAST();
+        this.printAST();
         this.lines = this.tokenize(this.AST);
         console.log("Compilation terminated successfully.");
     }

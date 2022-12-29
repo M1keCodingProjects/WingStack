@@ -27,21 +27,20 @@ export default class Compiler {
             editor.console.appendLog(JSON.stringify(this.AST, null, 2));
             editor.console.appendLog("Build complete.");
         }
+        
         this.run(expressions);
     }
 
-    run(expressions) {
-        expressions.shift()?.exec(expressions);
+    async run(expressions) {
+        for(const expr of expressions) {
+            await expr.exec();
+        }
     }
 }
 
 class Proc {
     constructor(args) {
         this.buildArgs(args);
-    }
-
-    exec(callback) {
-        callback.shift()?.exec(callback);
     }
 }
 
@@ -54,11 +53,9 @@ class PrintProc extends Proc {
         this.stackExpr = new StackExpr(args);
     }
 
-    exec(callback) {
-        this.stackExpr.exec(result => {
-            editor.console.appendLog("" + result);
-            super.exec(callback);
-        });
+    async exec() {
+        const result = await this.stackExpr.exec();
+        editor.console.appendLog("" + result);
     }
 }
 
@@ -73,38 +70,27 @@ class StackExpr {
         });
     }
 
-    exec(callback) {
+    async exec() {
         const stack = [];
-        this.stackEls.shift().exec(stack, this.stackEls);
-        waitForResponse.call(this);
-
-        function waitForResponse() {
-            if(this.stackEls.length) return setTimeout(waitForResponse.bind(this), 0);
-            callback(stack);
+        for(const stackEl of this.stackEls) {
+            await stackEl.exec(stack);
         }
+        return stack;
     }
 }
-
 class InpStackOp {
-    constructor() {
-
-    }
-
-    exec(stack, nextEls) {
-        editor.console.requestInput((stack, nextEls, response) => {
-            stack.push(response);
-            nextEls.shift()?.exec(stack, nextEls);
-        }, stack, nextEls);
+    async exec(stack) {
+        const userInput = await editor.console.requestInput();
+        stack.push(userInput);
     }
 }
 
-class StackValue {
+class StackValue{
     constructor(value) {
         this.value = value;
     }
 
-    exec(stack, nextEls) {
+    exec(stack) {
         stack.push(this.value);
-        nextEls.shift()?.exec(stack, nextEls);
     }
 }

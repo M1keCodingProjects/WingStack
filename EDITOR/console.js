@@ -2,7 +2,6 @@ export default class Console {
     constructor() {
         [this.log, this.input] = document.querySelectorAll("#mainConsole > .console-log, .console-input");
         this.inputRequested = false;
-        this.savedInputResponse = "";
         this.init();
     }
 
@@ -11,17 +10,12 @@ export default class Console {
     }
 
     submit(event) {
-        if(event.key != "Enter") return;
-
-        let newLog = this.input.value;
-        if(this.inputRequested) {
-            this.savedInputResponse = newLog;
-            this.inputRequested = false;
-            newLog = "The User responded with: " + newLog;
-        }
-        
-        this.appendLog(newLog);
+        if(event.key != "Enter") return null;
+        const userInput = this.input.value;
         this.input.value = "";
+        
+        if(!this.inputRequested) this.appendLog(userInput);
+        return userInput;
     }
 
     appendLog(text) {
@@ -37,16 +31,20 @@ export default class Console {
         this.log.innerHTML = "";
     }
 
-    requestInput(callback, ...args) {
+    async requestInput() {
         this.inputRequested = true;
-        this.appendLog(`The program requested input: `);    
-        waitForResponse.call(this);
-
-        function waitForResponse() {
-            if(this.inputRequested) return setTimeout(waitForResponse.bind(this), 0);
-            const response = this.savedInputResponse;
-            this.savedInputResponse = "";
-            callback(...args, response);
-        }
+        this.appendLog(`The program requested input: `); 
+        return new Promise((resolve) => {
+            this.input.onkeyup = (e => {
+                const userInput = this.submit(e);
+                if(userInput === null || !this.inputRequested) return;
+                this.inputRequested = false;
+                resolve(userInput);
+            }).bind(this);
+        })
+        .then((result => {
+            this.init();
+            return result;
+        }).bind(this));
     }
 }

@@ -1,223 +1,34 @@
-import * as Errors from "./errors.js";
+/* to implement in the std library:
+  //  : / int
+  mix : rot> swap rot<
+  over: mix swap
+  revo: swap mix
+  tup : rot> dup rot< dup mix
+  xor : tup and not rot> or rot< and
+  >=  : < not
+  <=  : > not
+*/
 
-export class StackValue {
-    constructor(ID, value) {
-      this.ID = ID;
-      this.value = value;
-    }
-    
-    get_type(stackElement) {
-      if(stackElement === undefined) return "none";
-      switch(typeof stackElement) {
-        case 'string'  : return 'string';
-        case 'number'  : return 'number';
-        case 'boolean' : return 'number';
-        case 'object'  : return stackElement instanceof Array ? 'list' : 'object';
-        default: throw new Errors.RuntimeError(this.ID, `unknown or unsupported <StackElement> type ${typeof stackElement}`);
-      }
-    }
-
-    execute(stack) {
-      stack.data.push(this.value);
-      return true;
-    }
-  }
-  
 export class StackOp {
-  constructor(ID, type, replacedExpr = false) {
-    this.ID = ID;
-    this.type = type;
-    if(replacedExpr) {
-      this.stackOps = [...replacedExpr];
-      this.stackOps.forEach(stackOp => stackOp.ID = ID);
-      this.execute = this.replaceExec;
-    }
+  constructor(required_stackState = [0, "?", "any"]) {
+      this.parseRequirements(required_stackState);
   }
-  
-  check_minLength(stack, len) { if(stack.data.length < len) throw new Errors.RuntimeError(this.ID, `A Runtime NotEnoughArguments Error occurred at line ${this.ID} : tried performing the stack operation "${this.type}" with less than ${len} elements on the stack`); }
-  throw_unsupportedTypes_error(acceptedTypes, typesArr) { throw new Errors.RuntimeError(this.ID, `A Runtime UnsupportedTypes Error occurred at line ${this.ID} : unsupported type(s) for <StackOperator> "${this.type}", which only accepts items of type(s) ${acceptedTypes.join(" or ")}, and instead got : ${typesArr.join(" and ")}`); }
 
-  replaceExec(stack) {
-    for(let stackOp of this.stackOps) {
-      try { stackOp.execute(stack); }
-      catch(e) {
-        throw new Errors.RuntimeError(this.ID, `Execution failed inside of a <${this.type}> stackOp: ${e.message}`);
-      }
-    }
-    return true;
+  parseRequirements(required_stackState) {
+      //TODO
   }
 }
 
-//########################################################################################################
-export class Math_stackOp extends StackOp {
-  constructor(ID, type, acceptedTypes = ["number"]) { 
-    super(ID, type);
-    this.acceptedTypes = acceptedTypes;
+export class Dup_stackOp extends StackOp {
+  constructor() {
+    super([1, 1, "any"]);
   }
-  
-  execute(stack) {
-    this.check_minLength(stack, 2);
-    let el2 = stack.pop();
-    let type2 = StackValue.prototype.get_type(el2);
-    let el1 = stack.pop();
-    let type1 = StackValue.prototype.get_type(el1);
-    if(!this.acceptedTypes.includes(type1) || !this.acceptedTypes.includes(type2)) this.throw_unsupportedTypes_error(this.acceptedTypes, [type1, type2]);
-    return [el1, el2];
-  }
-  
-  checkNaN(stack, res) {
-    if(StackValue.prototype.get_type(res) !== "string" && isNaN(res)) throw new Errors.RuntimeError(this.ID, "you tried performing a mathematically impossible operation");
-    stack.data.push(res);
-    return true;
+
+  exec(stack) {
+    stack.push(stack[stack.length - 1]);
   }
 }
-
-export class Add_stackOp extends Math_stackOp {
-  constructor(ID) { super(ID, "+", ["number", "string"]); }
-  
-  execute(stack) {
-    let [el1, el2] = super.execute(stack);
-    this.checkNaN(stack, el1 + el2);
-  }
-}
-
-export class Sub_stackOp extends Math_stackOp {
-  constructor(ID) { super(ID, "-"); }
-  
-  execute(stack) {
-    let [el1, el2] = super.execute(stack);
-    this.checkNaN(stack, el1 - el2);
-  }
-}
-
-export class Mult_stackOp extends Math_stackOp {
-  constructor(ID) { super(ID, "*"); }
-  
-  execute(stack) {
-    let [el1, el2] = super.execute(stack);
-    this.checkNaN(stack, el1 * el2);
-  }
-}
-
-export class Div_stackOp extends Math_stackOp {
-  constructor(ID) { super(ID, "/"); }
-  
-  execute(stack) {
-    let [el1, el2] = super.execute(stack);
-    this.checkNaN(stack, el1 / el2);
-  }
-}
-
-export class Idiv_stackOp extends Math_stackOp {
-  constructor(ID) { super(ID, "//"); }
-  
-  execute(stack) {
-    let [el1, el2] = super.execute(stack);
-    this.checkNaN(stack, Math.floor(el1 / el2));
-  }
-}
-
-export class Pow_stackOp extends Math_stackOp {
-  constructor(ID) { super(ID, "**"); }
-  
-  execute(stack) {
-    let [el1, el2] = super.execute(stack);
-    this.checkNaN(stack, el1 ** el2);
-  }
-}
-
-export class And_stackOp extends Math_stackOp {
-  constructor(ID) { super(ID, "&&"); }
-  
-  execute(stack) {
-    let [el1, el2] = super.execute(stack);
-    this.checkNaN(stack, 1 * (el1 && el2));
-  }
-}
-
-export class Band_stackOp extends Math_stackOp {
-  constructor(ID) { super(ID, "&"); }
-  
-  execute(stack) {
-    let [el1, el2] = super.execute(stack);
-    this.checkNaN(stack, 1 * (el1 & el2));
-  }
-}
-
-export class Or_stackOp extends Math_stackOp {
-  constructor(ID) { super(ID, "||"); }
-  
-  execute(stack) {
-    let [el1, el2] = super.execute(stack);
-    this.checkNaN(stack, 1 * (el1 || el2));
-  }
-}
-
-export class Bor_stackOp extends Math_stackOp {
-  constructor(ID) { super(ID, "|"); }
-
-  execute(stack) {
-    let [el1, el2] = super.execute(stack);
-    this.checkNaN(stack, 1 * (el1 | el2));
-  }
-}
-
-export class Xor_stackOp extends Math_stackOp {
-  constructor(ID) { super(ID, "xor"); }
-  
-  execute(stack) {
-    let [el1, el2] = super.execute(stack);
-    this.checkNaN(stack, 1 * ((el1 || el2) && !(el1 && el2)));
-  }
-}
-
-export class Grt_stackOp extends Math_stackOp {
-  constructor(ID) { super(ID, ">"); }
-  
-  execute(stack) {
-    let [el1, el2] = super.execute(stack);
-    this.checkNaN(stack, 1 * (el1 > el2));
-  }
-}
-
-export class Lst_stackOp extends Math_stackOp {
-  constructor(ID) { super(ID, "<"); }
-  
-  execute(stack) {
-    let [el1, el2] = super.execute(stack);
-    this.checkNaN(stack, 1 * (el1 < el2));
-  }
-}
-
-export class Eqs_stackOp extends Math_stackOp {
-  constructor(ID) { super(ID, "==", ["number", "string"]); }
-  
-  execute(stack) {
-    let [el1, el2] = super.execute(stack);
-    this.checkNaN(stack, 1 * (el1 === el2));
-  }
-}
-
-export class Rshft_stackOp extends Math_stackOp {
-  constructor(ID) { super(ID, ">>"); }
-  
-  execute(stack) {
-    let [el1, el2] = super.execute(stack);
-    this.checkNaN(stack, 1 * (el1 >> el2));
-  }
-}
-
-export class Lshft_stackOp extends Math_stackOp {
-  constructor(ID) { super(ID, "<<"); }
-  
-  execute(stack) {
-    let [el1, el2] = super.execute(stack);
-    this.checkNaN(stack, 1 * (el1 << el2));
-  }
-}
-
-//########################################################################################################
-
+/*
 export class Not_stackOp extends StackOp {
   constructor(ID) { super(ID, "!"); }
   
@@ -229,16 +40,6 @@ export class Not_stackOp extends StackOp {
   }
 }
 
-export class Bnot_stackOp extends StackOp {
-  constructor(ID) { super(ID, "~"); }
-  
-  execute(stack) {
-    this.check_minLength(stack, 1);
-    let el1 = stack.pop();
-    if(StackValue.prototype.get_type(el1) != "number") return this.throw_unsupportedTypes_error(["<number>"], [type1]);
-    stack.data.push(1 * ~el1);
-  }
-}
 
 export class Dup_stackOp extends StackOp {
   constructor(ID) { super(ID, "dup"); }

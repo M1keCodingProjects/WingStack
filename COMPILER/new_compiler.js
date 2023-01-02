@@ -1,12 +1,18 @@
-import Editor  from '../EDITOR/editor.js';
-import Parser from "./PARSING/new_parser.js";
+import      Parser  from "./PARSING/new_parser.js";
+import      Editor  from "../EDITOR/editor.js";
+import * as StackEl from "./stack operators.js";
 
 const editor = new Editor();
+const print = msg => editor.console.appendLog(msg);
+const raise = msg => editor.console.appendLog(msg, "Error");
+const mathSymbols = ["+", "-", "*", "/"];
+
 export default class Compiler {
     constructor() {
         this.init();
         this.state = "deploy";
         this.parser = new Parser(editor);
+        this.editor = editor;
     }
 
     init() {
@@ -24,11 +30,12 @@ export default class Compiler {
         const expressions = [];
         for(const expr of this.AST) expressions.push(new PrintProc(expr.value));
         if(this.state == "debug") {
-            editor.console.appendLog(JSON.stringify(this.AST, null, 2));
-            editor.console.appendLog("Build complete.");
+            print(JSON.stringify(this.AST, null, 2));
+            print("Build complete.");
         }
         
         this.run(expressions);
+        if(this.state == "debug") print("Execution complete.");
     }
 
     async run(expressions) {
@@ -38,6 +45,7 @@ export default class Compiler {
     }
 }
 
+// PROCEDURES
 class Proc {
     constructor(args) {
         this.buildArgs(args);
@@ -55,19 +63,28 @@ class PrintProc extends Proc {
 
     async exec() {
         const result = await this.stackExpr.exec();
-        editor.console.appendLog("" + result);
+        print("" + result);
     }
 }
 
+// STACK
 class StackExpr {
     constructor(stackElements) {
-        this.stackEls = stackElements.map(stackEl => {
-            switch(stackEl.type) {
-                case "stackOp": return new InpStackOp(stackEl.value);
+        this.stackEls = stackElements.map(stackElm => {
+            switch(stackElm.type) {
+                case "stackOp": return this.getStackOp(stackElm.value);
                 case "num":
-                case "str": return new StackValue(stackEl.value);
+                case "str": return new StackValue(stackElm.value);
             }
         });
+    }
+
+    getStackOp(symbol) {
+        if(mathSymbols.includes(symbol)) return new Math_stackOp(symbol);
+        switch(symbol) {
+            case "inp" : return new Inp_stackOp();
+            case "dup" : return new StackEl.Dup_stackOp();
+        }
     }
 
     async exec() {
@@ -78,12 +95,6 @@ class StackExpr {
         return stack;
     }
 }
-class InpStackOp {
-    async exec(stack) {
-        const userInput = await editor.console.requestInput();
-        stack.push(userInput);
-    }
-}
 
 class StackValue{
     constructor(value) {
@@ -92,5 +103,127 @@ class StackValue{
 
     exec(stack) {
         stack.push(this.value);
+    }
+}
+
+export class Math_stackOp extends StackEl.StackOp {
+    constructor(symbol, required_stackState = [2, 2, "num"]) {
+        super(required_stackState);
+        this.exec = this.init_exec(symbol).bind(this);
+    }
+
+    get(stack) {
+        const el2 = stack.pop();
+        const el1 = stack.pop();
+        return [el1, el2];
+    }
+
+    checkNaN(res) {
+        if(isNaN(res)) raise("A math error has occurred inside of a StackExpression.");
+    }
+
+    init_exec(symbol) {
+        switch(symbol) {
+            case "+" : return stack => {
+                const [el1, el2] = this.get(stack);
+                const res = el1 + el2;
+                this.checkNaN(res);
+                stack.push(res);
+            };
+
+            case "-" : return stack => {
+                const [el1, el2] = this.get(stack);
+                const res = el1 - el2;
+                this.checkNaN(res);
+                stack.push(res);
+            };
+
+            case "*" : return stack => {
+                const [el1, el2] = this.get(stack);
+                const res = el1 * el2;
+                this.checkNaN(res);
+                stack.push(res);
+            };
+
+            case "/" : return stack => {
+                const [el1, el2] = this.get(stack);
+                const res = el1 / el2;
+                this.checkNaN(res);
+                stack.push(res);
+            };
+
+            case "**" : return stack => {
+                const [el1, el2] = this.get(stack);
+                const res = el1 ** el2;
+                this.checkNaN(res);
+                stack.push(res);
+            };
+
+            case "and" : return stack => {
+                const [el1, el2] = this.get(stack);
+                const res = 1 * (el1 && el2);
+                this.checkNaN(res);
+                stack.push(res);
+            };
+
+            case "or" : return stack => {
+                const [el1, el2] = this.get(stack);
+                const res = 1 * (el1 || el2);
+                this.checkNaN(res);
+                stack.push(res);
+            };
+
+            case ">" : return stack => {
+                const [el1, el2] = this.get(stack);
+                const res = 1 * (el1 > el2);
+                this.checkNaN(res);
+                stack.push(res);
+            };
+
+            case "<" : return stack => {
+                const [el1, el2] = this.get(stack);
+                const res = 1 * (el1 < el2);
+                this.checkNaN(res);
+                stack.push(res);
+            };
+
+            case "==" : return stack => {
+                const [el1, el2] = this.get(stack);
+                const res = 1 * (el1 === el2);
+                this.checkNaN(res);
+                stack.push(res);
+            };
+
+            case ">>" : return stack => {
+                const [el1, el2] = this.get(stack);
+                const res = 1 * (el1 >> el2);
+                this.checkNaN(res);
+                stack.push(res);
+            };
+
+            case "<<" : return stack => {
+                const [el1, el2] = this.get(stack);
+                const res = 1 * (el1 << el2);
+                this.checkNaN(res);
+                stack.push(res);
+            };
+        }
+    }
+}
+  
+class Plus_stackOp extends Math_stackOp {
+    constructor() {
+        super("+", [2, "num|str"]);
+    }
+}
+
+class Inp_stackOp extends StackEl.StackOp {
+    constructor() {
+        super();
+    }
+
+    async exec(stack) {
+        const userInput = await editor.console.requestInput();
+        stack.push(userInput);
     }
 }

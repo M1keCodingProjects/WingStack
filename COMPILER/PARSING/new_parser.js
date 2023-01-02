@@ -58,7 +58,7 @@ export default class Parser {
 
     Value() {
         const token = this.grab_nextToken();
-        if(!["num", "str"].includes(token.type)) throw new Error(`Unexpected token of type ${token.type}, expected: NUM or STR`);
+        if(!["num", "str"].includes(token.type)) this.throw(`Unexpected token of type ${token.type}, expected: NUM or STR`);
         if(token.type == "str") token.value = token.value.slice(1, -1);
         return token;
     }
@@ -73,8 +73,14 @@ export default class Parser {
 
     eat(tokenType) {
         const token = this.grab_nextToken();
-        if(token === null) throw new Error(`Unexpected end of input, expected: <${tokenType}>`);
-        if(token.type !== tokenType) throw new Error(`Unexpected token of type ${token.type}, expected: <${tokenType}>`);
+        if(token === null) this.throw(`Unexpected end of input, expected ${tokenType}`);
+        if(token.type !== tokenType) this.throw(`Unexpected token of type ${token.type}, expected ${tokenType}`);
         return token;
+    }
+
+    throw(errorMsg) {
+        errorMsg = "Syntax Error: " + errorMsg;
+        this.editor.console.appendLog(errorMsg, "Error");
+        throw new Error(errorMsg);
     }
 }

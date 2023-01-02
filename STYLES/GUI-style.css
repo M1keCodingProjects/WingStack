@@ -101,6 +101,10 @@
     content: url(../ASSETS/ICONS/open.svg);
 }
 
+#Build::before {
+    content: url(../ASSETS/ICONS/build_run.svg);
+}
+
 #GUI .search-input {
     width: calc(100% - .5rem);
     font-size: .9rem;

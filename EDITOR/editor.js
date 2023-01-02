@@ -1,4 +1,4 @@
-import Console from '../EDITOR/console.js';
+import Console from './console.js';
 const GUIfileTab = document.querySelector("#GUI .openFilesContainer .fileName");
 
 export default class Editor {
@@ -31,10 +31,10 @@ export default class Editor {
             [/^-?\d+(\.\d+)?/, "num"],
             [/^(print|make|macro|expand|loop|when|else|free|fun|exit|next|typenum|use)[^\w]/, "keyword"],
             [/^(with|global|dynamic|class|frozen|then)[^\w]/, "specifier"],
-            [/^(FALSE|TRUE|PI|INF)/, "constant"],
+            [/^(PI|INF)/, "constant"],
             [/^(me|origin)[^\w]/, "instance"],
             [/^(rot\<|rot\>|dup|drop|num|int|float|str|list|obj|void|spill|swap|over|and|or|not|type|size|pop|inp)[^\w]/, "stackOp"],
-            [/^(\>|\<|\<\=|\>\=|\%|\+|\-|\*|\/)/, "op"],
+            [/^(\>|\<|\+|\-|\*|\/)/, "op"],
             [/^((Type|Property|Value)?Error)/, "errorClass"],
             [/^-?[a-zA-Z_]\w*/, "WORD"],
             [/^[^ ]+ */, "any"],
@@ -155,9 +155,10 @@ export default class Editor {
                 if(match === null) continue;
                 match = match[1 * (match[1] != undefined && tokenType !== "num")];
                 cursor += match.length;
+                
                 this.tokens.push({
-                    type  : tokenType,
-                    value : match,
+                    type  : tokenType == "op" ? "stackOp" : tokenType,
+                    value : tokenType == "num" ? Number(match) : match,
                 });
 
                 let temp = "";
@@ -166,6 +167,7 @@ export default class Editor {
                 }
                 match = temp;
 
+                if(match == "FALSE" || match == "TRUE") tokenType = "constant";
                 result += this.colors.includes(tokenType) ? `<span style="color : var(--${tokenType}-col);">${match}</span>` : match;
                 break;
             }

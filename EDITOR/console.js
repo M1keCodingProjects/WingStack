@@ -18,9 +18,12 @@ export default class Console {
         return userInput;
     }
 
-    appendLog(text) {
+    appendLog(text, style) {
         if(text == "") return;
         text = text.replace(/\n/g, "<br>").replace(/ /g, "&nbsp;");
+        switch(style) {
+            case "Error" : text = `<span style="color:var(--error-col)">${text}</span>`; break;
+        }
         this.log.innerHTML += `&gt;&gt;&nbsp;${text}<br>`;
         if(text == "\\clear") this.clearLog();
         this.log.scrollTop  = this.log.scrollHeight;

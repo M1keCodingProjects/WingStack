@@ -1,5 +1,6 @@
 :root {
     --console-bg-col: #1a1a1d;
+    --error-col: #fd224b;
 }
 
 .consoleContainer {

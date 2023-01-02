@@ -1,5 +1,7 @@
+import Compiler    from "./COMPILER/new_compiler.js";
 import FileManager from './FILES/fileManager.js';
-import Compiler   from "./COMPILER/new_compiler.js";
+
+//old code
 import { loadFile } from "./FILES/file loader.js";
 
 const preloadedModuleList = {
@@ -9,9 +11,10 @@ const preloadedModuleList = {
     "Vector2D"          : (await(await fetch(`./FILES/Vector2D.GL`)).text()).split("\r").join(""),
 };
 const usedFilePath = "EXAMPLES/presentation";
+//end
 
-const fileManager = new FileManager();
 const GLC         = new Compiler();
+const fileManager = new FileManager();
 
 //GUI Buttons setup
 const openFileBtn   = document.getElementById("Open");
@@ -22,15 +25,15 @@ const buildBtn      = document.getElementById("Build");
 openFileBtn.onclick = async _=> {
     await fileManager.openFile();
     const [fileName, fileContents] = await fileManager.readFile();
-    editor.loadText(fileName, fileContents);
+    GLC.editor.loadText(fileName, fileContents);
 };
 
 saveFileBtn.onclick = async _=> {
-    await fileManager.saveFile(editor.getText());
+    await fileManager.saveFile(GLC.editor.getText());
 };
 
 saveFileAsBtn.onclick = async _=> {
-    await fileManager.saveFileAs(editor.getText());
+    await fileManager.saveFileAs(GLC.editor.getText());
 };
 
 buildBtn.onclick =_=> {

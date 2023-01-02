@@ -82,8 +82,17 @@ class StackExpr {
     getStackOp(symbol) {
         if(mathSymbols.includes(symbol)) return new Math_stackOp(symbol);
         switch(symbol) {
-            case "inp" : return new Inp_stackOp();
-            case "dup" : return new StackEl.Dup_stackOp();
+            case "not"  : return new StackEl.Not_stackOp();
+            case "dup"  : return new StackEl.Dup_stackOp();
+            case "size" : return new StackEl.Size_stackOp(); 
+            case "rot<" : return new StackEl.RotL_stackOp();
+            case "rot>" : return new StackEl.RotR_stackOp();
+            case "spill": return new StackEl.Spill_stackOp();
+            case "type" : return new StackEl.Type_stackOp();
+            case "swap" : return new StackEl.Swap_stackOp();
+            case "drop" : return new StackEl.Drop_stackOp();
+            case "pop"  : return new StackEl.Pop_stackOp();
+            case "inp"  : return new Inp_stackOp();
         }
     }
 
@@ -106,8 +115,8 @@ class StackValue{
     }
 }
 
-export class Math_stackOp extends StackEl.StackOp {
-    constructor(symbol, required_stackState = [2, 2, "num"]) {
+class Math_stackOp extends StackEl.StackOp {
+    constructor(symbol, required_stackState = ["num", "num"]) {
         super(required_stackState);
         this.exec = this.init_exec(symbol).bind(this);
     }
@@ -213,7 +222,7 @@ export class Math_stackOp extends StackEl.StackOp {
   
 class Plus_stackOp extends Math_stackOp {
     constructor() {
-        super("+", [2, "num|str"]);
+        super("+", ["num|str", "num|str"]);
     }
 }
 

@@ -12,6 +12,10 @@ export default class Parser {
         this.eat("{");
         const expressions = [];
         while(this.peek_nextToken()?.type != "}") {
+            if(this.peek_nextToken()?.type == "EOL") {
+                this.eat("EOL");
+                continue;
+            }
             expressions.push(this.Expression());
         }
         this.eat("}");

@@ -10,7 +10,7 @@
 */
 
 export class StackOp {
-  constructor(required_stackState = [0, "?", "any"]) {
+  constructor(required_stackState = ["any|void"]) {
       this.parseRequirements(required_stackState);
   }
 
@@ -19,149 +19,125 @@ export class StackOp {
   }
 }
 
+export class Not_stackOp extends StackOp {
+  constructor() {
+    super(["num"]);
+  }
+
+  exec(stack) {
+    stack.push(!stack.pop());
+  }
+}
+
 export class Dup_stackOp extends StackOp {
   constructor() {
-    super([1, 1, "any"]);
+    super(["any"]);
   }
 
   exec(stack) {
     stack.push(stack[stack.length - 1]);
   }
 }
-/*
-export class Not_stackOp extends StackOp {
-  constructor(ID) { super(ID, "!"); }
-  
-  execute(stack) {
-    this.check_minLength(stack, 1);
-    let el1 = stack.pop();
-    if(StackValue.prototype.get_type(el1) != "number") return this.throw_unsupportedTypes_error(["<number>"], [type1]);
-    stack.data.push(1 * !el1);
-  }
-}
-
-
-export class Dup_stackOp extends StackOp {
-  constructor(ID) { super(ID, "dup"); }
-  
-  execute(stack) {
-    this.check_minLength(stack, 1);
-    stack.data.push(stack.pop(1, true));
-  }
-}
 
 export class Size_stackOp extends StackOp {
-  constructor(ID) { super(ID, "size"); }
+  constructor() {
+    super();
+  }
   
-  execute(stack) {
-    stack.data.push(stack.len());
+  exec(stack) {
+    stack.push(stack.length);
   }
 }
 
 export class RotL_stackOp extends StackOp {
-  constructor(ID) { super(ID, "rot<"); }
+  constructor() {
+    super(["many"]);
+  }
   
-  execute(stack) {
-    this.check_minLength(stack, 2);
-    stack.data.push(stack.fetch(0, false));
+  exec(stack) {
+    stack.push(stack.shift());
   }
 }
 
 export class RotR_stackOp extends StackOp {
-  constructor(ID) { super(ID, "rot>"); }
+  constructor() {
+    super(["many"]);
+  }
   
-  execute(stack) {
-    this.check_minLength(stack, 2);
-    stack.push(stack.pop(), 0);
+  exec(stack) {
+    stack.unshift(stack.pop());
   }
 }
 
 export class Spill_stackOp extends StackOp {
-  constructor(ID) { super(ID, "spill"); }
+  constructor() {
+    super(["list|object"])
+  }
   
-  execute(stack) {
-    this.check_minLength(stack, 1);
-    let el1 = stack.pop();
-    let type1 = StackValue.prototype.get_type(el1);
-    switch(type1) {
-      case "string" : if(el1 !== "") stack.data.push(...el1.split("")); break;//console.warn(`Warning from line ${this.ID}: stack operator <spill> has no effect on empty strings`);      
-      case "list" :   stack.data.push(...el1); break;
-      default :       return this.throw_unsupportedTypes_error(["<list>", "<string>"], [type1]);
+  exec(stack) {
+    const el = stack.pop();
+    switch(typeof el) {
+      case "list"   : stack.push(...el); break;
+      case "object" : stack.push(...el.listEnumerable()); break;
     }
   }
 }
   
 export class Type_stackOp extends StackOp {
-  constructor(ID) { super(ID, "type"); }
+  constructor() {
+    super();
+  }
   
-  execute(stack) {
-    this.check_minLength(stack, 1);
-    stack.data.push(StackValue.prototype.get_type(stack.pop()));
+  exec(stack) {
+    // TODO
   }
 }
 
 export class Swap_stackOp extends StackOp {
-  constructor(ID) { super(ID, "swap"); }
+  constructor() {
+    super(["many"]);
+  }
   
-  execute(stack) {
-    this.check_minLength(stack, 2);
+  exec(stack) {
     let el1 = stack.pop();
     let el2 = stack.pop();
-    stack.data.push(el1, el2);
+    stack.push(el1, el2);
   }
 }
 
 export class Drop_stackOp extends StackOp {
-  constructor(ID) { super(ID, "drop"); }
+  constructor() {
+    super(["any"]);
+  }
   
-  execute(stack) {
-    this.check_minLength(stack, 1);
+  exec(stack) {
     stack.pop();
   }
 }
 
-export class Inp_stackOp extends StackOp {
-  constructor(ID) { super(ID, "inp"); }
-  
-  execute(stack) {
-    let res = prompt("GLIDE Compiler requested user input:");
-    if(res === null) throw new Errors.RuntimeError(this.ID, `unhandled user input, don't cancel input prompts!`);
-    let fres = Number(res);
-    stack.data.push(isNaN(fres) ? res : fres);
+export class Pop_stackOp extends StackOp {
+  constructor() {
+    super(["any"]);
+  }
+
+  exec(stack) {
+    stack.splice(0, stack.length - 1, stack.pop());
   }
 }
-
-export class Over_stackOp extends StackOp {
-  constructor(ID) { super(ID, "over"); }
-  
-  execute(stack) {
-    this.check_minLength(stack, 3);
-    stack.data.push(stack.fetch(stack.len() - 3, false));
-  }
-}
-
+/*
 export class Rand_stackOp extends StackOp {
   constructor(ID) { super(ID, "rand"); }
   
-  execute(stack) {
+  exec(stack) {
     this.check_minLength(stack, 1);
     stack.data.push(stack.fetch(Math.floor(Math.random() * stack.len())));
-  }
-}
-
-export class Pop_stackOp extends StackOp {
-  constructor(ID) { super(ID, "pop"); }
-  
-  execute(stack) {
-    this.check_minLength(stack, 1);
-    if(stack.len() > 1) stack.data.push(stack.pop("all").pop());
   }
 }
 
 export class Limit_stackOp extends StackOp {
   constructor(ID) { super(ID, ","); }
   
-  execute(stack) {
+  exec(stack) {
     this.check_minLength(stack, 1);
     stack.fetchID = stack.len();
   }
@@ -174,7 +150,7 @@ class Cast_stackOp extends StackOp {
     this.acceptedTypes = acceptedTypes;
   }
   
-  execute(stack) {
+  exec(stack) {
     if(!this.acceptedTypes.includes("none")) this.check_minLength(stack, 1);
     let el;
     let type = "many";
@@ -238,7 +214,7 @@ export class ObjCast_stackOp extends Cast_stackOp {
 export class _stackOp extends StackOp {
   constructor(ID) { super(ID, ""); }
   
-  execute(stack) {
+  exec(stack) {
     this.check_minLength(stack, 1);
     
   }

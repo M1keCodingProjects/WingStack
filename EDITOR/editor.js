@@ -156,7 +156,7 @@ export default class Editor {
                 match = match[1 * (match[1] != undefined && tokenType !== "num")];
                 cursor += match.length;
                 
-                this.tokens.push({
+                if(tokenType != "comment") this.tokens.push({
                     type  : tokenType == "op" ? "stackOp" : tokenType,
                     value : tokenType == "num" ? Number(match) : match,
                 });

@@ -15,17 +15,34 @@ export default class Console {
         this.input.value = "";
         
         if(!this.inputRequested) this.appendLog(userInput);
-        return userInput;
+        return userInput.match(/^-?\d+(\.\d+)?/)?.[0] == userInput ? Number(userInput) : userInput;
+    }
+
+    format(text, firstCall = true) {
+        switch(typeof text) {
+            case 'string': return `"${text}"`;
+            case 'number': return `${text}`;
+            case 'object': return firstCall ? `[${text.map(el => this.format(el, false)).join(", ")}]` : `[List:${text.length}]`;
+        }
     }
 
     appendLog(text, style) {
-        if(text == "") return;
-        text = text.replace(/\n/g, "<br>").replace(/ /g, "&nbsp;");
+        if(text === "") return;
+        const original_text = text;
+        text = this.format(text).replace(/\n/g, "<br>").replace(/ /g, "&nbsp;");
         switch(style) {
-            case "Error" : text = `<span style="color:var(--error-col)">${text}</span>`; break;
+            case "Error" :
+                text = `<span style="color:var(--error-col)">${text}</span>`;
+                console.clear(); break;
+        }
+        
+        if(original_text == "\\clear") {
+            this.clearLog();
+            console.clear();
+            return;
         }
         this.log.innerHTML += `&gt;&gt;&nbsp;${text}<br>`;
-        if(text == "\\clear") this.clearLog();
+        console.log(original_text);
         this.log.scrollTop  = this.log.scrollHeight;
         this.log.scrollLeft = 0;
     }

@@ -25,7 +25,7 @@ export class Not_stackOp extends StackOp {
   }
 
   exec(stack) {
-    stack.push(!stack.pop());
+    stack.push(1 * !stack.pop());
   }
 }
 
@@ -71,14 +71,15 @@ export class RotR_stackOp extends StackOp {
 
 export class Spill_stackOp extends StackOp {
   constructor() {
-    super(["list|object"])
+    super(["str|list|obj"])
   }
   
   exec(stack) {
     const el = stack.pop();
     switch(typeof el) {
-      case "list"   : stack.push(...el); break;
-      case "object" : stack.push(...el.listEnumerable()); break;
+      case "string" : stack.push(...el.split("")); return;
+      case "object" : stack.push(...el); return;
+      case "obj"    : stack.push(...el.listEnumerable()); return; //NOT READY
     }
   }
 }
@@ -89,7 +90,13 @@ export class Type_stackOp extends StackOp {
   }
   
   exec(stack) {
-    // TODO
+    switch(typeof stack[stack.length - 1]) {
+      case "undefined": stack.push("void"); return;
+      case "number" : stack.push("num");  return;
+      case "string" : stack.push("str");  return;
+      case "object" : stack.push("list"); return;
+      case "obj"    : stack.push("obj");  return; //NOT READY
+    }
   }
 }
 

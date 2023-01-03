@@ -4,8 +4,13 @@ import * as StackEl from "./stack operators.js";
 
 const editor = new Editor();
 const print = msg => editor.console.appendLog(msg);
-const raise = msg => editor.console.appendLog(msg, "Error");
-const mathSymbols = ["+", "-", "*", "/"];
+
+const raise = msg => {
+    editor.console.appendLog(msg, "Error");
+    throw new Error(msg);
+}
+
+const mathSymbols = ["+", "-", "*", "/", "**", "and", "or", ">", "<", "==", "<<", ">>"];
 
 export default class Compiler {
     constructor() {
@@ -63,7 +68,7 @@ class PrintProc extends Proc {
 
     async exec() {
         const result = await this.stackExpr.exec();
-        print("" + result);
+        print(result);
     }
 }
 
@@ -80,7 +85,13 @@ class StackExpr {
     }
 
     getStackOp(symbol) {
-        if(mathSymbols.includes(symbol)) return new Math_stackOp(symbol);
+        if(mathSymbols.includes(symbol)) {
+            switch(symbol) {
+                case "+" : return new Plus_stackOp(symbol);
+                case "==": return new Eqs_stackOp(symbol);
+                default  : return new Math_stackOp(symbol);
+            }
+        }
         switch(symbol) {
             case "not"  : return new StackEl.Not_stackOp();
             case "dup"  : return new StackEl.Dup_stackOp();
@@ -101,7 +112,7 @@ class StackExpr {
         for(const stackEl of this.stackEls) {
             await stackEl.exec(stack);
         }
-        return stack;
+        return stack.length == 1 ? stack[0] : stack;
     }
 }
 
@@ -170,14 +181,14 @@ class Math_stackOp extends StackEl.StackOp {
 
             case "and" : return stack => {
                 const [el1, el2] = this.get(stack);
-                const res = 1 * (el1 && el2);
+                const res = 1 * (Boolean(el1) && Boolean(el2));
                 this.checkNaN(res);
                 stack.push(res);
             };
 
             case "or" : return stack => {
                 const [el1, el2] = this.get(stack);
-                const res = 1 * (el1 || el2);
+                const res = 1 * (Boolean(el1) || Boolean(el2));
                 this.checkNaN(res);
                 stack.push(res);
             };
@@ -223,6 +234,12 @@ class Math_stackOp extends StackEl.StackOp {
 class Plus_stackOp extends Math_stackOp {
     constructor() {
         super("+", ["num|str", "num|str"]);
+    }
+}
+
+class Eqs_stackOp extends Math_stackOp {
+    constructor() {
+        super("==", ["num|str|list|obj", "num|str|list|obj"]);
     }
 }
 

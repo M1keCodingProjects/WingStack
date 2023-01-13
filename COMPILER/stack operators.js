@@ -26,22 +26,26 @@ export class TypeOption {
     for(const opt of options) {
       if(expandedOpts[opt] === false) expandedOpts[opt] = true;
       if(opt == "any") {
-        expandedOpts[num]  = true;
-        expandedOpts[str]  = true;
-        expandedOpts[list] = true;
-        expandedOpts[obj]  = true;
+        expandedOpts.num  = true;
+        expandedOpts.str  = true;
+        expandedOpts.list = true;
+        expandedOpts.obj  = true;
       }
     }
     return expandedOpts;
   }
 
+  set(type, value = true) {
+    this.options[type] = value;
+  }
+
   canBe(type) {
-    return this.options[type];
+    return type == "any" ? (this.options.num && this.options.str && this.options.list && this.options.obj) : this.options[type];
   }
 
   isValidFor(typeOpt) {
-    for(const type of this.options) {
-      if(typeOpt.canBe(type)) return true;
+    for(const type in this.options) {
+      if(this.options[type] && typeOpt.canBe(type)) return true;
     }
     return false;
   }
@@ -55,35 +59,37 @@ export class TypeOption {
   }
 }
 
-class typeStack {
+export class TypeStack {
   constructor() {
-    this.elements = [];
-    this.sizeOpts = [0];
+    this.items = [];
+    this.emptyFallback = new TypeOption("void");
   }
 
   addOption(...options) {
-    const newOption = new TypeOption(...options);
-    this.elements.push(newTypeOpt);
-    if(newOption.canBe("void")) {
-      this.sizeOpts.push(this.sizeOpts[this.sizeOpts.length - 1]);
-      this.sizeOpts[this.sizeOpts.length - 1]++;
-      return;
-    }
-    this.sizeOpts.forEach(sz => sz++);
+    this.items.push(new TypeOption(...options));
   }
 
-  compareToExpected(...options) {
-    const expectedOpt = new TypeOption(...options);
-    const lastElement = this.elements.pop();
-    return lastElement.isValidFor(expectedOpt) || lastElement.toString();
+  verifyTop_isOfType(expectedTypeOpt) {
+    if(!this.items.length) return this.emptyFallback.toStr();
+    const lastElement = this.items[this.items.length - 1];
+    return lastElement.isValidFor(expectedTypeOpt) || lastElement.toStr();
   }
 }
 
 export class StackOp {
-  constructor() {}
+  constructor(typeStack) {
+    this.checkType(typeStack);
+  }
 
-  checkType(typeStack) { // any | void -> any | void
-    typeStack.addOption("any", "void");
+  checkType(typeStack) { // any|void -0-> any : default behaviour wants at least 0 any:items, takes 0 and returns 1 any:item
+    typeStack.addOption("any");
+  }
+
+  requestItem(typeStack, pop = false, ...options) {
+    const typeOpt = new TypeOption(...options);
+    const result = typeStack.verifyTop_isOfType(typeOpt);
+    if(typeof result == "string") throw new Error(`TypeError: ${this.constructor.name} expected ${typeOpt.toStr()} but got ${result}`);
+    if(pop) return typeStack.items.pop();
   }
 
   grab(stack, ...typeOpts) {
@@ -97,13 +103,12 @@ export class StackOp {
 }
 
 export class Not_stackOp extends StackOp {
-  constructor() {
-    super();
+  constructor(typeStack) {
+    super(typeStack);
   }
 
-  checkType(typeStack) { // num -> num
-    const result = typeStack.compareToExpected("num");
-    if(typeof result == "string") throw new Error(`TypeError: Not_stackOp expected num but got ${result}`);
+  checkType(typeStack) { // num -1-> num
+    this.requestItem(typeStack, true, "num");
     typeStack.addOption("num");
   }
 
@@ -114,8 +119,14 @@ export class Not_stackOp extends StackOp {
 }
 
 export class Dup_stackOp extends StackOp {
-  constructor() {
-    super(["any"]);
+  constructor(typeStack) {
+    super(typeStack);
+  }
+
+  checkType(typeStack) { // any -0-> any
+    this.requestItem(typeStack, false, "any");
+    const lastItem = Object.assign(new TypeOption, typeStack.items[typeStack.items.length - 1]);
+    typeStack.items.push(lastItem);
   }
 
   exec(stack) {
@@ -124,35 +135,51 @@ export class Dup_stackOp extends StackOp {
 }
 
 export class Size_stackOp extends StackOp {
-  constructor() {
-    super();
+  constructor(typeStack) {
+    super(typeStack);
   }
   
+  checkType(typeStack) { // any|void -0-> num
+    typeStack.addOption("num");
+  }
+
   exec(stack) {
     stack.push(stack.length);
   }
 }
 
 export class RotL_stackOp extends StackOp {
-  constructor() {
-    super(["many"]);
+  constructor(typeStack) {
+    super(typeStack);
   }
   
+  checkType(typeStack) { // any any -0-> void
+    this.requestItem(typeStack, false, "any");
+    this.requestItem(typeStack, false, "any");
+    typeStack.items.push(typeStack.items.shift());
+  }
+
   exec(stack) {
     stack.push(stack.shift());
   }
 }
 
 export class RotR_stackOp extends StackOp {
-  constructor() {
-    super(["many"]);
+  constructor(typeStack) {
+    super(typeStack);
   }
   
+  checkType(typeStack) { // any any -0-> void
+    this.requestItem(typeStack, false, "any");
+    this.requestItem(typeStack, false, "any");
+    typeStack.items.unshift(typeStack.items.pop());
+  }
+
   exec(stack) {
     stack.unshift(stack.pop());
   }
 }
-
+/*
 export class Spill_stackOp extends StackOp {
   constructor() {
     super(["str|list|obj"])
@@ -167,12 +194,17 @@ export class Spill_stackOp extends StackOp {
     }
   }
 }
-  
+*/
 export class Type_stackOp extends StackOp {
-  constructor() {
-    super();
+  constructor(typeStack) {
+    super(typeStack);
   }
   
+  checkType(typeStack) { // any|void -0-> str
+    this.requestItem(typeStack, true, "any", "void");
+    typeStack.addOption("str");
+  }
+
   getType(item) {
     switch(typeof item) {
       case "undefined": return "void";
@@ -184,10 +216,10 @@ export class Type_stackOp extends StackOp {
   }
 
   exec(stack) {
-    stack.push(this.getType(stack.pop()));
+    stack.push(this.getType(stack[stack.length - 1]));
   }
 }
-
+/*
 export class Swap_stackOp extends StackOp {
   constructor() {
     super(["many"]);

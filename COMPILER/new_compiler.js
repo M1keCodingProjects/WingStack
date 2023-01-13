@@ -133,9 +133,7 @@ class Math_stackOp extends StackEl.StackOp {
     }
 
     get(stack) {
-        const el2 = stack.pop();
-        const el1 = stack.pop();
-        return [el1, el2];
+        return this.grab(stack, new StackEl.TypeOption("num"), new StackEl.TypeOption("num"));
     }
 
     checkNaN(res) {
@@ -145,9 +143,9 @@ class Math_stackOp extends StackEl.StackOp {
     init_exec(symbol) {
         switch(symbol) {
             case "+" : return stack => {
-                const [el1, el2] = this.get(stack);
+                const [el1, el2] = this.grab(stack, new StackEl.TypeOption("num", "str"), new StackEl.TypeOption("num", "str"));
                 const res = el1 + el2;
-                this.checkNaN(res);
+                if(typeof res == "number") this.checkNaN(res);
                 stack.push(res);
             };
 

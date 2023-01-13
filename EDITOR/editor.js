@@ -37,7 +37,7 @@ export default class Editor {
             [/^\=/, "="],
             [/^((Type|Property|Value)?Error)/, "errorClass"],
             [/^-?[a-zA-Z_]\w*/, "WORD"],
-            [/^[^ ]+ */, "any"],
+            [/^([^ \n]+)( +|\n)*/, "any"],
         ];
 
         this.colors = ["comment", "str", "num", "constant", "keyword", "stackOp", "instance", "errorClass", "specifier"];

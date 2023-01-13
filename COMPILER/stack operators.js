@@ -9,23 +9,107 @@
   <=  : > not
 */
 
-export class StackOp {
-  constructor(required_stackState = ["any|void"]) {
-      this.parseRequirements(required_stackState);
+export class TypeOption {
+  constructor(...options) {
+    this.options = this.expand(options);
   }
 
-  parseRequirements(required_stackState) {
-      //TODO
+  expand(options) {
+    const expandedOpts = {
+      num  : false,
+      str  : false,
+      list : false,
+      obj  : false,
+      void : false,
+    };
+
+    for(const opt of options) {
+      if(expandedOpts[opt] === false) expandedOpts[opt] = true;
+      if(opt == "any") {
+        expandedOpts[num]  = true;
+        expandedOpts[str]  = true;
+        expandedOpts[list] = true;
+        expandedOpts[obj]  = true;
+      }
+    }
+    return expandedOpts;
+  }
+
+  canBe(type) {
+    return this.options[type];
+  }
+
+  isValidFor(typeOpt) {
+    for(const type of this.options) {
+      if(typeOpt.canBe(type)) return true;
+    }
+    return false;
+  }
+
+  toStr() {
+    let res = "";
+    for(const key in this.options) {
+      if(this.options[key]) res += `${key}|`;
+    }
+    return res.slice(0, -1);
+  }
+}
+
+class typeStack {
+  constructor() {
+    this.elements = [];
+    this.sizeOpts = [0];
+  }
+
+  addOption(...options) {
+    const newOption = new TypeOption(...options);
+    this.elements.push(newTypeOpt);
+    if(newOption.canBe("void")) {
+      this.sizeOpts.push(this.sizeOpts[this.sizeOpts.length - 1]);
+      this.sizeOpts[this.sizeOpts.length - 1]++;
+      return;
+    }
+    this.sizeOpts.forEach(sz => sz++);
+  }
+
+  compareToExpected(...options) {
+    const expectedOpt = new TypeOption(...options);
+    const lastElement = this.elements.pop();
+    return lastElement.isValidFor(expectedOpt) || lastElement.toString();
+  }
+}
+
+export class StackOp {
+  constructor() {}
+
+  checkType(typeStack) { // any | void -> any | void
+    typeStack.addOption("any", "void");
+  }
+
+  grab(stack, ...typeOpts) {
+    const res = stack.splice(stack.length - typeOpts.length);
+    for(let i = 0; i < typeOpts.length; i++) {
+      const type = Type_stackOp.prototype.getType(res[i]);
+      if(!typeOpts[i].canBe(type)) throw new Error(`Runtime TypeError: ${this.constructor.name} expected #${i + 1} input value to be of type "${typeOpts[i].toStr()}" but got "${type}" instead`);
+    }
+    return res;
   }
 }
 
 export class Not_stackOp extends StackOp {
   constructor() {
-    super(["num"]);
+    super();
+  }
+
+  checkType(typeStack) { // num -> num
+    const result = typeStack.compareToExpected("num");
+    if(typeof result == "string") throw new Error(`TypeError: Not_stackOp expected num but got ${result}`);
+    typeStack.addOption("num");
   }
 
   exec(stack) {
-    stack.push(1 * !stack.pop());
+    const [el1] = this.grab(stack, new TypeOption("num"));
+    stack.push(1 * !el1);
   }
 }
 
@@ -89,14 +173,18 @@ export class Type_stackOp extends StackOp {
     super();
   }
   
-  exec(stack) {
-    switch(typeof stack[stack.length - 1]) {
-      case "undefined": stack.push("void"); return;
-      case "number" : stack.push("num");  return;
-      case "string" : stack.push("str");  return;
-      case "object" : stack.push("list"); return;
-      case "obj"    : stack.push("obj");  return; //NOT READY
+  getType(item) {
+    switch(typeof item) {
+      case "undefined": return "void";
+      case "number"   : return "num";
+      case "string"   : return "str";
+      case "object"   : return "list";
+      case "obj"      : return "obj"; //NOT READY
     }
+  }
+
+  exec(stack) {
+    stack.push(this.getType(stack.pop()));
   }
 }
 

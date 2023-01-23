@@ -16,20 +16,26 @@ export class TypeOption {
 
   expand(options) {
     const expandedOpts = {
-      num  : false,
-      str  : false,
-      list : false,
-      obj  : false,
-      void : false,
+      int   : false,
+      float : false,
+      str   : false,
+      list  : false,
+      obj   : false,
+      void  : false,
     };
 
     for(const opt of options) {
       if(expandedOpts[opt] === false) expandedOpts[opt] = true;
       if(opt == "any") {
-        expandedOpts.num  = true;
-        expandedOpts.str  = true;
-        expandedOpts.list = true;
-        expandedOpts.obj  = true;
+        expandedOpts.int   = true;
+        expandedOpts.float = true;
+        expandedOpts.str   = true;
+        expandedOpts.list  = true;
+        expandedOpts.obj   = true;
+      }
+      if(opt == "num") {
+        expandedOpts.int   = true;
+        expandedOpts.float = true;
       }
     }
     return expandedOpts;
@@ -40,7 +46,9 @@ export class TypeOption {
   }
 
   canBe(type) {
-    return type == "any" ? (this.options.num && this.options.str && this.options.list && this.options.obj) : this.options[type];
+    return type == "any" ? (this.canBe("num") && this.options.str && this.options.list && this.options.obj) :
+    type == "num" ? this.options.int || this.options.float
+    : this.options[type];
   }
 
   isValidFor(typeOpt) {
@@ -201,14 +209,14 @@ export class Type_stackOp extends StackOp {
   }
   
   checkType(typeStack) { // any|void -0-> str
-    this.requestItem(typeStack, true, "any", "void");
+    this.requestItem(typeStack, false, "any", "void");
     typeStack.addOption("str");
   }
 
   getType(item) {
     switch(typeof item) {
       case "undefined": return "void";
-      case "number"   : return "num";
+      case "number"   : return Math.floor(item) === item ? "int" : "float";
       case "string"   : return "str";
       case "object"   : return "list";
       case "obj"      : return "obj"; //NOT READY

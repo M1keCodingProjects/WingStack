@@ -241,7 +241,12 @@ class Plus_stackOp extends StackEl.StackOp {
                           (0.5 + 0.5 * (el2.canBe("num") - el2.canBe("str")));
         
         const options = [];
-        if(typeScore > 0) options.push("num"); // 0.25, 0.5 relate to num|str, 1 is num
+        if(typeScore > 0) { // 0.25, 0.5 relate to num|str, 1 is num
+            const numTypeScore = Math.round(1.4 * el1.canBe("float") + 0.4 * el1.canBe("int")) +
+                                 Math.round(1.4 * el2.canBe("float") + 0.4 * el2.canBe("int"));
+
+            options.push(["int", "float", "num"][Math.min(numTypeScore, 2)]); // 0 : int, 1 : float, 2 : num
+        }
         if(typeScore < 1) options.push("str"); // 0.25, 0.5 relate to num|str, 0 is str
         typeStack.addOption(...options);
     }

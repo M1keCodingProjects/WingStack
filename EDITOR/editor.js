@@ -27,17 +27,17 @@ export default class Editor {
             [/^\:/, ":"],
             [/^\|/, "|"],
             [/^\"[^\"\n]*\"?/, "str"],
-            [/^-?\d+(\.\d+)?/, "num"],
             [/^(print|make|macro|expand|loop|when|else|free|fun|exit|next|typenum|use)[^\w]/, "keyword"],
             [/^(with|global|dynamic|class|frozen|then)[^\w]/, "specifier"],
             [/^(PI|INF)/, "constant"],
             [/^(me|origin)[^\w]/, "instance"],
-            [/^(rot\<|rot\>|dup|drop|num|int|float|str|list|obj|void|spill|swap|over|and|or|not|type|size|pop|inp)[^\w]/, "stackOp"],
+            [/^(rot\<|rot\>|dup|drop|num|int|float|str|list|obj|void|spill|swap|over|and|or|not|type|size|pop|inp|2dup)[^\w]/, "stackOp"],
+            [/^-?\d+(\.\d+)?/, "num"],
             [/^(\<\<|\>\>|\>|\<|\+|\-|\*\*|\/|\*|\=\=)/, "op"],
             [/^\=/, "="],
             [/^((Type|Property|Value)?Error)/, "errorClass"],
             [/^-?[a-zA-Z_]\w*/, "WORD"],
-            [/^([^ \n]+)( +|\n)*/, "any"],
+            [/^[^ \n]/, "any"],
         ];
 
         this.colors = ["comment", "str", "num", "constant", "keyword", "stackOp", "instance", "errorClass", "specifier"];
@@ -100,6 +100,7 @@ export default class Editor {
 
     onkeydown(event) {
         switch(event.key) {
+            case "Enter" : this.startNewline(event); break;
             case "Tab" : this.insertTab(event); break;
             case "ArrowDown":
             case "ArrowUp":
@@ -109,12 +110,34 @@ export default class Editor {
         }
     }
 
+    _getCurrentLine(event, cursorPos) {
+        return event.target.value.substring(0, cursorPos).split("\n").pop();
+    }
+
+    _addTextManuallyAfterPointerPos(event, cursorPos, textToAdd) {
+        event.target.value = event.target.value.substring(0, cursorPos) + textToAdd + event.target.value.substring(cursorPos);
+    }
+
+    _manuallySetPointerPos(event, newCursorPos) {
+        event.target.selectionStart = newCursorPos;
+        event.target.selectionEnd   = newCursorPos;
+    }
+
+    startNewline(event) {
+        const oldCursorPos = event.target.selectionStart;
+        const currentLine  = this._getCurrentLine(event, oldCursorPos);
+        const newLineTrail = currentLine.match(/^ */)[0] + " ".repeat(2 * (event.target.value[oldCursorPos - 1] == "{")); 
+        this._addTextManuallyAfterPointerPos(event, oldCursorPos, `\n${newLineTrail}`);
+        this._manuallySetPointerPos(event, oldCursorPos + 1 + newLineTrail.length);
+        this.updateText(event);
+        event.preventDefault();
+    }
+
     insertTab(event) {
         const oldCursorPos = event.target.selectionStart;
-        event.target.value = event.target.value.substring(0, oldCursorPos) + "  " + event.target.value.substring(oldCursorPos);
+        this._addTextManuallyAfterPointerPos(event, oldCursorPos, "  ");
         this.updateText(event);
-        event.target.selectionStart = oldCursorPos + 2;
-        event.target.selectionEnd   = oldCursorPos + 2;
+        this._manuallySetPointerPos(event, oldCursorPos + 2);
         event.preventDefault();
     }
 

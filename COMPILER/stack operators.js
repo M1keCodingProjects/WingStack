@@ -14,6 +14,16 @@ export class TypeOption {
     this.options = this.expand(options);
   }
 
+  copy() {
+    const copy = new TypeOption();
+    for(const type in this.options) {
+      const option = this.options[type];
+      if(!option) continue;
+      copy.set(type, option instanceof TypeOption ? { many : option.copy() } : type); // list variant not implemented
+    }
+    return copy;
+  }
+
   expand(options) {
     const expandedOpts = {
       int   : false,
@@ -22,22 +32,36 @@ export class TypeOption {
       list  : false,
       obj   : false,
       void  : false,
+      many  : false,
     };
 
     for(const opt of options) {
       if(expandedOpts[opt] === false) expandedOpts[opt] = true;
-      if(opt == "any") {
-        expandedOpts.int   = true;
-        expandedOpts.float = true;
-        expandedOpts.str   = true;
-        expandedOpts.list  = true;
-        expandedOpts.obj   = true;
+      
+      if(opt == "many") opt = { many : ["any"] };
+      if(typeof opt == "object") {
+        if("list" in opt) return;
+        // if "many" in opt:
+        expandedOpts.many = new TypeOption(...opt.many);
+        continue;
       }
-      if(opt == "num") {
-        expandedOpts.int   = true;
-        expandedOpts.float = true;
+      
+      switch(opt) {
+        case "any" :
+          expandedOpts.int   = true;
+          expandedOpts.float = true;
+          expandedOpts.str   = true;
+          expandedOpts.list  = true;
+          expandedOpts.obj   = true;
+          break;
+        
+        case "num" :
+          expandedOpts.int   = true;
+          expandedOpts.float = true;
+          break;
       }
     }
+
     return expandedOpts;
   }
 
@@ -55,13 +79,18 @@ export class TypeOption {
     for(const type in this.options) {
       if(this.options[type] && typeOpt.canBe(type)) return true;
     }
-    return false;
+    return this.options.many && this.options.many.isValidFor(typeOpt);
   }
 
   toStr() {
     let res = "";
     for(const key in this.options) {
-      if(this.options[key]) res += `${key}|`;
+      const option = this.options[key];
+      if(!option) continue;
+      const optionText = option instanceof TypeOption ? option.toStr() : key;
+      res += (key == "many" ? `(${optionText})` :
+              key == "list" ? `[${optionText}]` :
+              optionText) + "|";
     }
     return res.slice(0, -1);
   }
@@ -79,7 +108,7 @@ export class TypeStack {
 
   verifyTop_isOfType(expectedTypeOpt) {
     if(!this.items.length) return this.emptyFallback.toStr();
-    const lastElement = this.items[this.items.length - 1];
+    let lastElement = this.items[this.items.length - 1];
     return lastElement.isValidFor(expectedTypeOpt) || lastElement.toStr();
   }
 }
@@ -97,7 +126,9 @@ export class StackOp {
     const typeOpt = new TypeOption(...options);
     const result = typeStack.verifyTop_isOfType(typeOpt);
     if(typeof result == "string") throw new Error(`TypeError: ${this.constructor.name} expected ${typeOpt.toStr()} but got ${result}`);
-    if(pop) return typeStack.items.pop();
+    if(!pop) return;
+    const lastElement = typeStack.items[typeStack.items.length - 1];
+    return lastElement.canBe("many") ? lastElement.copy() : typeStack.items.pop();
   }
 
   grab(stack, ...typeOpts) {
@@ -161,7 +192,7 @@ export class RotL_stackOp extends StackOp {
     super(typeStack);
   }
   
-  checkType(typeStack) { // any any -0-> void
+  checkType(typeStack) { // many -0-> void
     this.requestItem(typeStack, false, "any");
     this.requestItem(typeStack, false, "any");
     typeStack.items.push(typeStack.items.shift());
@@ -177,7 +208,7 @@ export class RotR_stackOp extends StackOp {
     super(typeStack);
   }
   
-  checkType(typeStack) { // any any -0-> void
+  checkType(typeStack) { // main -0-> void
     this.requestItem(typeStack, false, "any");
     this.requestItem(typeStack, false, "any");
     typeStack.items.unshift(typeStack.items.pop());
@@ -187,22 +218,28 @@ export class RotR_stackOp extends StackOp {
     stack.unshift(stack.pop());
   }
 }
-/*
+
 export class Spill_stackOp extends StackOp {
-  constructor() {
-    super(["str|list|obj"])
+  constructor(typeStack) {
+    super(typeStack);
   }
   
+  checkType(typeStack) { // str|list|obj -1-> void|any|many
+    const el = this.requestItem(typeStack, true, "str", "list", "obj");
+    if(el.isValidFor(new TypeOption("str"))) typeStack.addOption({ many : ["str"] });
+  }
+
   exec(stack) {
     const el = stack.pop();
     switch(typeof el) {
       case "string" : stack.push(...el.split("")); return;
       case "object" : stack.push(...el); return;
       case "obj"    : stack.push(...el.listEnumerable()); return; //NOT READY
+      default       : throw new Error(`Runtime TypeError: cannot spill item of type <${Type_stackOp.prototype.getType(el)}>`);
     }
   }
 }
-*/
+
 export class Type_stackOp extends StackOp {
   constructor(typeStack) {
     super(typeStack);

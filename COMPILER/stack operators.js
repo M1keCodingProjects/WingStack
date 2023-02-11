@@ -18,8 +18,8 @@ export class TypeOption {
     const copy = new TypeOption();
     for(const type in this.options) {
       const option = this.options[type];
-      if(!option) continue;
-      copy.set(type, option instanceof TypeOption ? { many : option.copy() } : type); // list variant not implemented
+      if(option === false) continue;
+      copy.set(type, option instanceof TypeOption ? { many : option.copy() } : option); // list variant not implemented
     }
     return copy;
   }
@@ -40,12 +40,17 @@ export class TypeOption {
       
       if(opt == "many") opt = { many : ["any"] };
       if(typeof opt == "object") {
-        if("list" in opt) return;
+        if(opt instanceof Array) {
+          expandedOpts[opt[0]] = opt[1];
+          continue;
+        }
+
+        if("list" in opt) return; // TODO: support
         // if "many" in opt:
         expandedOpts.many = new TypeOption(...opt.many);
         continue;
       }
-      
+
       switch(opt) {
         case "any" :
           expandedOpts.int   = true;
@@ -72,12 +77,20 @@ export class TypeOption {
   canBe(type) {
     return type == "any" ? (this.canBe("num") && this.options.str && this.options.list && this.options.obj) :
     type == "num" ? this.options.int || this.options.float
-    : this.options[type];
+    : this.options[type] !== false;
+  }
+
+  isOnly(...types) {
+    const expectedTypeOpt = new TypeOption(...types);
+    for(const type in this.options) {
+      if((this.options[type] !== false) != expectedTypeOpt.options[type]) return false;
+    }
+    return true;
   }
 
   isValidFor(typeOpt) {
     for(const type in this.options) {
-      if(this.options[type] && typeOpt.canBe(type)) return true;
+      if(this.options[type] !== false && typeOpt.canBe(type)) return true;
     }
     return this.options.many && this.options.many.isValidFor(typeOpt);
   }
@@ -86,8 +99,9 @@ export class TypeOption {
     let res = "";
     for(const key in this.options) {
       const option = this.options[key];
-      if(!option) continue;
-      const optionText = option instanceof TypeOption ? option.toStr() : key;
+      if(option === false) continue;
+      let optionText = option instanceof TypeOption ? option.toStr() : key;
+      if(typeof option == "number") optionText += `(${option})`;
       res += (key == "many" ? `(${optionText})` :
               key == "list" ? `[${optionText}]` :
               optionText) + "|";
@@ -106,38 +120,57 @@ export class TypeStack {
     this.items.push(new TypeOption(...options));
   }
 
-  verifyTop_isOfType(expectedTypeOpt) {
+  getItem(atPos = -1) {
+    if(itemPos < 0) itemPos = this.items.length + itemPos;
+    this.items[itemPos];
+  }
+
+  verifyItem_isOfType(expectedTypeOpt, itemPos) {
     if(!this.items.length) return this.emptyFallback.toStr();
-    let lastElement = this.items[this.items.length - 1];
-    return lastElement.isValidFor(expectedTypeOpt) || lastElement.toStr();
+    let item = this.getItem(itemPos);
+    return item?.isValidFor(expectedTypeOpt) || item?.toStr() || this.emptyFallback.toStr();
+  }
+
+  toStr() {
+    return this.items.map(item => item.toStr());
   }
 }
 
 export class StackOp {
   constructor(typeStack) {
-    this.checkType(typeStack);
+    //this.checkType(typeStack); Temporarily paused development on compile-time typechecking
   }
 
   checkType(typeStack) { // any|void -0-> any : default behaviour wants at least 0 any:items, takes 0 and returns 1 any:item
     typeStack.addOption("any");
   }
 
-  requestItem(typeStack, pop = false, ...options) {
+  requestItem(typeStack, itemPos = -1, pop = false, ...options) {
     const typeOpt = new TypeOption(...options);
-    const result = typeStack.verifyTop_isOfType(typeOpt);
+    const result = typeStack.verifyItem_isOfType(typeOpt, itemPos);
     if(typeof result == "string") throw new Error(`TypeError: ${this.constructor.name} expected ${typeOpt.toStr()} but got ${result}`);
     if(!pop) return;
     const lastElement = typeStack.items[typeStack.items.length - 1];
-    return lastElement.canBe("many") ? lastElement.copy() : typeStack.items.pop();
+    return lastElement.canBe("many") ? lastElement.options.many.copy() : typeStack.items.pop();
   }
 
-  grab(stack, ...typeOpts) {
-    const res = stack.splice(stack.length - typeOpts.length);
-    for(let i = 0; i < typeOpts.length; i++) {
-      const type = Type_stackOp.prototype.getType(res[i]);
-      if(!typeOpts[i].canBe(type)) throw new Error(`Runtime TypeError: ${this.constructor.name} expected #${i + 1} input value to be of type "${typeOpts[i].toStr()}" but got "${type}" instead`);
-    }
-    return res;
+  checkStackMinLength(stack, amt) {
+    if(stack.length < amt) throw new Error(`Runtime NotEnoughArguments Error: ${this.constructor.name} expected ${amt} arguments but got ${stack.length} instead.`);
+  }
+
+  grabItemFromTop(stack, inputID, asCopy, ...validTypes) {
+    const grabbedItem = asCopy ? stack[stack.length - 1] : stack.pop();
+    const itemType    = this.checkItemType(grabbedItem, inputID, ...validTypes);
+    return [grabbedItem, itemType];
+  }
+
+  checkItemType(item, inputID, ...validTypes) {
+    const itemType = Type_stackOp.prototype.getType(item);
+    if(validTypes[0] == "any" && itemType != "void") return itemType;
+    
+    const validTypeOpt = new TypeOption(...validTypes);
+    if(itemType == "void" || !validTypeOpt.canBe(itemType)) throw new Error(`Runtime Type Error: ${this.constructor.name} expected ${inputID + 1}° input value to be of type "${validTypeOpt.toStr()}" but got "${itemType}" instead.`);
+    return itemType;
   }
 }
 
@@ -152,8 +185,8 @@ export class Not_stackOp extends StackOp {
   }
 
   exec(stack) {
-    const [el1] = this.grab(stack, new TypeOption("num"));
-    stack.push(1 * !el1);
+    const [item] = this.grabItemFromTop(stack, 0, false, "num");
+    stack.push(1 * !item);
   }
 }
 
@@ -163,13 +196,14 @@ export class Dup_stackOp extends StackOp {
   }
 
   checkType(typeStack) { // any -0-> any
-    this.requestItem(typeStack, false, "any");
-    const lastItem = Object.assign(new TypeOption, typeStack.items[typeStack.items.length - 1]);
-    typeStack.items.push(lastItem);
+    const lastItem = this.requestItem(typeStack, true, "any");
+    typeStack.items.push(lastItem, lastItem.copy());
+    console.log(typeStack.items);
   }
 
   exec(stack) {
-    stack.push(stack[stack.length - 1]);
+    const [item] = this.grabItemFromTop(stack, 0, true, "any");
+    stack.push(item);
   }
 }
 
@@ -192,13 +226,14 @@ export class RotL_stackOp extends StackOp {
     super(typeStack);
   }
   
-  checkType(typeStack) { // many -0-> void
+  checkType(typeStack) { // any any -0-> void
     this.requestItem(typeStack, false, "any");
     this.requestItem(typeStack, false, "any");
     typeStack.items.push(typeStack.items.shift());
   }
 
   exec(stack) {
+    this.checkStackMinLength(stack, 2);
     stack.push(stack.shift());
   }
 }
@@ -208,13 +243,14 @@ export class RotR_stackOp extends StackOp {
     super(typeStack);
   }
   
-  checkType(typeStack) { // main -0-> void
+  checkType(typeStack) { // any any -0-> void
     this.requestItem(typeStack, false, "any");
     this.requestItem(typeStack, false, "any");
     typeStack.items.unshift(typeStack.items.pop());
   }
 
   exec(stack) {
+    this.checkStackMinLength(stack, 2);
     stack.unshift(stack.pop());
   }
 }
@@ -226,16 +262,17 @@ export class Spill_stackOp extends StackOp {
   
   checkType(typeStack) { // str|list|obj -1-> void|any|many
     const el = this.requestItem(typeStack, true, "str", "list", "obj");
-    if(el.isValidFor(new TypeOption("str"))) typeStack.addOption({ many : ["str"] });
+    if(!el.isValidFor(new TypeOption("str"))) return;
+    if(el.options.str === true) return typeStack.addOption({ many : ["str"] });
+    for(let i = 0; i < el.options.str; i++) typeStack.addOption("str");
   }
 
   exec(stack) {
-    const el = stack.pop();
-    switch(typeof el) {
-      case "string" : stack.push(...el.split("")); return;
-      case "object" : stack.push(...el); return;
-      case "obj"    : stack.push(...el.listEnumerable()); return; //NOT READY
-      default       : throw new Error(`Runtime TypeError: cannot spill item of type <${Type_stackOp.prototype.getType(el)}>`);
+    const [item, type] = this.grabItemFromTop(stack, 0, false, "str", "list", "obj");
+    switch(type) {
+      case "str"  : stack.push(...item.split("")); return;
+      case "list" : stack.push(...item); return;
+      case "obj"  : stack.push(...item.listEnumerable()); return; //NOT READY
     }
   }
 }
@@ -264,131 +301,210 @@ export class Type_stackOp extends StackOp {
     stack.push(this.getType(stack[stack.length - 1]));
   }
 }
-/*
+
+export class Flip_stackOp extends StackOp {
+  constructor(typeStack) {
+    super(typeStack);
+  }
+
+  checkType(typeStack) { // any any -0-> void
+    this.requestItem(typeStack, false, "any");
+    this.requestItem(typeStack, false, "any");
+    typeStack.items.reverse();
+  }
+
+  exec(stack) {
+    stack.reverse();
+  }
+}
+
 export class Swap_stackOp extends StackOp {
-  constructor() {
-    super(["many"]);
+  constructor(typeStack) {
+    super(typeStack);
+  }
+
+  checkType(typeStack) {
+    //TODO
   }
   
   exec(stack) {
-    let el1 = stack.pop();
-    let el2 = stack.pop();
-    stack.push(el1, el2);
+    this.checkStackMinLength(stack, 2);
+    let [item1] = this.grabItemFromTop(stack, 0, false, "any");
+    let [item2] = this.grabItemFromTop(stack, 1, false, "any");
+    stack.push(item1, item2);
   }
 }
 
 export class Drop_stackOp extends StackOp {
-  constructor() {
-    super(["any"]);
+  constructor(typeStack) {
+    super(typeStack);
+  }
+
+  checkType(typeStack) {
+    //TODO
   }
   
   exec(stack) {
-    stack.pop();
+    this.grabItemFromTop(stack, 0, false, "any");
   }
 }
 
 export class Pop_stackOp extends StackOp {
-  constructor() {
-    super(["any"]);
+  constructor(typeStack) {
+    super(typeStack);
+  }
+
+  checkType(typeStack) {
+    //TODO
   }
 
   exec(stack) {
-    stack.splice(0, stack.length - 1, stack.pop());
+    const [item] = this.grabItemFromTop(stack, 0, false, "any");
+    stack.length = 1;
+    stack[0]     = item;
   }
 }
-/*
+
 export class Rand_stackOp extends StackOp {
-  constructor(ID) { super(ID, "rand"); }
+  constructor(typeStack) {
+    super(typeStack);
+  }
   
+  checkType(typeStack) {
+    //TODO
+  }
+
+  getRandomStackItem(stack) {
+    return stack[ Math.floor(Math.random() * stack.length) ];
+  }
+
   exec(stack) {
-    this.check_minLength(stack, 1);
-    stack.data.push(stack.fetch(Math.floor(Math.random() * stack.len())));
+    this.checkStackMinLength(stack, 1);
+    stack.push(this.getRandomStackItem(stack));
   }
 }
 
-export class Limit_stackOp extends StackOp {
-  constructor(ID) { super(ID, ","); }
-  
+export class Num_stackOp extends StackOp {
+  constructor(typeStack) {
+    super(typeStack);
+  }
+
+  checkType(typeStack) {
+    //TODO
+  }
+
+  castStr(item) {
+    if(item.match(/^-?\d+(\.\d+)?/)?.[0] == item) return Number(item);
+    if(item.length != 1) throw new Error("Runtime ValueError: casting from non-numeric str to num is only possible with a single character str.");
+    return item.charCodeAt(0);
+  }
+
   exec(stack) {
-    this.check_minLength(stack, 1);
-    stack.fetchID = stack.len();
+    if(!stack.length) stack.push(0);
+    const [item, type] = this.grabItemFromTop(stack, 0, false, "num", "str");
+    stack.push(type == "str" ? this.castStr(item) : item);
   }
 }
 
-//########################################################################################################
-class Cast_stackOp extends StackOp {
-  constructor(ID, type, acceptedTypes) {
-    super(ID, type);
-    this.acceptedTypes = acceptedTypes;
+export class Int_stackOp extends Num_stackOp {
+  constructor(typeStack) {
+    super(typeStack);
   }
-  
+
+  checkType(typeStack) {
+    //TODO
+  }
+
+  castStr(item) {
+    return Math.round(super.castStr(item));
+  }
+
   exec(stack) {
-    if(!this.acceptedTypes.includes("none")) this.check_minLength(stack, 1);
-    let el;
-    let type = "many";
-    if(this.acceptedTypes.includes("many") && stack.len() > 1) el = [...stack.pop("all")];
-    else {
-      el = stack.pop();
-      type = StackValue.prototype.get_type(el);
-      if(!this.acceptedTypes.includes(type)) throw new Errors.RuntimeError(this.ID, `Invalid casting attempt from <${type}> to <${this.type}>, expected ${this.acceptedTypes.join(" or ")}`);
+    if(!stack.length) stack.push(0);
+    const [item, type] = this.grabItemFromTop(stack, 0, false, "num", "str");
+    stack.push(type == "str" ? this.castStr(item) : Math.round(item));
+  }
+}
+
+export class Str_stackOp extends StackOp {
+  constructor(typeStack) {
+    super(typeStack);
+  }
+
+  checkType(typeStack) { // void|num|str -all-> str
+    const allowedOpts = new TypeOption("num", "str");
+    for(const item of typeStack.items) {
+      if(!item.isValidFor(allowedOpts)) throw new Error(`TypeError: ${this.constructor.name} expected ${allowedOpts.toStr()} but got ${item.toStr()}`);
     }
-    stack.data.push(this.cast(el, type));
+    typeStack.items = [];
+    typeStack.addOption("str");
   }
-}
 
-export class NumCast_stackOp extends Cast_stackOp {
-  constructor(ID) { super(ID, "number", ["number", "string"]); }
-
-  cast(el, type) {
-    if(isNaN(el)) throw new Errors.RuntimeError(this.ID, `string literal item "${el}" cannot be converted to a number`);
-    return Number(el);
-  }
-}
-
-export class StrCast_stackOp extends Cast_stackOp {
-  constructor(ID) { super(ID, "string", ["number", "string", "list", "many"]); }
-
-  cast(el, type){
-    switch(type) {
-      case "list": return el.join(" ");
-      case "many": return el.join("");
-      default    : return `${el}`;
-    }
-  }
-}
-
-export class LstCast_stackOp extends Cast_stackOp {
-  constructor(ID) { super(ID, "list", ["number", "string", "list", "many", "object"]); }
-
-  cast(el, type) {
-    switch(type) {
-      case "many"   : return [...el];
-      case "object" : const propertiesList = Object.entries(el).filter(entry => !(entry[1] instanceof Function));
-                      if(!propertiesList.length) throw new Errors.RuntimeError(this.ID, "Nothing to pack! A <pack> operation was performed on an OBJECT-type item with no properties, which results in an empty LIST");
-                      return propertiesList;
-      default       : return [el];
-    }
-  }
-}
-
-export class ObjCast_stackOp extends Cast_stackOp {
-  constructor(ID) { super(ID, "object", ["number", "string", "list", "object"]); }
-
-  cast(el, type) {
-    if(type == "object") return {...el};
-    return { value : el };
-  }
-}
-
-//########################################################################################################
-
-/* TEMPLATE BELOW :
-export class _stackOp extends StackOp {
-  constructor(ID) { super(ID, ""); }
-  
   exec(stack) {
-    this.check_minLength(stack, 1);
+    let res = "";
     
+    if(stack.length == 1 && Type_stackOp.prototype.getType(stack[0]) == "int") {
+      res = String.fromCharCode(stack[0]);
+      stack.length = 1;
+      stack[0] = res;
+      return;
+    }
+
+    const initialLength = stack.length;
+    for(let i = 0; i < initialLength; i++) {
+      const [item, type] = this.grabItemFromTop(stack, i, false, "num", "str");
+      res = item + res;
+    }
+    
+    stack[0] = res;
+  }
+}
+
+export class List_stackOp extends StackOp {
+  constructor(typeStack) {
+    super(typeStack);
+  }
+
+  checkType(typeStack) {
+    //TODO
+  }
+
+  exec(stack) {
+    const res    = [...stack];
+    stack.length = 1;
+    stack[0]     = res;
+  }
+}
+
+export class Obj_stackOp extends StackOp {
+  constructor(typeStack) {
+    super(typeStack);
+  }
+
+  checkType(typeStack) {
+    //TODO
+  }
+
+  exec(stack) {
+    if(!stack.length) return stack.push({});
+
+    const item = this.grabItemFromTop(stack, 0, false, "obj");
+    stack.push({...item}); // NOT READY!!
+  }
+}
+
+/*
+export class _stackOp extends StackOp {
+  constructor(typeStack) {
+    super(typeStack);
+  }
+  
+  checkType(typeStack) {
+    //TODO
+  }
+
+  exec(stack) {
+
   }
 }
 */

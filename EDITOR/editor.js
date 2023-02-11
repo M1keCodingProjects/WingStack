@@ -31,7 +31,7 @@ export default class Editor {
             [/^(with|global|dynamic|class|frozen|then)[^\w]/, "specifier"],
             [/^(PI|INF)/, "constant"],
             [/^(me|origin)[^\w]/, "instance"],
-            [/^(rot\<|rot\>|dup|drop|num|int|float|str|list|obj|void|spill|swap|over|and|or|not|type|size|pop|inp|2dup)[^\w]/, "stackOp"],
+            [/^(rot\<|rot\>|dup|drop|num|int|float|str|list|obj|void|spill|swap|over|and|or|not|type|size|pop|inp|2dup|flip|rand)[^\w]/, "stackOp"],
             [/^-?\d+(\.\d+)?/, "num"],
             [/^(\<\<|\>\>|\>|\<|\+|\-|\*\*|\/|\*|\=\=)/, "op"],
             [/^\=/, "="],

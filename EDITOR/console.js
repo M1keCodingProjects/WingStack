@@ -11,23 +11,25 @@ export default class Console {
 
     submit(event) {
         if(event.key != "Enter") return null;
-        const userInput = this.input.value;
+        let userInput = this.input.value;
+        userInput = userInput.match(/^-?\d+(\.\d+)?/)?.[0] == userInput ? Number(userInput) : userInput;
         this.input.value = "";
         
-        if(!this.inputRequested) this.appendLog(userInput);
-        return userInput.match(/^-?\d+(\.\d+)?/)?.[0] == userInput ? Number(userInput) : userInput;
+        if(!this.inputRequested && userInput) this.appendLog(userInput);
+        return userInput;
     }
 
     format(text, firstCall = true) {
         switch(typeof text) {
             case 'string': return `"${text}"`;
             case 'number': return `${text}`;
-            case 'object': return firstCall ? `[${text.map(el => this.format(el, false)).join(", ")}]` : `[List:${text.length}]`;
+            case 'object': return text instanceof Array ?
+                firstCall ? `[${text.map(el => this.format(el, false)).join(", ")}]` : `[List:${text.length}]`
+                : "{...}";
         }
     }
 
     appendLog(text, style) {
-        if(text === "") return;
         const original_text = text;
         text = this.format(text).replace(/\n/g, "<br>").replace(/ /g, "&nbsp;");
         switch(style) {

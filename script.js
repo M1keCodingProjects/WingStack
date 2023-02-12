@@ -13,14 +13,11 @@ const preloadedModuleList = {
 const usedFilePath = "EXAMPLES/presentation";
 //end
 
-const GLC         = new Compiler();
+const GLC         = new Compiler("debug");
 const fileManager = new FileManager();
 
 //GUI Buttons setup
-const openFileBtn   = document.getElementById("Open");
-const saveFileBtn   = document.getElementById("Save");
-const saveFileAsBtn = document.getElementById("SaveAs");
-const buildBtn      = document.getElementById("Build");
+const [saveFileBtn, saveFileAsBtn, openFileBtn] = Array.from(document.querySelectorAll("#File-dropdown > .dropdown-opts > .dropdown-option"));
 
 openFileBtn.onclick = async _=> {
     await fileManager.openFile();
@@ -35,6 +32,17 @@ saveFileBtn.onclick = async _=> {
 saveFileAsBtn.onclick = async _=> {
     await fileManager.saveFileAs(GLC.editor.getText());
 };
+
+
+const [compileBtn, runBtn, buildBtn] = Array.from(document.querySelectorAll("#Code-dropdown > .dropdown-opts > .dropdown-option"));
+
+compileBtn.onclick =_=> {
+    GLC.compile();
+}
+
+runBtn.onclick =_=> {
+    GLC.run();
+}
 
 buildBtn.onclick =_=> {
     GLC.build();

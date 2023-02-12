@@ -15,24 +15,35 @@
     <section id="GUI" class="flex-row">
         <div class="flex-col" style="width: 40%">
             <div class="buttonContainer flex-row">
-                <button class="gui-btn" id="Save">Save</button>
-                <button class="gui-btn" id="SaveAs">Save As</button>
-                <button class="gui-btn" id="Open">Open</button>
-                <button class="gui-btn" id="Build">Build</button>
+                <div class="dropdown" id="File-dropdown">
+                    <button class="gui-btn" id="File">File</button>
+                    <div class="dropdown-opts">
+                        <button class="dropdown-option" id="Save">Save</button>
+                        <button class="dropdown-option" id="SaveAs">Save As</button>
+                        <button class="dropdown-option" id="Open">Open</button>
+                    </div>
+                </div>
+
+                <div class="dropdown" id="Code-dropdown">
+                    <button class="gui-btn" id="Code">Code</button>
+                    <div class="dropdown-opts">
+                        <button class="dropdown-option" id="Compile">Compile</button>
+                        <button class="dropdown-option" id="Run">Run Latest</button>
+                        <button class="dropdown-option" id="CompileRun">Compile & Run</button>
+                    </div>
+                </div>
             </div>
             
             <div style="position: relative;">
                 <input type="text" class="search-input" placeholder="Find text">
                 <span class="search-icon"></span>
             </div>
-        </div>
-
-        <div class="openFilesContainer">
-            <span class="fileTab"><span class="fileName">unsaved-file</span>.gl</span>
-        </div>
-
-        <span style="content: url(./ASSETS/ICONS/GLIDE_logo.svg); width: 8rem; margin-inline: 1rem;"></span>
+        </div>  
     </section>
+
+    <div class="openFilesContainer" style="position: absolute; left:50%; top: 10%">
+            <span class="fileTab"><span class="fileName">unsaved-file</span>.gl</span>
+    </div>
     
     <div class="flex-row" style="height: 84%;">
         <div class="editorContainer" id="mainTextEditor">

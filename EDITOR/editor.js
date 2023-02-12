@@ -1,5 +1,5 @@
 import Console from './console.js';
-const GUIfileTab = document.querySelector("#GUI .openFilesContainer .fileName");
+const GUIfileTab = document.querySelector(".openFilesContainer .fileName");
 
 export default class Editor {
     constructor() {

@@ -422,7 +422,7 @@ export class Int_stackOp extends Num_stackOp {
   exec(stack) {
     if(!stack.length) stack.push(0);
     const [item, type] = this.grabItemFromTop(stack, 0, false, "num", "str");
-    stack.push(type == "str" ? this.castStr(item) : Math.round(item));
+    stack.push(type == "str" ? this.castStr(item) : Math.floor(item));
   }
 }
 

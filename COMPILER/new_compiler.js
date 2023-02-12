@@ -13,40 +13,46 @@ const raise = msg => {
 const mathSymbols = ["+", "-", "*", "/", "**", "and", "or", ">", "<", "==", "<<", ">>"];
 
 export default class Compiler {
-    constructor() {
+    constructor(state) {
         this.init();
-        this.state = "deploy";
+        this.state = state;
         this.parser = new Parser(editor);
         this.editor = editor;
     }
 
     init() {
         this.AST = [];
-        this.reset_runtime();
+        this.expressions = [];
     }
 
     reset_runtime() {
         this.vars = [];
+        print("\\clear");
     }
 
-    build() {
+    compile() {
         this.init();
         this.AST = this.parser.parse_fileContents();
-        const expressions = [];
-        for(const expr of this.AST) expressions.push(new PrintProc(expr.value));
+        for(const expr of this.AST) this.expressions.push(new PrintProc(expr.value));
         if(this.state == "debug") {
             print(JSON.stringify(this.AST, null, 2));
             print("Build complete.");
         }
-        
-        this.run(expressions);
-        if(this.state == "debug") print("Execution complete.");
     }
 
-    async run(expressions) {
-        for(const expr of expressions) {
+    build() {
+        this.compile();
+        this.run();
+    }
+
+    async run() {
+        this.reset_runtime();
+        if(!this.expressions.length) raise("Couldn't find any previous build to run.");
+
+        for(const expr of this.expressions) {
             await expr.exec();
         }
+        if(this.state == "debug") print("Execution complete.");
     }
 }
 
@@ -79,6 +85,8 @@ class StackExpr {
         this.stackEls = stackElements.map(stackElm => {
             switch(stackElm.type) {
                 case "stackOp": return this.getStackOp(stackElm.value, typeStack);
+                case "CallChain": return new CallChain(stackElm.value, typeStack);
+
                 case "num":
                 case "str": return new StackValue(stackElm.value, typeStack);
             }
@@ -119,12 +127,12 @@ class StackExpr {
         }
     }
 
-    async exec() {
+    async exec(keepPacked = false) {
         const stack = [];
         for(const stackEl of this.stackEls) {
             await stackEl.exec(stack);
         }
-        return stack.length == 1 ? stack[0] : stack;
+        return stack.length == 1 && !keepPacked ? stack[0] : stack;
     }
 }
 
@@ -307,5 +315,30 @@ class Inp_stackOp extends StackEl.StackOp {
     async exec(stack) {
         const userInput = await editor.console.requestInput();
         stack.push(userInput);
+    }
+}
+
+class CallChain {
+    constructor(properties, typeStack) {
+        this.properties = properties.map(p => {
+            switch(p.type) {
+                case "IndexedProperty" : return new StackExpr(p.value);
+            }
+        });
+    }
+
+    async exec(stack) {
+        const newListItem = await this.properties[0].exec(true);
+        if(this.properties.length == 1) return stack.push(newListItem);
+        
+        let res = newListItem;
+        for(let i = 1; i < this.properties.length; i++) {
+            const id = await this.properties[i].exec();
+            const idType = StackEl.Type_stackOp.prototype.getType(id);
+            if(idType != "int") raise(`Runtime List Error: cannot index properties of a list item with a non-int index: got ${idType}`);
+            res = res[id < 0 ? res.length + id : id];
+            if(res === undefined) raise(`Runtime List Error: cannot find item at position ${id} in list.`);
+        }
+        stack.push(res);
     }
 }

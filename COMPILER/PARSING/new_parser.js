@@ -47,17 +47,58 @@ export default class Parser {
     }
 
     StackExpr() {
+        if(this.peek_nextToken()?.type == "space") this.eat("space");
         const values = [];
-        while(!["EOL", "}"].includes(this.peek_nextToken()?.type)) {
+        while(true) {
             const nextTokenType = this.peek_nextToken()?.type;
-            values.push(nextTokenType == "stackOp" ? this.eat("stackOp") : this.Value());
-            if(this.peek_nextToken()?.type == "space") this.eat("space");
+            switch(nextTokenType) {
+                case "stackOp" : values.push(this.eat("stackOp")); break;
+                case "["       : values.push(this.CallChain()); break;
+                
+                case "num"     :
+                case "str"     : values.push(this.Value()); break;
+                
+                case "EOL"     :
+                case ")"       :
+                case "]"       :
+                case "}"       : break;
+                
+                default        : this.throw(`Unexpected token of type "${nextTokenType}" in Stack Expression.`);
+            }
+            
+            if(["EOL", ")", "]", "}"].includes(this.peek_nextToken()?.type)) break;
+            else this.eat("space");
         }
 
         return {
             type  : "StackExpr",
             value : values,
         };
+    }
+
+    CallChain() {
+        const properties = [this.Property()];
+        while(true) {
+            const nextTokenType = this.peek_nextToken()?.type;
+            if(nextTokenType == ".") this.eat(".");
+            else if(nextTokenType != "[") break;
+            properties.push(this.Property());
+        }
+
+        return {
+            type  : "CallChain",
+            value : properties,
+        };
+    }
+
+    Property() {
+        this.eat("[");
+        const token = {
+            type  : "IndexedProperty",
+            value : this.StackExpr().value, // only works for indexed properties
+        };
+        this.eat("]");
+        return token;
     }
 
     Value() {

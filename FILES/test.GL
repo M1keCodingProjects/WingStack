@@ -1,1 +1,1 @@
-print "Hello, World!"
+print [":(" "Fizz" "Buzz" "FizzBuzz"][inp int dup dup 3 / int 3 * - 0 == swap dup 5 / int 5 * - 0 == 2 * +]

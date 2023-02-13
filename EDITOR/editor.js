@@ -30,7 +30,7 @@ export default class Editor {
             [/^(print|make|macro|expand|loop|when|else|free|fun|exit|next|typenum|use)[^\w]/, "keyword"],
             [/^(with|global|dynamic|class|frozen|then)[^\w]/, "specifier"],
             [/^(PI|INF)/, "constant"],
-            [/^(me|origin)[^\w]/, "instance"],
+            [/^(me|origin|runtimeElapsed)[^\w]/, "instance"],
             [/^(rot\<|rot\>|dup|drop|num|int|float|str|list|obj|void|spill|swap|over|and|or|not|type|size|pop|inp|2dup|flip|rand)[^\w]/, "stackOp"],
             [/^-?\d+(\.\d+)?/, "num"],
             [/^(\<\<|\>\>|\>|\<|\+|\-|\*\*|\/|\*|\=\=)/, "op"],

@@ -5,20 +5,20 @@ export default class Parser {
 
     parse_fileContents() {
         this.tokens = this.editor.sendTokens();
-        return this.Program().value;
+        return this.Program(true).value;
     }
 
-    Program() {
-        this.eat("{");
+    Program(isGlobal = false) {
         const expressions = [];
-        while(this.peek_nextToken()?.type != "}") {
-            if(this.peek_nextToken()?.type == "EOL") {
-                this.eat("EOL");
-                continue;
-            }
-            expressions.push(this.Expression());
+        while(true) {
+            const nextTokenType = this.peek_nextToken()?.type;
+            if(!nextTokenType || nextTokenType == "}") break;
+            if(nextTokenType == "EOL") this.eat("EOL");
+            else expressions.push(this.Expression());
         }
-        this.eat("}");
+        
+        if(isGlobal && this.tokens.length) this.throw(`Trailing content found outside of main program: ${this.tokens.reduce((acc, token) => acc + token.value, "")}`);
+
         return {
             type  : "Program",
             value : expressions,
@@ -102,7 +102,7 @@ export default class Parser {
     }
 
     Value() {
-        const token = this.grab_nextToken();
+        const token = {...this.grab_nextToken()};
         if(!["num", "str"].includes(token.type)) this.throw(`Unexpected token of type ${token.type}, expected: NUM or STR`);
         if(token.type == "str") token.value = token.value.slice(1, -1);
         return token;
@@ -113,7 +113,7 @@ export default class Parser {
     }
 
     grab_nextToken() {
-        return this.tokens.shift();
+        return this.tokens.shift() || null;
     }
 
     eat(tokenType) {

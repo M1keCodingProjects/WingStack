@@ -35,9 +35,9 @@ export default class Compiler {
         this.AST = this.parser.parse_fileContents();
         for(const expr of this.AST) this.expressions.push(new PrintProc(expr.value));
         if(this.state == "debug") {
-            print(JSON.stringify(this.AST, null, 2));
-            print("Build complete.");
+            print(JSON.stringify(this.AST, null, 2)); 
         }
+        print("Build complete.");
     }
 
     build() {
@@ -115,6 +115,7 @@ class StackExpr {
             case "pop"  : return new StackEl.Pop_stackOp(typeStack);
             case "flip" : return new StackEl.Flip_stackOp(typeStack);
             case "rand" : return new StackEl.Rand_stackOp(typeStack);
+            case "char" : return new StackEl.Char_stackOp(typeStack);
             
             //type-casting
             case "num"  : return new StackEl.Num_stackOp(typeStack);

@@ -26,16 +26,16 @@ export default class Editor {
             [/^\./, "."],
             [/^\:/, ":"],
             [/^\|/, "|"],
-            [/^\"[^\"\n]*\"?/, "str"],
-            [/^(print|make|macro|expand|loop|when|else|free|fun|exit|next|typenum|use)[^\w]/, "keyword"],
-            [/^(with|global|dynamic|class|frozen|then)[^\w]/, "specifier"],
-            [/^(PI|INF)/, "constant"],
-            [/^(me|origin|runtimeElapsed)[^\w]/, "instance"],
-            [/^(rot\<|rot\>|dup|drop|num|int|float|str|list|obj|void|spill|swap|over|and|or|not|type|size|pop|inp|2dup|flip|rand)[^\w]/, "stackOp"],
+            [/^((\"[^\"\n]*\"?)|(\'[^\'\n]*\'?))/, "str"],
+            [/^(print|make|macro|expand|loop|when|else|free|fun|exit|next|typenum|use)([^\w]|$)/, "keyword"],
+            [/^(with|global|dynamic|class|frozen|then)([^\w]|$)/, "specifier"],
+            [/^(PI|INF)([^\w]|$)/, "constant"],
+            [/^(me|origin|runtimeElapsed)([^\w]|$)/, "instance"],
+            [/^(rot\<|rot\>|dup|drop|num|int|float|str|char|list|obj|void|spill|swap|over|and|or|not|type|size|pop|inp|2dup|flip|rand)([^\w]|$)/, "stackOp"],
             [/^-?\d+(\.\d+)?/, "num"],
             [/^(\<\<|\>\>|\>|\<|\+|\-|\*\*|\/|\*|\=\=)/, "op"],
             [/^\=/, "="],
-            [/^((Type|Property|Value)?Error)/, "errorClass"],
+            [/^((Type|Property|Value)?Error)([^\w]|$)/, "errorClass"],
             [/^-?[a-zA-Z_]\w*/, "WORD"],
             [/^[^ \n]/, "any"],
         ];
@@ -90,11 +90,12 @@ export default class Editor {
     }
 
     sendTokens() {
-        if(this.tokens[this.tokens.length - 1]?.type == "space") this.tokens.pop();
         return [
-            { type : "{", value : "{" },
-            ...this.tokens.map(token => ({...token})),
-            { type : "}", value : "}" },
+            ...this.tokens,
+            {
+                type  : "EOL",
+                value : "",
+            },
         ];
     }
 
@@ -160,7 +161,7 @@ export default class Editor {
     }
 
     updateText(event) {
-        this.textTarget.innerHTML = this.highlight(event.target.value + " ");
+        this.textTarget.innerHTML = this.highlight(event.target.value);
         this.updateSaveState(false);
         this.updateLineCounter(event);
         if(!event.isMock) this.updateCurrentLine(event);

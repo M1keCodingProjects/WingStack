@@ -393,7 +393,7 @@ export class Num_stackOp extends StackOp {
     //TODO
   }
 
-  castStr(item) {
+  castStr_toNum(item) {
     if(item.match(/^-?\d+(\.\d+)?/)?.[0] == item) return Number(item);
     if(item.length != 1) throw new Error("Runtime ValueError: casting from non-numeric str to num is only possible with a single character str.");
     return item.charCodeAt(0);
@@ -402,7 +402,7 @@ export class Num_stackOp extends StackOp {
   exec(stack) {
     if(!stack.length) stack.push(0);
     const [item, type] = this.grabItemFromTop(stack, 0, false, "num", "str");
-    stack.push(type == "str" ? this.castStr(item) : item);
+    stack.push(type == "str" ? this.castStr_toNum(item) : item);
   }
 }
 
@@ -415,14 +415,14 @@ export class Int_stackOp extends Num_stackOp {
     //TODO
   }
 
-  castStr(item) {
-    return Math.round(super.castStr(item));
+  castStr_toNum(item) {
+    return Math.round(super.castStr_toNum(item));
   }
 
   exec(stack) {
     if(!stack.length) stack.push(0);
     const [item, type] = this.grabItemFromTop(stack, 0, false, "num", "str");
-    stack.push(type == "str" ? this.castStr(item) : Math.floor(item));
+    stack.push(type == "str" ? this.castStr_toNum(item) : Math.floor(item));
   }
 }
 
@@ -442,14 +442,6 @@ export class Str_stackOp extends StackOp {
 
   exec(stack) {
     let res = "";
-    
-    if(stack.length == 1 && Type_stackOp.prototype.getType(stack[0]) == "int") {
-      res = String.fromCharCode(stack[0]);
-      stack.length = 1;
-      stack[0] = res;
-      return;
-    }
-
     const initialLength = stack.length;
     for(let i = 0; i < initialLength; i++) {
       const [item, type] = this.grabItemFromTop(stack, i, false, "num", "str");
@@ -457,6 +449,21 @@ export class Str_stackOp extends StackOp {
     }
     
     stack[0] = res;
+  }
+}
+
+export class Char_stackOp extends StackOp { // technically not casting
+  constructor(typeStack) {
+    super(typeStack);
+  }
+
+  checkType(typeStack) {
+    //TODO
+  }
+
+  exec(stack) {
+    const [item] = this.grabItemFromTop(stack, 0, false, "int");
+    stack.push(String.fromCharCode(item));
   }
 }
 

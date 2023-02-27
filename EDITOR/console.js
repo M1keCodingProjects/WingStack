@@ -33,9 +33,15 @@ export default class Console {
         const original_text = text;
         text = this.format(text).replace(/\n/g, "<br>").replace(/ /g, "&nbsp;");
         switch(style) {
-            case "Error" :
+            case "Error" : {
                 text = `<span style="color:var(--error-col)">${text}</span>`;
-                console.clear(); break;
+                console.clear();
+                break;
+            }
+
+            case undefined : break;
+
+            default : text = `<span style="${style}">${text}</span>`; break;
         }
         
         if(original_text == "\\clear") {
@@ -44,7 +50,10 @@ export default class Console {
             return;
         }
         this.log.innerHTML += `&gt;&gt;&nbsp;${text}<br>`;
-        console.log(original_text);
+        
+        if(style) console.log(`%c${original_text}`, style);
+        else console.log(original_text);
+        
         this.log.scrollTop  = this.log.scrollHeight;
         this.log.scrollLeft = 0;
     }

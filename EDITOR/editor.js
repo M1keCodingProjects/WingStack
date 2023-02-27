@@ -182,7 +182,8 @@ export default class Editor {
                 
                 if(tokenType != "comment") this.tokens.push({
                     type  : tokenType == "op" ? "stackOp" : tokenType,
-                    value : tokenType == "num" ? Number(match) : match,
+                    value : tokenType == "num" ? Number(match) :
+                            tokenType == "str" ? match.slice(1, -1) : match,
                 });
 
                 let temp = "";

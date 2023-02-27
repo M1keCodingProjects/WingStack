@@ -3,7 +3,7 @@ import      Editor  from "../EDITOR/editor.js";
 import * as StackEl from "./stack operators.js";
 
 const editor = new Editor();
-const print = msg => editor.console.appendLog(msg);
+const print = (msg, style) => editor.console.appendLog(msg, style);
 
 const raise = msg => {
     editor.console.appendLog(msg, "Error");
@@ -33,7 +33,7 @@ export default class Compiler {
     compile() {
         this.init();
         this.AST = this.parser.parse_fileContents();
-        for(const expr of this.AST) this.expressions.push(new PrintProc(expr.value));
+        for(const expr of this.AST) this.expressions.push(new PrintProc(expr));
         if(this.state == "debug") {
             print(JSON.stringify(this.AST, null, 2)); 
         }
@@ -69,12 +69,18 @@ class PrintProc extends Proc {
     }
 
     buildArgs(args) {
-        this.stackExpr = new StackExpr(args);
+        this.stackExpr = new StackExpr(args.value);
+        if(args.styleTag) {
+            this.styleTag = "";
+            if(args.styleTag.color)  this.styleTag += `color: ${args.styleTag.color};`;
+            if(args.styleTag.bold)   this.styleTag += `font-weight: bolder;`;
+            if(args.styleTag.italic) this.styleTag += `font-style: italic;`;
+        }
     }
 
     async exec() {
         const result = await this.stackExpr.exec();
-        print(result);
+        print(result, this.styleTag);
     }
 }
 

@@ -40,10 +40,44 @@ export default class Parser {
     }
 
     PrintProc() {
-        return {
+        const token = {
             type  : "PrintProc",
             value : this.StackExpr().value,
+        };
+
+        if(this.peek_nextToken()?.type == "specifier") {
+            const keyword = this.eat("specifier").value;
+            if(keyword != "with") this.throw(`Found unexpected specifier "${keyword}" in PrintProcedure, expected optional "with"`);
+            this.eat("space");
+            token.styleTag = this.parse_styleTag(this.eat("str").value);
         }
+        return token;
+    }
+
+    parse_styleTag(styleTag) {
+        const styles = styleTag.split(/, */);
+        if(styles == "") return;
+        if(styles.length > 3) this.throw("Too many styles (more than 3 selectors) applied in PrintProcedure.");
+
+        const tagObj = {
+            color: "",
+            bold: false,
+            italic: false,
+        };
+
+        for(const style of styles) {
+            switch(style) {
+                case "bold"   : tagObj.bold   = true; break;
+                case "italic" : tagObj.italic = true; break;
+                default       : {
+                    if(style[0] != "#" || style.length != 7) this.throw(`Unrecognized style selector "${style}" in PrintProcedure. Color-type style selector must be hexadecimal (# followed by 6 digits 0-f).`);
+                    tagObj.color = style;
+                    break;
+                }
+            }
+        }
+
+        return tagObj;
     }
 
     StackExpr() {
@@ -58,15 +92,17 @@ export default class Parser {
                 case "num"     :
                 case "str"     : values.push(this.Value()); break;
                 
-                case "EOL"     :
-                case ")"       :
-                case "]"       :
-                case "}"       : break;
+                //add on bottom as well
+                case "specifier" :
+                case "EOL"       :
+                case ")"         :
+                case "]"         :
+                case "}"         : break;
                 
                 default        : this.throw(`Unexpected token of type "${nextTokenType}" in Stack Expression.`);
             }
             
-            if(["EOL", ")", "]", "}"].includes(this.peek_nextToken()?.type)) break;
+            if(["specifier", "EOL", ")", "]", "}"].includes(this.peek_nextToken()?.type)) break;
             else this.eat("space");
         }
 
@@ -104,7 +140,6 @@ export default class Parser {
     Value() {
         const token = {...this.grab_nextToken()};
         if(!["num", "str"].includes(token.type)) this.throw(`Unexpected token of type ${token.type}, expected: NUM or STR`);
-        if(token.type == "str") token.value = token.value.slice(1, -1);
         return token;
     }
 

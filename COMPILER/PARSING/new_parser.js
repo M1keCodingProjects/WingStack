@@ -49,35 +49,9 @@ export default class Parser {
             const keyword = this.eat("specifier").value;
             if(keyword != "with") this.throw(`Found unexpected specifier "${keyword}" in PrintProcedure, expected optional "with"`);
             this.eat("space");
-            token.styleTag = this.parse_styleTag(this.eat("str").value);
+            token.styleTag = this.eat("errorClass").value;
         }
         return token;
-    }
-
-    parse_styleTag(styleTag) {
-        const styles = styleTag.split(/, */);
-        if(styles == "") return;
-        if(styles.length > 3) this.throw("Too many styles (more than 3 selectors) applied in PrintProcedure.");
-
-        const tagObj = {
-            color: "",
-            bold: false,
-            italic: false,
-        };
-
-        for(const style of styles) {
-            switch(style) {
-                case "bold"   : tagObj.bold   = true; break;
-                case "italic" : tagObj.italic = true; break;
-                default       : {
-                    if(style[0] != "#" || style.length != 7) this.throw(`Unrecognized style selector "${style}" in PrintProcedure. Color-type style selector must be hexadecimal (# followed by 6 digits 0-f).`);
-                    tagObj.color = style;
-                    break;
-                }
-            }
-        }
-
-        return tagObj;
     }
 
     StackExpr() {

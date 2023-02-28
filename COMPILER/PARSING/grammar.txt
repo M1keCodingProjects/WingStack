@@ -1,7 +1,7 @@
 Program: Expression*
     Expression: Procedure | Assignment | (CallChain ".")? FuncCall
         Procedure: PrintProcedure | ...
-            PrintProcedure: "print" " " StackExpr (" " "with" STR_TOKEN)? 
+            PrintProcedure: "print" " " StackExpr (" " "with" "Error")? 
                 StackExpr: (Value | STACKOP_TOKEN | CallChain )* " "
                     Value: NUM_TOKEN | STR_TOKEN
     

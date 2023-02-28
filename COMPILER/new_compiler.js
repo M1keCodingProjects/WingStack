@@ -3,7 +3,7 @@ import      Editor  from "../EDITOR/editor.js";
 import * as StackEl from "./stack operators.js";
 
 const editor = new Editor();
-const print = (msg, style) => editor.console.appendLog(msg, style);
+const print = msg => editor.console.appendLog(msg);
 
 const raise = msg => {
     editor.console.appendLog(msg, "Error");
@@ -70,17 +70,11 @@ class PrintProc extends Proc {
 
     buildArgs(args) {
         this.stackExpr = new StackExpr(args.value);
-        if(args.styleTag) {
-            this.styleTag = "";
-            if(args.styleTag.color)  this.styleTag += `color: ${args.styleTag.color};`;
-            if(args.styleTag.bold)   this.styleTag += `font-weight: bolder;`;
-            if(args.styleTag.italic) this.styleTag += `font-style: italic;`;
-        }
     }
 
     async exec() {
         const result = await this.stackExpr.exec();
-        print(result, this.styleTag);
+        print(result);
     }
 }
 
@@ -146,6 +140,7 @@ class StackExpr {
 class StackValue {
     constructor(value, typeStack) {
         this.value = value;
+        this.type = StackEl.Type_stackOp.prototype.getType(value);
         this.checkType(typeStack);
     }
 

@@ -37,7 +37,6 @@ export default class Console {
 
         while(i < text.length) {
             const textCopy = text.substring(i);
-            //console.log(textCopy, formattedText, i, position);
             switch(position) {
                 case STYLED_TEXT_STATE.INSIDE_STYLEDEF: {
                     const parsedStyleObj = this.parse_styleDefinition(textCopy);
@@ -54,7 +53,7 @@ export default class Console {
 
                 case STYLED_TEXT_STATE.INSIDE_STYLED_TEXT: {
                     const styleDefEnd = textCopy.match(/\$[^\(]?/);
-                    if(!styleDefEnd) return this.format_strText(text);
+                    if(!styleDefEnd || (styleDefEnd.index == 0)) return this.format_strText(text);
                     formattedText += `${
                         this.format_strText(textCopy.substr(0, styleDefEnd.index), false)
                     }</span>`;
@@ -66,13 +65,14 @@ export default class Console {
                 case STYLED_TEXT_STATE.OUTSIDE : {
                     const styleDefStart = textCopy.match(/\$\(/);
                     formattedText += this.format_strText(textCopy.substr(0, styleDefStart?.index), false);
-                    position = STYLED_TEXT_STATE.INSIDE_STYLEDEF;
+                    if(styleDefStart) position = STYLED_TEXT_STATE.INSIDE_STYLEDEF;
                     i += styleDefStart ? styleDefStart.index + 2 : text.length;
                     break;
                 }
             }
         }
 
+        if(position != STYLED_TEXT_STATE.OUTSIDE) return this.format_strText(text);
         return formattedText;
     }
 

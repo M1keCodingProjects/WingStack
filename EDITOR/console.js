@@ -37,7 +37,7 @@ export default class Console {
         let formattedText = "";
 
         while(i < text.length) {
-            const textCopy = text.substring(i);
+            const textCopy        = text.substring(i);
             const styledTextStart = textCopy.match(/\$<([^>]*)>/);
             const styledTextEnd   = textCopy.match(/<\$>/);
 
@@ -50,7 +50,7 @@ export default class Console {
                 
                 isOutside = false;
                 nestingCount++;
-                formattedText += this.format_plainText(textCopy.substring(0, styledTextStart.index)) + `<span style = "${styledTextStart[1]}">`;
+                formattedText += this.format_plainText(textCopy.substring(0, styledTextStart.index)) + this.parse_styleTag(styledTextStart);
                 i += styledTextStart.index + styledTextStart[0].length;
                 continue;
             }
@@ -58,7 +58,7 @@ export default class Console {
                 if(!styledTextEnd) return this.format_plainText(text, true);
                 if(styledTextStart?.index < styledTextEnd?.index) {
                     nestingCount++;
-                    formattedText += this.format_plainText(textCopy.substring(0, styledTextStart.index)) + `<span style = "${styledTextStart[1]}">`;
+                    formattedText += this.format_plainText(textCopy.substring(0, styledTextStart.index)) + this.parse_styleTag(styledTextStart);
                     i += styledTextStart.index + styledTextStart[0].length;
                     continue;
                 }
@@ -72,7 +72,11 @@ export default class Console {
                 continue;
             }
         }
-        return `"${formattedText}"`;
+        return isOutside ? `"${formattedText}"` : this.format_plainText(text, true);
+    }
+
+    parse_styleTag(styleTag) {
+        return `<span style = "${styleTag[1].replace(/"/g, "'")}">`;
     }
 
     format_plainText(text, firstCall = false) {

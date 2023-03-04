@@ -1,0 +1,29 @@
+class List {
+  fun new(items:list) {
+    me.length :int = 0
+    loop items len with i then me.push(items[i])
+  }
+  
+  fun new_fill(value, amt:int):List {
+    loop amt then me.push(value)
+  }
+  
+  fun new_range(from:num, step:num, to:num):List {
+    make value := from
+    when value to >= loop {
+      me.push(value)
+      value += step
+    }
+    exit me
+  }
+  
+  fun push(item):List {
+    make me[me.length] = item
+    exit me
+  }
+  
+  fun popAt(pos:int=-1):List {
+    free me[pos]
+    exit me
+  }
+}

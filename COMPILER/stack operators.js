@@ -159,7 +159,7 @@ export class StackOp {
   }
 
   grabItemFromTop(stack, inputID, asCopy, ...validTypes) {
-    const grabbedItem = asCopy ? stack[stack.length - 1] : stack.pop();
+    const grabbedItem = asCopy ? stack[stack.length - inputID - 1] : stack.pop();
     const itemType    = this.checkItemType(grabbedItem, inputID, ...validTypes);
     return [grabbedItem, itemType];
   }
@@ -497,6 +497,23 @@ export class Obj_stackOp extends StackOp {
 
     const item = this.grabItemFromTop(stack, 0, false, "obj");
     stack.push({...item}); // NOT READY!!
+  }
+}
+
+export class In_stackOp extends StackOp {
+  constructor(typeStack) {
+    super(typeStack);
+  }
+  
+  checkType(typeStack) {
+    //TODO
+  }
+
+  exec(stack) {
+    const [container, containerType] = this.grabItemFromTop(stack, 0, true, "list", "obj");
+    const [item] = this.grabItemFromTop(stack, 1, true, "any");
+    stack.push(1 * (containerType == "obj" ? (item in container) : container.indexOf(item) >= 0));
+    //the object implementation is not ready!!
   }
 }
 

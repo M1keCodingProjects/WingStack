@@ -52,7 +52,7 @@ export default class Console {
                 }
 
                 case STYLED_TEXT_STATE.INSIDE_STYLED_TEXT: {
-                    const styleDefEnd = textCopy.match(/\$[^\(]?/);
+                    const styleDefEnd = textCopy.match(/\$([^\(]|$)/);
                     if(!styleDefEnd || (styleDefEnd.index == 0)) return this.format_strText(text);
                     formattedText += `${
                         this.format_strText(textCopy.substr(0, styleDefEnd.index), false)

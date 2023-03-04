@@ -27,7 +27,7 @@ export default class Compiler {
 
     reset_runtime() {
         this.vars = [];
-        //print("\\clear");
+        print("\\clear");
     }
 
     compile() {
@@ -116,6 +116,7 @@ class StackExpr {
             case "flip" : return new StackEl.Flip_stackOp(typeStack);
             case "rand" : return new StackEl.Rand_stackOp(typeStack);
             case "char" : return new StackEl.Char_stackOp(typeStack);
+            case "in"   : return new StackEl.In_stackOp(typeStack);
             
             //type-casting
             case "num"  : return new StackEl.Num_stackOp(typeStack);

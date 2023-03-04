@@ -31,7 +31,7 @@ export default class Editor {
             [/^(with|global|dynamic|class|frozen|then)([^\w]|$)/, "specifier"],
             [/^(PI|INF)([^\w]|$)/, "constant"],
             [/^(me|origin|runtimeElapsed)([^\w]|$)/, "instance"],
-            [/^(rot\<|rot\>|dup|drop|num|int|float|str|char|list|obj|void|spill|swap|over|and|or|not|type|size|pop|inp|2dup|flip|rand)([^\w]|$)/, "stackOp"],
+            [/^(rot\<|rot\>|dup|drop|num|int|float|str|char|list|obj|void|spill|swap|over|and|or|not|type|size|pop|inp|2dup|flip|rand|in)([^\w]|$)/, "stackOp"],
             [/^-?\d+(\.\d+)?/, "num"],
             [/^(\<\<|\>\>|\>|\<|\+|\-|\*\*|\/|\*|\=\=)/, "op"],
             [/^\=/, "="],
@@ -193,6 +193,7 @@ export default class Editor {
                 match = temp;
 
                 if(match == "FALSE" || match == "TRUE") tokenType = "constant";
+                if(match == "Bool") tokenType = "stackOp";
                 result += this.colors.includes(tokenType) ? `<span style="color : var(--${tokenType}-col);">${match}</span>` : match;
                 break;
             }

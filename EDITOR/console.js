@@ -24,89 +24,58 @@ export default class Console {
 
     format(text, firstCall = true) {
         switch(typeof text) {
-            case 'string': return text.indexOf("$(") >= 0 ? this.format_styledStr(text) : this.format_strText(text);
+            case 'string': return this.format_strText(text, true);
             case 'number': return `${text}`;
             case 'object': return text instanceof Array ? this.format_listText(text, firstCall) : "{...}";
         }
     }
 
-    format_styledStr(text) {
-        let i = 0
+    format_strText(text) {
+        let i             = 0
+        let isOutside     = true;
+        let nestingCount  = 0;
         let formattedText = "";
-        let position = STYLED_TEXT_STATE.OUTSIDE;
 
         while(i < text.length) {
             const textCopy = text.substring(i);
-            switch(position) {
-                case STYLED_TEXT_STATE.INSIDE_STYLEDEF: {
-                    const parsedStyleObj = this.parse_styleDefinition(textCopy);
-                    if(!parsedStyleObj) return this.format_strText(text);
-                    formattedText += "<span style = '";
-                    if(parsedStyleObj.color)  formattedText += `color : ${parsedStyleObj.color};`;
-                    if(parsedStyleObj.bold)   formattedText += `font-weight : bold;`;
-                    if(parsedStyleObj.italic) formattedText += `font-style : italic;`;
-                    formattedText += "'>";
-                    position = STYLED_TEXT_STATE.INSIDE_STYLED_TEXT;
-                    i += parsedStyleObj.len;
-                    break;
-                }
+            const styledTextStart = textCopy.match(/\$<([^>]*)>/);
+            const styledTextEnd   = textCopy.match(/<\$>/);
 
-                case STYLED_TEXT_STATE.INSIDE_STYLED_TEXT: {
-                    const styleDefEnd = textCopy.match(/\$([^\(]|$)/);
-                    if(!styleDefEnd || (styleDefEnd.index == 0)) return this.format_strText(text);
-                    formattedText += `${
-                        this.format_strText(textCopy.substr(0, styleDefEnd.index), false)
-                    }</span>`;
-                    position = STYLED_TEXT_STATE.OUTSIDE;
-                    i += styleDefEnd.index + 1;
-                    break;
+            if(isOutside) {
+                if(!styledTextStart) {
+                    formattedText += this.format_plainText(textCopy);
+                    i = text.length;
+                    continue;
                 }
+                
+                isOutside = false;
+                nestingCount++;
+                formattedText += this.format_plainText(textCopy.substring(0, styledTextStart.index)) + `<span style = "${styledTextStart[1]}">`;
+                i += styledTextStart.index + styledTextStart[0].length;
+                continue;
+            }
+            else {
+                if(!styledTextEnd) return this.format_plainText(text, true);
+                if(styledTextStart?.index < styledTextEnd?.index) {
+                    nestingCount++;
+                    formattedText += this.format_plainText(textCopy.substring(0, styledTextStart.index)) + `<span style = "${styledTextStart[1]}">`;
+                    i += styledTextStart.index + styledTextStart[0].length;
+                    continue;
+                }
+                
+                if(!nestingCount) return this.format_plainText(text, true);
+                nestingCount--;
+                isOutside = !nestingCount;
 
-                case STYLED_TEXT_STATE.OUTSIDE : {
-                    const styleDefStart = textCopy.match(/\$\(/);
-                    formattedText += this.format_strText(textCopy.substr(0, styleDefStart?.index), false);
-                    if(styleDefStart) position = STYLED_TEXT_STATE.INSIDE_STYLEDEF;
-                    i += styleDefStart ? styleDefStart.index + 2 : text.length;
-                    break;
-                }
+                formattedText += this.format_plainText(textCopy.substring(0, styledTextEnd.index)) + "</span>"
+                i += styledTextEnd.index + 3; // 3 is the length of "<$>"
+                continue;
             }
         }
-
-        if(position != STYLED_TEXT_STATE.OUTSIDE) return this.format_strText(text);
-        return formattedText;
+        return `"${formattedText}"`;
     }
 
-    parse_styleDefinition(text) {
-        const currentStyle = {
-            bold   : false,
-            italic : false,
-            color  : "",
-            len    : 1,
-        };
-        
-        for(let i = 0; i < 3; i++) {
-            const styleWord = text.match(/^(#[0-9a-f]{6}|bold|italic)/)?.[0];
-
-            if(!styleWord || currentStyle[styleWord]) return; // invalid style or already set
-            if(styleWord[0] != "#") currentStyle[styleWord] = true;
-            else if(currentStyle.color) return; // color already set
-            else currentStyle.color = styleWord;
-            
-            text = text.substring(styleWord.length);
-            currentStyle.len += styleWord.length;
-
-            const separatorLen = text.match(/^, */)?.[0]?.length || 0;
-            text = text.substring(separatorLen);
-            currentStyle.len += separatorLen;
-
-            if(text[0] == ")") return currentStyle; // having a separator at the end is fine!
-            if(!separatorLen) return; // if no separator is found after a styleWord and the styleDefinition doesn't end, it's a mistake.
-        }
-        
-        if(text[0] == ")") return currentStyle;
-    }
-
-    format_strText(text, addQuotes = true) {
+    format_plainText(text, firstCall = false) {
         let formattedText = "";
         for(let char of text) {
             switch(char) {
@@ -117,8 +86,7 @@ export default class Console {
             }
             formattedText += char;
         }
-
-        return addQuotes ? `"${formattedText}"` : formattedText;
+        return firstCall ? `"${formattedText}"` : formattedText;
     }
 
     format_listText(text, firstCall = true) {

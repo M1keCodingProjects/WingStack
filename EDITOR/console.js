@@ -104,7 +104,7 @@ export default class Console {
         switch(style) {
             case "Error" : {
                 text = `<span style="color:var(--error-col)">${text}</span>`;
-                console.clear();
+                //console.clear();
                 break;
             }
         }

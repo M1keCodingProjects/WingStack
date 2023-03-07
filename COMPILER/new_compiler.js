@@ -27,7 +27,7 @@ export default class Compiler {
 
     reset_runtime() {
         this.vars = [];
-        print("\\clear");
+        //print("\\clear");
     }
 
     compile() {

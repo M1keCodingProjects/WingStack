@@ -1,11 +1,10 @@
-Program: Expression*
-    Expression: Procedure | Assignment | (CallChain ".")? FuncCall
-        Procedure: PrintProcedure | ...
-            PrintProcedure: "print" " " StackExpr (" " "with" "Error")? 
-                StackExpr: (Value | STACKOP_TOKEN | CallChain )* " "
-                    Value: NUM_TOKEN | STR_TOKEN
-    
-    CallChain: Property("." Property)?*
-        Property: WORD_TOKEN | FuncCall | IndexedProperty
-            FuncCall: WORD_TOKEN "(" StackExpr ")"
-            IndexedProperty: "[" StackExpr "]"
+Program    : (Expression SPACE? EOL)*
+Expression : Procedure
+Procedure  : PrintProc
+PrintProc  : "print" SPACE StackExpr (SPACE "with" ERROR)?
+StackExpr  : ((StackValue | STACKOP | CallChain) SPACE)*
+StackValue : NUM | STR
+CallChain  : Property (("." Property) | IDProp)?*
+Property   : IDProp
+FuncCall   : WORD "(" SPACE? StackExpr ")"
+IDProp     : "[" SPACE? StackExpr "]"

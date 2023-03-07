@@ -1,58 +1,121 @@
-use "std GList" with lst
-make std  = lst.std
-make List = lst.List
+use "std GLib" with std
+use "ListObj"
 
-make Message = {
-  make content = ""
-  make color   = "black"
-  make style   = List.new( "" )
+####
+macro isVoid expand type "void" ==
+####
+
+class Message {
+  fun new(text:str, styles:[str]|str|void) {
+    make me.text := str
+    make me.styles := List()
+    when styles isVoid then me.text = text
+    else me.writeStyled(text, styles)
+  }
   
-  def new => msg color style {
-    me.copy( )
-    me.content = msg str
-    when color "" != { me.color = color }
-    when style "" != { me.style = List.new( style ) }
+  fun write(text:str):Message {
+    me.text += text
     exit me
   }
   
-  def copy {
-    me = me obj
+  fun erase:Message {
+    me.text = ""
     exit me
   }
   
-  def say with msg { me.new( msg "" dup ).Print( ) } #prints your new message but keeps the saved style
-  
-  def Print {
-    def toStr $temp with el { exit el str }
-    print me.content with me.color " " toStr( me.style.data ) str
-  }
-  
-  def useColor with clr {
-    me.color = clr
+  fun addStyle(style:str):Message {
+    when [style spill][-1] ";" != then style += ";"
+    me.styles.pushItem(style)
     exit me
   }
   
-  def useStyle with stl {
-    me.style = List.new( stl )
+  fun addStyles(dynamic styles:[str]|str):Message {
+    when styles type "str" == then styles = [styles]
+    loop styles len with i then me.addStyle(styles[i])
     exit me
   }
   
-  def addStyle with stl {
-    when me.style.data spill "" == pop {
-      me.style = List.new( stl )
-    
-    } else { me.style.push( stl ) }
+  fun delStyle:Message {
+    me.styles.popItem()
     exit me
   }
   
-  def removeStyle with stl {
-    make id = me.style.getPos( stl )
-    when id 0 < { exit me }
-    loop id 1 + {
-      me.style.data = me.style.data spill rot<
+  fun clearStyles:Message {
+    me.styles.clear()
+    exit me
+  }
+  
+  fun _addStylesToText(styles:str) {
+    me.text += "$<" styles ">" str
+  }
+  
+  fun pushStyles(clearAfter:Bool=TRUE):Message {
+    me._addStylesToText(me.styles.toStr())
+    exit when clearAfter then me.clearStyles() else me # ternary syntax
+  }
+  
+  fun popStyles:Message {
+    me.text += "<$>"
+    exit me
+  }
+  
+  fun writeStyled(text:str, styles:str|Bool=FALSE):Message {
+    when styles FALSE == then me.pushStyles() else me._addStylesToText(styles)
+    me.write(text)
+    exit me.popStyles()
+  }
+  
+  fun addColor(color:str):Message {
+    when color "rainbow" == {
+      exit me.addStyle("background: linear-gradient(to right, #ef5350, #f48fb1, #7e57c2, #2196f3, #26c6da, #43a047, #eeff41, #f9a825, #ff5722); -webkit-background-clip: text; -webkit-text-fill-color: transparent;")
     }
-    
-    when me.style.len( ) 1 > { me.style.popLast( )
-    } else { me.style = List.new( "" ) }
+    exit me.addStyle("color : " color +)
+  }
+  
+  fun bold:Message => exit me.addStyle("font-weight : bold")
+  
+  fun italic:Message => exit me.addStyle("font-decoration : italics")
+  
+  fun writeColored(text:str, color:str):Message {
+    me.addColor(color)
+    exit me.writeStyled(text)
+  }
+  
+  fun applyStylesInPlace(dynamic text:str, styles:[str]|str):Message {
+    text = [text spill]
+    when "<" text in not then exit me.write(text)
+    when styles type "str" == then styles = [styles]
+    loop text len with i {
+      me.text += match text[i] with {
+        when "<" then "$<" styles[i] ">"
+        when ">" then "<$>"
+        else text[i]
+      }
+    }
+    exit me
+  }
+  
+  fun send(clearAfter:Bool=TRUE):Message {
+    print me.text
+    when clearAfter {
+      me.erase()
+      me.clearStyles()
+    }
+    exit me
   }
 }
+
+# manual way:
+print "Hello, $<font-weight:bold; font-decoration:italics; color:green>It$<color:white>a<$>$<color:red>ly<$><$>!"
+
+# using Message:
+Message("Hello, ").bold().italic().addColor("green").pushStyles().write("It")
+.writeColored("a", "white")
+.writeColored("ly", "red").popStyles()
+.send()
+
+# using advanced Message methods:
+Message().applyStylesInPlace(
+  "Hello, <It<a><ly>>!",
+  "font-weight:bold; font-decoration:italics; color:green" "color:white" "color:red"
+).send()

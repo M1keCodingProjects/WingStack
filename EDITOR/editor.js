@@ -27,7 +27,7 @@ export default class Editor {
             [/^\:/, ":"],
             [/^\|/, "|"],
             [/^((\"[^\"\n]*\"?)|(\'[^\'\n]*\'?))/, "str"],
-            [/^(print|make|macro|expand|loop|when|else|free|fun|exit|next|typenum|use)([^\w]|$)/, "keyword"],
+            [/^(print|make|macro|expand|loop|when|else|free|fun|exit|next|typenum|use|match)([^\w]|$)/, "keyword"],
             [/^(with|global|dynamic|class|frozen|then)([^\w]|$)/, "specifier"],
             [/^(PI|INF)([^\w]|$)/, "constant"],
             [/^(me|origin|runtimeElapsed)([^\w]|$)/, "instance"],
@@ -92,10 +92,6 @@ export default class Editor {
     sendTokens() {
         return [
             ...this.tokens,
-            {
-                type  : "EOL",
-                value : "",
-            },
         ];
     }
 

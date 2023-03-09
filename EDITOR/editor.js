@@ -1,5 +1,17 @@
-import Console from './console.js';
+import tokenize from "../COMPILER/PARSING/tokenizer.js";
+import Console  from './console.js';
 const GUIfileTab = document.querySelector(".openFilesContainer .fileName");
+
+import iota from "../../UTILS/general.js";
+const HIGHLIGHT_COLORS = {
+    "comment"    : iota(),
+    "str"        : iota(),
+    "num"        : iota(),
+    "keyword"    : iota(),
+    "stackOp"    : iota(),
+    "errorClass" : iota(),
+    "instance"   : iota(),
+};
 
 export default class Editor {
     constructor() {
@@ -9,46 +21,6 @@ export default class Editor {
         this.console       = new Console();
         this.fileIsSaved   = false;
         this.currentLineID = 0;
-        this.tokens        = [];
-
-        this.tokenPatterns = [
-            [/^ +/, "space"],
-            [/^#.*/, "comment"],
-            [/^\n+/, "EOL"],
-            [/^\{\n*/, "{"],
-            [/^\}/, "}"],
-            [/^\[/, "["],
-            [/^\]/, "]"],
-            [/^\(/, "("],
-            [/^\)/, ")"],
-            [/^\=\>/, "=>"],
-            [/^,/, ","],
-            [/^\./, "."],
-            [/^\:/, ":"],
-            [/^\|/, "|"],
-            [/^((\"[^\"\n]*\"?)|(\'[^\'\n]*\'?))/, "str"],
-            [/^(print|make|macro|expand|loop|when|else|free|fun|exit|next|typenum|use|match)([^\w]|$)/, "keyword"],
-            [/^(with|global|dynamic|class|frozen|then)([^\w]|$)/, "specifier"],
-            [/^(PI|INF)([^\w]|$)/, "constant"],
-            [/^(me|origin|runtimeElapsed)([^\w]|$)/, "instance"],
-            [/^(rot\<|rot\>|dup|drop|num|int|float|str|char|list|obj|void|spill|swap|over|and|or|not|type|size|pop|inp|2dup|flip|rand|in)([^\w]|$)/, "stackOp"],
-            [/^-?\d+(\.\d+)?/, "num"],
-            [/^(\<\<|\>\>|\>|\<|\+|\-|\*\*|\/|\*|\=\=)/, "op"],
-            [/^\=/, "="],
-            [/^((Type|Property|Value)?Error)([^\w]|$)/, "errorClass"],
-            [/^-?[a-zA-Z_]\w*/, "WORD"],
-            [/^[^ \n]/, "any"],
-        ];
-
-        this.colors = ["comment", "str", "num", "constant", "keyword", "stackOp", "instance", "errorClass", "specifier"];
-
-        this.charSubstitutions = {
-            "&"  : "&amp;",
-            "<"  : "&lt;",
-            ">"  : "&gt;",
-            " "  : "&nbsp;",
-            "\n" : "<br>",
-        };
 
         this.init();
     }
@@ -87,12 +59,6 @@ export default class Editor {
     getText() {
         this.updateSaveState(true);
         return this.textContainer.value;
-    }
-
-    sendTokens() {
-        return [
-            ...this.tokens,
-        ];
     }
 
     onkeydown(event) {
@@ -163,39 +129,31 @@ export default class Editor {
         if(!event.isMock) this.updateCurrentLine(event);
     }
 
-    highlight(text) {
+    replaceCharacters(text) {
         let result = "";
-        let cursor = 0;
-        this.tokens = [];
-        while(cursor < text.length) {
-            let stream = text.substring(cursor);
-            const oldCursor = cursor;
-            for(let [regExp, tokenType] of this.tokenPatterns) {
-                let match = stream.match(regExp);
-                if(match === null) continue;
-                match = match[1 * (match[1] != undefined && tokenType !== "num")];
-                cursor += match.length;
-                
-                if(tokenType != "comment") this.tokens.push({
-                    type  : tokenType == "op" ? "stackOp" : tokenType,
-                    value : tokenType == "num" ? Number(match) :
-                            tokenType == "str" ? match.slice(1, -1) : match,
-                });
-
-                let temp = "";
-                for(const char of match) {
-                    temp += char in this.charSubstitutions ? this.charSubstitutions[char] : char;
-                }
-                match = temp;
-
-                if(match == "FALSE" || match == "TRUE") tokenType = "constant";
-                if(match == "Bool") tokenType = "stackOp";
-                result += this.colors.includes(tokenType) ? `<span style="color : var(--${tokenType}-col);">${match}</span>` : match;
-                break;
+        for(const char of text) {
+            switch(char) {
+                case "&"  : result += "&amp;";  break;
+                case "<"  : result += "&lt;";   break;
+                case ">"  : result += "&gt;";   break;
+                case " "  : result += "&nbsp;"; break;
+                case "\n" : result += "<br>";   break;
+                default   : result += char;     break;
             }
-            if(oldCursor == cursor) throw new Error("Something went really wrong here!");
         }
         return result;
+    }
+
+    highlight(text) {
+        const result = [];
+        tokenize(text, (match, tokenType, result) => {
+            result.push(
+                tokenType in HIGHLIGHT_COLORS ?
+                `<span style="color : var(--${tokenType}-col);">${match}</span>` :
+                this.replaceCharacters(match)
+            );
+        }, result);
+        return result.join("");
     }
 
     onscroll(event) {

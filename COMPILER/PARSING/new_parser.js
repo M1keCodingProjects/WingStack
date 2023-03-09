@@ -1,34 +1,51 @@
+import tokenize from "./tokenizer.js";
+
+import iota from "../../UTILS/general.js";
+const IGNORED_TOKEN_TYPES = {
+    space   : iota(),
+    EOL     : iota(),
+    comment : iota(),
+};
+
 export default class Parser {
     constructor(editor) {
         this.editor = editor;
-
-        this.stackExpr_validTokenTypes = ["stackOp", "[", "num", "str"];
     }
 
     parse_fileContents() {
         this.tokens = [];
-        let currentlyAfterEOL = true;
-        for(const token of this.editor.sendTokens()) {
-            if(token.type == "EOL") {
-                if(!currentlyAfterEOL) {
-                    currentlyAfterEOL = true;
-                    this.tokens.push(token);
-                }
-                continue;
+
+        let insideStackExpr = 0;
+        tokenize(this.editor.textContainer.value, (match, tokenType, tokens) => {
+            if(tokenType in IGNORED_TOKEN_TYPES && (tokenType != "space" || !insideStackExpr)) return;
+
+            switch(tokenType) {
+                case "op" : tokenType = "stackOp"; break;
+                
+                case "[" :
+                case "(" : insideStackExpr++; break;
+                
+                case "]" :
+                case ")" : insideStackExpr--; break;
             }
 
-            if(token.type == "space" && currentlyAfterEOL) continue;
-            
-            this.tokens.push(token);
-            currentlyAfterEOL = false;
-        }
+            tokens.push({
+                type  : tokenType,
+                value : tokenType == "num" ? Number(match) : match,
+            });
+        }, this.tokens);
+        
+        if(insideStackExpr) this.throw("Uneven amount of parentheses detected.");
+        
+        //console.log(...this.tokens.map(t => t.type));
         return this.Program(true).value;
     }
 
-    Program(isGlobal = false) { // Program : (Expression SPACE? EOL)*
+    Program(isGlobal = false) { // Program : Expression*
         const expressions = [];
+        
         while(this.peek_nextToken()?.type) {
-            if(expressions.length) this.eat("EOL");
+            if(this.peek_nextToken()?.type == "}") break;
             expressions.push(this.Expression());
         }
         
@@ -40,62 +57,106 @@ export default class Parser {
         };
     }
 
-    Expression() { // Expression : Procedure
-        const token = this.Procedure();
+    Block() { // Block : "{" Program "}"
+        this.eat("{");
+        if(this.peek_nextToken()?.type == "space") this.eat("space");
+        const expressions = this.Program().value;
+        this.eat("}");
+
+        return {
+            type  : "Block",
+            value : expressions,
+        };
+    }
+
+    Expression() { // Expression : (Procedure | Assignment) ";"?
+        const token = this.Procedure(); // doesn't implement assignments yet.
+        this.eat(";");
         return token;
     }
 
-    Procedure() { // Procedure : PrintProc
+    Procedure() { // Procedure : PrintProc | WhenProc
         const keyword = this.eat("keyword");
-        this.eat("space");
+
         switch(keyword.value) {
             case "print" : return this.PrintProc();
+            case "when"  : return this.WhenProc();
         }
     }
 
-    PrintProc() { // PrintProc : "print" SPACE StackExpr (SPACE "with" ERROR)?
-        const token = {
+    PrintProc() { // PrintProc : "print" StackExpr
+        return {
             type  : "PrintProc",
             value : this.StackExpr().value,
         };
-        if(!token.value.length) this.throw("Invalid empty StackExpression argument in PrintProcedure.");
-        if(this.peek_nextToken()?.type == "space") this.eat("space");
-        if(this.peek_nextToken()?.type == "specifier") {
-            const keyword = this.eat("specifier").value;
-            if(keyword != "with") this.throw(`Found unexpected specifier "${keyword}" in PrintProcedure, expected optional "with"`);
-            this.eat("space");
-            token.styleTag = this.eat("errorClass").value;
+    }
+
+    WhenProc() { // WhenProc : "when" StackExpr "loop"? Block ElseProc?
+        const token = {
+            type  : "WhenProc",
+            loops : false,
+            value : this.StackExpr().value,
+        };
+
+        if(this.peek_nextToken()?.type == "keyword") {
+            const keyword = this.eat("keyword").value;
+            if(keyword != "loop") this.throw(`Found unexpected specifier "${keyword}" in "When" procedure, expected optional "loop".`);
+            token.loops = true;
         }
+        
+        token.block = this.Block().value;
+        if(this.peek_nextToken()?.value == "else") token.else = this.ElseProc();
         return token;
     }
 
-    StackExpr() { // StackExpr : ((StackValue | STACKOP | CallChain) SPACE)*        
+    ElseProc() { // ElseProc : "else" (WhenProc | Block)
+        this.eat("keyword");
+        if(this.peek_nextToken()?.type == "keyword") {
+            const keyword = this.eat("keyword").value;
+            if(keyword != "when") this.throw(`Found unexpected specifier "${keyword}" in "Else" procedure, expected optional "when".`);
+            const token = this.WhenProc();
+            if(token.loops) this.throw('"Else-When" procedures cannot loop.');
+            return token;
+        }
+        
+        return {
+            type  : "ElseProc",
+            block : this.Block().value,
+        };
+    }
+
+    StackExpr(delimiterTokens = "()") { // StackExpr : "(" StackItem (SPACE StackItem)* ")"
         const token = {
             type  : "StackExpr",
             value : [],
         };
 
+        this.eat(delimiterTokens[0]);
+        this.eatOptionalSpace();
+        
         while(true) {
-            switch(this.peek_nextToken()?.type) {
+            const nextToken = this.peek_nextToken();
+            switch(nextToken?.type) {
                 case "stackOp" : token.value.push(this.eat("stackOp")); break;
                 case "["       : token.value.push(this.CallChain()); break;
                 case "num"     :
                 case "str"     : token.value.push(this.Value()); break;
-                default        : return token;
+                default        : this.throw(`Unexpected token "${nextToken.value}" of type "${nextToken.type}" in Stack Expression, expected LiteralValue, CallChain or StackOperator.`);
+                case undefined : this.throw('Stack Expression must end with ")"');
+            
+                case delimiterTokens[1] : this.eat(delimiterTokens[1]); return token;
             }
             
-            const nextToken = this.peek_nextToken();
-            if(this.stackExpr_validTokenTypes.includes(nextToken?.type)) this.throw(`Missing space between elements "${token.value.pop().value}" and "${nextToken.value}" in StackExpression.`);
-            if(this.stackExpr_validTokenTypes.includes(this.tokens[1]?.type)) this.eat("space");
+            if(this.peek_nextToken()?.type != delimiterTokens[1]) this.eat("space");
         }
     }
 
-    CallChain() { // CallChain : Property (("." Property) | IDProp)?*
+    CallChain() { // CallChain : Property (("." Property) | IDProp)*
         const properties = [this.Property()];
         while(true) {
             const nextTokenType = this.peek_nextToken()?.type;
             if(nextTokenType == ".") this.eat(".");
-            else if(nextTokenType != "[") break;
+            else if(nextTokenType != "[") break; // This doesn't really work, fix for WORD tokens.
             properties.push(this.Property());
         }
 
@@ -105,19 +166,14 @@ export default class Parser {
         };
     }
 
-    Property() { // IDProp
-        this.eat("[");
-        if(this.peek_nextToken()?.type == "space") this.eat("space");
-        const token = {
+    Property() { // Property : IDProp
+        return {
             type  : "IndexedProperty",
-            value : this.StackExpr().value, // only works for indexed properties
+            value : this.StackExpr("[]").value,
         };
-        if(this.peek_nextToken()?.type == "space") this.eat("space");
-        this.eat("]");
-        return token;
     }
 
-    Value() { // NUM | STR
+    Value() { // Value : NUM | STR
         const token = {...this.grab_nextToken()};
         if(!["num", "str"].includes(token.type)) this.throw(`Unexpected token of type ${token.type}, expected: NUM or STR`);
         return token;
@@ -131,10 +187,14 @@ export default class Parser {
         return this.tokens.shift() || null;
     }
 
+    eatOptionalSpace() {
+        if(this.peek_nextToken()?.type == "space") this.eat("space");
+    }
+
     eat(tokenType) {
         const token = this.grab_nextToken();
         if(token === null) this.throw(`Unexpected end of input, expected ${tokenType}`);
-        if(token.type !== tokenType) this.throw(`Unexpected token of type ${token.type}, expected ${tokenType}`);
+        if(token.type !== tokenType) this.throw(`Unexpected token of type "${token.type}", expected "${tokenType}"`);
         return token;
     }
 

@@ -1,6 +1,3 @@
-const enumerate = (...keys) => keys.reduce((acc, key, i) => ({...acc, [key] : i}), {});
-const STYLED_TEXT_STATE = enumerate("INSIDE_STYLEDEF", "INSIDE_STYLED_TEXT", "OUTSIDE");
-
 export default class Console {
     constructor() {
         [this.log, this.input] = document.querySelectorAll("#mainConsole > .console-log, .console-input");

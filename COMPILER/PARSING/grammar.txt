@@ -1,10 +1,31 @@
-Program    : (Expression SPACE? EOL)*
-Expression : Procedure
-Procedure  : PrintProc
-PrintProc  : "print" SPACE StackExpr (SPACE "with" ERROR)?
-StackExpr  : ((StackValue | STACKOP | CallChain) SPACE)*
+//
+? : 0 or 1 times (optional)
+* : 0 or more times
++ : 1 or more times
+//
+
+Program    : Expression*
+
+Expression : (Procedure | Assignment) ";"?
+
+Procedure  : PrintProc | WhenProc
+
+PrintProc  : "print" StackExpr
+
+StackExpr  : "(" StackItem (SPACE StackItem)* ")"
+
+StackItem  : StackValue | STACKOP | CallChain
+
 StackValue : NUM | STR
-CallChain  : Property (("." Property) | IDProp)?*
+
+CallChain  : Property (("." Property) | IDProp)*
+
 Property   : IDProp
-FuncCall   : WORD "(" SPACE? StackExpr ")"
-IDProp     : "[" SPACE? StackExpr "]"
+
+IDProp     : "[" StackItem (SPACE StackItem)* "]"
+
+WhenProc   : "when" StackExpr "loop"? Block ElseProc?
+
+Block      : "{" Program "}"
+
+ElseProc   : "else" (WhenProc | Block)

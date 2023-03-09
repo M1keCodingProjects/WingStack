@@ -22,21 +22,32 @@ export default class Compiler {
 
     init() {
         this.AST = [];
-        this.expressions = [];
     }
 
     reset_runtime() {
         this.vars = [];
-        //print("\\clear");
+        if(this.state != "debug") print("\\clear");
+    }
+
+    obtainExpressions_fromAST(AST) {
+        const expressions = [];
+        for(const expr of AST) {
+            switch(expr.type) {
+                case "PrintProc" : expressions.push(new PrintProc(expr)); break;
+                case "WhenProc"  : expressions.push(new WhenProc(expr));  break;
+            }
+        }
+        return expressions;
     }
 
     compile() {
         this.init();
         this.AST = this.parser.parse_fileContents();
-        for(const expr of this.AST) this.expressions.push(new PrintProc(expr));
-        if(this.state == "debug") {
+        this.expressions = this.obtainExpressions_fromAST(this.AST);
+
+        /*if(this.state == "debug") {
             print(JSON.stringify(this.AST, null, 2)); 
-        }
+        }*/
         print("Build complete.");
     }
 
@@ -47,7 +58,7 @@ export default class Compiler {
 
     async run() {
         this.reset_runtime();
-        if(!this.expressions.length) raise("Couldn't find any previous build to run.");
+        if(!this.expressions) raise("Couldn't find any previous build to run.");
 
         for(const expr of this.expressions) {
             await expr.exec();
@@ -75,6 +86,38 @@ class PrintProc extends Proc {
     async exec() {
         const result = await this.stackExpr.exec();
         print(result);
+    }
+}
+
+class WhenProc extends Proc {
+    constructor(args) {
+        super(args);
+    }
+
+    buildArgs(args) {
+        this.stackExpr = new StackExpr(args.value);
+        this.block     = new Block(args.block);
+        
+        if(args.else) this.else = args.else.type == "WhenProc" ? new WhenProc(args.else) : new Block(args.else.block);
+    }
+
+    async exec() {
+        const result = await this.stackExpr.exec();
+        if(!["int", "float"].includes(StackEl.Type_stackOp.prototype.getType(result))) raise('Conditions for "When" procedures must evaluate to "int", "float" or any "num" derived custom type.');
+        if(result) await this.block.exec();
+        else if(this.else) await this.else.exec();
+    }
+}
+
+class Block {
+    constructor(expressions) {
+        this.expressions = Compiler.prototype.obtainExpressions_fromAST(expressions);
+    }
+
+    async exec() {
+        for(const expr of this.expressions) {
+            await expr.exec();
+        }
     }
 }
 

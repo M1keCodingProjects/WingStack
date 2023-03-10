@@ -21,12 +21,8 @@ export default class Parser {
 
             switch(tokenType) {
                 case "op" : tokenType = "stackOp"; break;
-                
-                case "[" :
-                case "(" : insideStackExpr++; break;
-                
-                case "]" :
-                case ")" : insideStackExpr--; break;
+                case "["  : insideStackExpr++; break;
+                case "]"  : insideStackExpr--; break;
             }
 
             tokens.push({
@@ -59,7 +55,6 @@ export default class Parser {
 
     Block() { // Block : "{" Program "}"
         this.eat("{");
-        if(this.peek_nextToken()?.type == "space") this.eat("space");
         const expressions = this.Program().value;
         this.eat("}");
 
@@ -71,7 +66,7 @@ export default class Parser {
 
     Expression() { // Expression : (Procedure | Assignment) ";"?
         const token = this.Procedure(); // doesn't implement assignments yet.
-        this.eat(";");
+        if(this.peek_nextToken()?.type != "}" && !token.block) this.eat(";");
         return token;
     }
 
@@ -87,7 +82,7 @@ export default class Parser {
     PrintProc() { // PrintProc : "print" StackExpr
         return {
             type  : "PrintProc",
-            value : this.StackExpr().value,
+            value : this.StackExpr(),
         };
     }
 
@@ -95,7 +90,7 @@ export default class Parser {
         const token = {
             type  : "WhenProc",
             loops : false,
-            value : this.StackExpr().value,
+            value : this.StackExpr(),
         };
 
         if(this.peek_nextToken()?.type == "keyword") {
@@ -125,34 +120,59 @@ export default class Parser {
         };
     }
 
-    StackExpr(delimiterTokens = "()") { // StackExpr : "(" StackItem (SPACE StackItem)* ")"
+    StackExpr(forceBrackets = false) { // StackExpr : StackItem | ("[" StackItem (SPACE StackItem)* "]")
         const token = {
-            type  : "StackExpr",
-            value : [],
+            type    : "StackExpr",
+            wrapped : false,
+            value   : [],
         };
 
-        this.eat(delimiterTokens[0]);
+        if(this.peek_nextToken()?.type != "[") {
+            if(forceBrackets) this.throw('Missing wrapper "[]" around StackExpression.');
+            const item = this.StackItem();
+            if(item == "finished") this.throw('Cannot find matching "[" for "]" in StackExpression.');
+            token.value.push(item);
+            return token;
+        }
+
+        this.eat("[");
+        token.wrapped = true;
         this.eatOptionalSpace();
         
         while(true) {
-            const nextToken = this.peek_nextToken();
-            switch(nextToken?.type) {
-                case "stackOp" : token.value.push(this.eat("stackOp")); break;
-                case "["       : token.value.push(this.CallChain()); break;
-                case "num"     :
-                case "str"     : token.value.push(this.Value()); break;
-                default        : this.throw(`Unexpected token "${nextToken.value}" of type "${nextToken.type}" in Stack Expression, expected LiteralValue, CallChain or StackOperator.`);
-                case undefined : this.throw('Stack Expression must end with ")"');
-            
-                case delimiterTokens[1] : this.eat(delimiterTokens[1]); return token;
+            const item = this.StackItem();
+            if(item == "finished") {
+                if(forceBrackets || this.peek_nextToken()?.type != "[") return token;
+                token.wrapped = false;
+                const nextProps = this.CallChain(true); // if a "[" starts immediately, this was one CallChain item
+                nextProps.value.unshift({               // we finish the CallChain and add our initial IDProp (StackExpr) to its value
+                    type  : "IndexedProperty",
+                    value : token.value
+                });
+                token.value = [nextProps];              // the StackExpr is interpreted as containing one CallChain item.
+                return token;
             }
-            
-            if(this.peek_nextToken()?.type != delimiterTokens[1]) this.eat("space");
+            token.value.push(item);
+            if(this.peek_nextToken()?.type != "]") this.eat("space");
         }
     }
 
-    CallChain() { // CallChain : Property (("." Property) | IDProp)*
-        const properties = [this.Property()];
+    StackItem() { // StackItem : StackValue | STACKOP | CallChain
+        const nextToken = this.peek_nextToken();
+        switch(nextToken?.type) {
+            case "stackOp" : return this.eat("stackOp");
+            case "["       : return this.CallChain();
+            case "num"     :
+            case "str"     : return this.Value();
+            default        : this.throw(`Unexpected token "${nextToken.value}" of type "${nextToken.type}" in Stack Expression, expected LiteralValue, CallChain or StackOperator.`);
+            case undefined : this.throw('Stack Expression must end with "]"');
+        
+            case "]" : this.eat("]"); return "finished";
+        }
+    }
+
+    CallChain(alreadyProcessedFirstProperty = false) { // CallChain : Property (("." Property) | IDProp)*
+        const properties = alreadyProcessedFirstProperty ? [] : [this.Property()];
         while(true) {
             const nextTokenType = this.peek_nextToken()?.type;
             if(nextTokenType == ".") this.eat(".");
@@ -169,7 +189,7 @@ export default class Parser {
     Property() { // Property : IDProp
         return {
             type  : "IndexedProperty",
-            value : this.StackExpr("[]").value,
+            value : this.StackExpr(true).value,
         };
     }
 

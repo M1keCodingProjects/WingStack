@@ -123,8 +123,23 @@ class Block {
 
 // STACK
 class StackExpr {
-    constructor(stackElements) {
+    constructor(token) {
+        this.buildArgs(token);
+    }
+
+    buildArgs(args) {
         const typeStack = new StackEl.TypeStack();
+        const stackElements = args?.value || args;
+
+        if(stackElements.length == 1 && args?.wrapped) {
+            const wrapper = new CallChain([{
+                type  : "IndexedProperty",
+                value : stackElements,
+            }], typeStack);
+            this.stackEls = [wrapper];
+            return;
+        }
+
         this.stackEls = stackElements.map(stackElm => {
             switch(stackElm.type) {
                 case "stackOp": return this.getStackOp(stackElm.value, typeStack);
@@ -379,9 +394,11 @@ class CallChain {
         
         let res = newListItem;
         for(let i = 1; i < this.properties.length; i++) {
-            const id = await this.properties[i].exec();
-            const idType = StackEl.Type_stackOp.prototype.getType(id);
-            if(idType != "int") raise(`Runtime List Error: cannot index properties of a list item with a non-int index: got ${idType}`);
+            const id      = await this.properties[i].exec();
+            const idType  = StackEl.Type_stackOp.prototype.getType(id);
+            const resType = StackEl.Type_stackOp.prototype.getType(res);
+            if(resType   != "list") raise(`Runtime List Error: cannot index properties of a non-list item: got ${resType}`);
+            if(idType    != "int" ) raise(`Runtime List Error: cannot index properties of a list item with a non-int index: got ${idType}`);
             res = res[id < 0 ? res.length + id : id];
             if(res === undefined) raise(`Runtime List Error: cannot find item at position ${id} in list.`);
         }

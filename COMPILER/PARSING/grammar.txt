@@ -12,7 +12,7 @@ Procedure  : PrintProc | WhenProc
 
 PrintProc  : "print" StackExpr
 
-StackExpr  : "(" StackItem (SPACE StackItem)* ")"
+StackExpr  : StackItem | ("[" StackItem (SPACE StackItem)* "]")
 
 StackItem  : StackValue | STACKOP | CallChain
 

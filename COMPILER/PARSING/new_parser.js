@@ -27,7 +27,8 @@ export default class Parser {
 
             tokens.push({
                 type  : tokenType,
-                value : tokenType == "num" ? Number(match) : match,
+                value : tokenType == "num" ? Number(match) :
+                        tokenType == "str" ? match.slice(1, -1) : match,
             });
         }, this.tokens);
         

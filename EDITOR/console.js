@@ -21,7 +21,7 @@ export default class Console {
 
     format(text, firstCall = true) {
         switch(typeof text) {
-            case 'string': return this.format_strText(text, true);
+            case 'string': return this.format_strText(text);
             case 'number': return `${text}`;
             case 'object': return text instanceof Array ? this.format_listText(text, firstCall) : "{...}";
         }
@@ -92,7 +92,7 @@ export default class Console {
 
     format_listText(text, firstCall = true) {
         return firstCall ? `[${text.map(el => this.format(el, false)).join(", ")}]` :
-                           `[List:${text.length}]`;
+                           `List(${text.length})`;
     }
 
     appendLog(text, style) {

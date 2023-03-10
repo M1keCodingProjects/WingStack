@@ -2,7 +2,7 @@ import tokenize from "../COMPILER/PARSING/tokenizer.js";
 import Console  from './console.js';
 const GUIfileTab = document.querySelector(".openFilesContainer .fileName");
 
-import iota from "../../UTILS/general.js";
+import iota from "../UTILS/general.js";
 const HIGHLIGHT_COLORS = {
     "comment"    : iota(),
     "str"        : iota(),

@@ -16,8 +16,18 @@ export default class Parser {
         this.tokens = [];
 
         let insideStackExpr = 0;
+        let foundSpace      = false;
         tokenize(this.editor.textContainer.value, (match, tokenType, tokens) => {
-            if(tokenType in IGNORED_TOKEN_TYPES && (tokenType != "space" || !insideStackExpr)) return;
+            if(tokenType in IGNORED_TOKEN_TYPES) {
+                if(!insideStackExpr || foundSpace) return;
+                foundSpace = true;
+                return tokens.push({
+                    type  : "space",
+                    value : " ",
+                });
+            }
+            
+            if(foundSpace) foundSpace = false;
 
             switch(tokenType) {
                 case "op" : tokenType = "stackOp"; break;

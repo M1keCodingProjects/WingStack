@@ -147,10 +147,11 @@ export default class Editor {
     highlight(text) {
         const result = [];
         tokenize(text, (match, tokenType, result) => {
+            const cleanMatch = this.replaceCharacters(match);
             result.push(
                 tokenType in HIGHLIGHT_COLORS ?
-                `<span style="color : var(--${tokenType}-col);">${match}</span>` :
-                this.replaceCharacters(match)
+                `<span style="color : var(--${tokenType}-col);">${cleanMatch}</span>` :
+                cleanMatch
             );
         }, result);
         return result.join("");

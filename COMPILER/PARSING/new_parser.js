@@ -73,7 +73,7 @@ export default class Parser {
     PrintProc() { // PrintProc : "print" StackExpr
         return {
             type  : "PrintProc",
-            value : this.StackExpr().value,
+            value : this.StackExpr(true).value,
         };
     }
 
@@ -111,7 +111,7 @@ export default class Parser {
         };
     }
 
-    StackExpr() { // StackExpr : (StackValue | STACKOP | CallChain)+
+    StackExpr(atLineEnd = false) { // StackExpr : (StackValue | STACKOP | CallChain)+
         const token = {
             type    : "StackExpr",
             value   : [],
@@ -124,9 +124,9 @@ export default class Parser {
                 case "["       : token.value.push(this.Property()); break;
                 case "num"     :
                 case "str"     : token.value.push(this.Value()); break;
-                default        : this.throw(`Unexpected token "${nextToken.value}" of type "${nextToken.type}" in Stack Expression, expected LiteralValue, CallChain or StackOperator.`);
+                default        : if(atLineEnd) this.throw(`Unexpected token "${nextToken.value}" of type "${nextToken.type}" in Stack Expression, expected LiteralValue, CallChain or StackOperator.`);
+                case "}"       :
                 case ";"       :
-                case "]"       :
                 case undefined : return token;
             }
         }

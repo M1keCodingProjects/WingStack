@@ -13,7 +13,7 @@ const preloadedModuleList = {
 const usedFilePath = "EXAMPLES/presentation";
 //end
 
-const GLC         = new Compiler("debug");
+const GLC         = new Compiler("deploy");
 const fileManager = new FileManager();
 
 //GUI Buttons setup

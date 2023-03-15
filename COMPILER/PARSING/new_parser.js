@@ -2,7 +2,6 @@ import tokenize from "./tokenizer.js";
 
 import iota from "../../UTILS/general.js";
 const IGNORED_TOKEN_TYPES = {
-    space   : iota(),
     EOL     : iota(),
     comment : iota(),
 };
@@ -15,36 +14,17 @@ export default class Parser {
     parse_fileContents() {
         this.tokens = [];
 
-        let insideStackExpr = 0;
-        let foundSpace      = false;
         tokenize(this.editor.textContainer.value, (match, tokenType, tokens) => {
-            if(tokenType in IGNORED_TOKEN_TYPES) {
-                if(!insideStackExpr || foundSpace) return;
-                foundSpace = true;
-                return tokens.push({
-                    type  : "space",
-                    value : " ",
-                });
-            }
+            if(tokenType in IGNORED_TOKEN_TYPES || (tokenType == "space" && this.tokens[this.tokens.length - 1]?.type != "]")) return;
             
-            if(foundSpace) foundSpace = false;
-
-            switch(tokenType) {
-                case "op" : tokenType = "stackOp"; break;
-                case "["  : insideStackExpr++; break;
-                case "]"  : insideStackExpr--; break;
-            }
-
             tokens.push({
                 type  : tokenType,
                 value : tokenType == "num" ? Number(match) :
                         tokenType == "str" ? match.slice(1, -1) : match,
             });
         }, this.tokens);
-        
-        if(insideStackExpr) this.throw("Uneven amount of parentheses detected.");
-        
-        //console.log(...this.tokens.map(t => t.type));
+                
+        console.log(...this.tokens.map(t => t.type));
         return this.Program(true).value;
     }
 
@@ -77,7 +57,7 @@ export default class Parser {
 
     Expression() { // Expression : (Procedure | Assignment) ";"?
         const token = this.Procedure(); // doesn't implement assignments yet.
-        if(this.peek_nextToken()?.type != "}" && !token.block) this.eat(";");
+        if(this.peek_nextToken()?.type == ";") this.eat(";");
         return token;
     }
 
@@ -93,7 +73,7 @@ export default class Parser {
     PrintProc() { // PrintProc : "print" StackExpr
         return {
             type  : "PrintProc",
-            value : this.StackExpr(),
+            value : this.StackExpr().value,
         };
     }
 
@@ -101,7 +81,7 @@ export default class Parser {
         const token = {
             type  : "WhenProc",
             loops : false,
-            value : this.StackExpr(),
+            value : this.StackExpr().value,
         };
 
         if(this.peek_nextToken()?.type == "keyword") {
@@ -131,77 +111,43 @@ export default class Parser {
         };
     }
 
-    StackExpr(forceBrackets = false) { // StackExpr : StackItem | ("[" StackItem (SPACE StackItem)* "]")
+    StackExpr() { // StackExpr : (StackValue | STACKOP | CallChain)+
         const token = {
             type    : "StackExpr",
-            wrapped : false,
             value   : [],
         };
 
-        if(this.peek_nextToken()?.type != "[") {
-            if(forceBrackets) this.throw('Missing wrapper "[]" around StackExpression.');
-            const item = this.StackItem();
-            if(item == "finished") this.throw('Cannot find matching "[" for "]" in StackExpression.');
-            token.value.push(item);
-            return token;
-        }
-
-        this.eat("[");
-        token.wrapped = true;
-        this.eatOptionalSpace();
-        
         while(true) {
-            const item = this.StackItem();
-            if(item == "finished") {
-                if(forceBrackets || this.peek_nextToken()?.type != "[") return token;
-                token.wrapped = false;
-                const nextProps = this.CallChain(true); // if a "[" starts immediately, this was one CallChain item
-                nextProps.value.unshift({               // we finish the CallChain and add our initial IDProp (StackExpr) to its value
-                    type  : "IndexedProperty",
-                    value : token.value
-                });
-                token.value = [nextProps];              // the StackExpr is interpreted as containing one CallChain item.
-                return token;
+            const nextToken = this.peek_nextToken();
+            switch(nextToken?.type) {
+                case "stackOp" : token.value.push(this.eat("stackOp")); break;
+                case "["       : token.value.push(this.Property()); break;
+                case "num"     :
+                case "str"     : token.value.push(this.Value()); break;
+                default        : this.throw(`Unexpected token "${nextToken.value}" of type "${nextToken.type}" in Stack Expression, expected LiteralValue, CallChain or StackOperator.`);
+                case ";"       :
+                case "]"       :
+                case undefined : return token;
             }
-            token.value.push(item);
-            if(this.peek_nextToken()?.type != "]") this.eat("space");
         }
-    }
-
-    StackItem() { // StackItem : StackValue | STACKOP | CallChain
-        const nextToken = this.peek_nextToken();
-        switch(nextToken?.type) {
-            case "stackOp" : return this.eat("stackOp");
-            case "["       : return this.CallChain();
-            case "num"     :
-            case "str"     : return this.Value();
-            default        : this.throw(`Unexpected token "${nextToken.value}" of type "${nextToken.type}" in Stack Expression, expected LiteralValue, CallChain or StackOperator.`);
-            case undefined : this.throw('Stack Expression must end with "]"');
-        
-            case "]" : this.eat("]"); return "finished";
-        }
-    }
-
-    CallChain(alreadyProcessedFirstProperty = false) { // CallChain : Property (("." Property) | IDProp)*
-        const properties = alreadyProcessedFirstProperty ? [] : [this.Property()];
-        while(true) {
-            const nextTokenType = this.peek_nextToken()?.type;
-            if(nextTokenType == ".") this.eat(".");
-            else if(nextTokenType != "[") break; // This doesn't really work, fix for WORD tokens.
-            properties.push(this.Property());
-        }
-
-        return {
-            type  : "CallChain",
-            value : properties,
-        };
     }
 
     Property() { // Property : IDProp
-        return {
+        this.eat("[");
+        const token = {
             type  : "IndexedProperty",
             value : this.StackExpr(true).value,
         };
+        this.eat("]");
+
+        const nextTokenType = this.peek_nextToken()?.type;
+        if(nextTokenType == ".") this.eat(".");
+        else if(nextTokenType != "[") {
+            this.eatOptionalSpace();
+            return token;
+        }
+        token.next = this.Property();
+        return token;
     }
 
     Value() { // Value : NUM | STR

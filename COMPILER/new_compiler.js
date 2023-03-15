@@ -43,11 +43,9 @@ export default class Compiler {
     compile() {
         this.init();
         this.AST = this.parser.parse_fileContents();
-        this.expressions = this.obtainExpressions_fromAST(this.AST);
+        if(this.state == "AST-debug") print(JSON.stringify(this.AST, null, 2)); 
 
-        /*if(this.state == "debug") {
-            print(JSON.stringify(this.AST, null, 2)); 
-        }*/
+        this.expressions = this.obtainExpressions_fromAST(this.AST);
         print("Build complete.");
     }
 
@@ -123,27 +121,17 @@ class Block {
 
 // STACK
 class StackExpr {
-    constructor(token) {
-        this.buildArgs(token);
+    constructor(stackEls) {
+        this.buildArgs(stackEls);
     }
 
-    buildArgs(args) {
+    buildArgs(stackEls) {
         const typeStack = new StackEl.TypeStack();
-        const stackElements = args?.value || args;
 
-        if(stackElements.length == 1 && args?.wrapped) {
-            const wrapper = new CallChain([{
-                type  : "IndexedProperty",
-                value : stackElements,
-            }], typeStack);
-            this.stackEls = [wrapper];
-            return;
-        }
-
-        this.stackEls = stackElements.map(stackElm => {
+        this.stackEls = stackEls.map(stackElm => {
             switch(stackElm.type) {
                 case "stackOp": return this.getStackOp(stackElm.value, typeStack);
-                case "CallChain": return new CallChain(stackElm.value, typeStack);
+                case "IndexedProperty": return new Property(stackElm, typeStack);
 
                 case "num":
                 case "str": return new StackValue(stackElm.value, typeStack);
@@ -379,13 +367,13 @@ class Inp_stackOp extends StackEl.StackOp {
     }
 }
 
-class CallChain {
-    constructor(properties, typeStack) {
-        this.properties = properties.map(p => {
-            switch(p.type) {
-                case "IndexedProperty" : return new StackExpr(p.value);
-            }
-        });
+class Property {
+    constructor(property, typeStack) {
+        this.properties = [];
+        while(property || !this.properties.length) {
+            this.properties.push(new StackExpr(property.value));
+            property = property.next;
+        }
     }
 
     async exec(stack) {

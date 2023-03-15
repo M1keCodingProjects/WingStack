@@ -12,9 +12,7 @@ Procedure  : PrintProc | WhenProc
 
 PrintProc  : "print" StackExpr
 
-StackExpr  : StackItem | ("[" StackItem (SPACE StackItem)* "]")
-
-StackItem  : StackValue | STACKOP | CallChain
+StackExpr  : (StackValue | STACKOP | CallChain)+
 
 StackValue : NUM | STR
 
@@ -22,7 +20,7 @@ CallChain  : Property (("." Property) | IDProp)*
 
 Property   : IDProp
 
-IDProp     : "[" StackItem (SPACE StackItem)* "]"
+IDProp     : "[" StackExpr "]"
 
 WhenProc   : "when" StackExpr "loop"? Block ElseProc?
 

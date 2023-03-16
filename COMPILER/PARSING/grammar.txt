@@ -18,7 +18,7 @@ StackValue : NUM | STR
 
 CallChain  : Property (("." Property) | IDProp)*
 
-Property   : IDProp
+Property   : IDProp | WORD
 
 IDProp     : "[" StackExpr "]"
 
@@ -29,3 +29,5 @@ Block      : ("{" Program "}") | ("then" Expression)
 ElseProc   : "else" (WhenProc | Block)
 
 LoopProc   : "loop" StackExpr Block
+
+Assignment : CallChain "=" StackExpr

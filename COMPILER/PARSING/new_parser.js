@@ -65,7 +65,10 @@ export default class Parser {
     }
 
     Expression(needsTerminator = true) { // Expression : (Procedure | Assignment) ";"?
-        const token = this.Procedure(needsTerminator); // doesn't implement assignments yet.
+        const token = this.peek_nextToken()?.type == "keyword" ?
+                      this.Procedure(needsTerminator) :
+                      this.Assignment();
+        
         if(this.peek_nextToken()?.type == ";") this.eat(";");
         return token;
     }
@@ -127,6 +130,16 @@ export default class Parser {
         };
     }
 
+    Assignment() {// Assignment : CallChain "=" StackExpr
+        const token = {
+            type   : "Assignment",
+            target : this.CallChain(true).value,
+        };
+        this.eat("=");
+        token.value = this.StackExpr(true).value;
+        return token;
+    }
+    
     StackExpr(atLineEnd = false) { // StackExpr : (StackValue | STACKOP | CallChain)+
         const token = {
             type    : "StackExpr",
@@ -136,11 +149,15 @@ export default class Parser {
         while(true) {
             const nextToken = this.peek_nextToken();
             switch(nextToken?.type) {
-                case "stackOp" : token.value.push(this.eat("stackOp")); break;
-                case "["       : token.value.push(this.Property()); break;
+                case "["       :
+                case "WORD"    :token.value.push(this.CallChain()); break;
+                
                 case "num"     :
                 case "str"     : token.value.push(this.Value()); break;
+                
+                case "stackOp" : token.value.push(this.eat("stackOp")); break;
                 default        : if(atLineEnd) this.throw(`Unexpected token "${nextToken.value}" of type "${nextToken.type}" in Stack Expression, expected LiteralValue, CallChain or StackOperator.`);
+                
                 case "}"       :
                 case ";"       :
                 case undefined : return token;
@@ -148,21 +165,37 @@ export default class Parser {
         }
     }
 
-    Property() { // Property : IDProp
+    CallChain(asTarget = false) { // CallChain : Property (("." Property) | IDProp)*
+        const token = {
+            type  : "CallChain",
+            value : [this.Property(asTarget)],
+        };
+
+        while(true) {
+            const nextTokenType = this.peek_nextToken()?.type;
+            if(nextTokenType == ".") this.eat(".");
+            else if(nextTokenType != "[") {
+                this.eatOptionalSpace();
+                return token;
+            }
+
+            token.value.push(this.Property());
+        }
+    }
+
+    Property(asTarget = false) { // Property : IDProp | WORD
+        if(this.peek_nextToken()?.type != "[") return this.eat("WORD");
+        if(asTarget) this.throw("Cannot build list as target of assignment.");
+        return this.IDProp();
+    }
+
+    IDProp() { // IDProp : "[" StackExpr "]"
         this.eat("[");
         const token = {
             type  : "IndexedProperty",
             value : this.StackExpr().value,
         };
         this.eat("]");
-
-        const nextTokenType = this.peek_nextToken()?.type;
-        if(nextTokenType == ".") this.eat(".");
-        else if(nextTokenType != "[") {
-            this.eatOptionalSpace();
-            return token;
-        }
-        token.next = this.Property();
         return token;
     }
 

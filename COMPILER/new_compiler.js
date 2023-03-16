@@ -12,6 +12,16 @@ const raise = msg => {
 
 const mathSymbols = ["+", "-", "*", "/", "**", "and", "or", ">", "<", "==", "<<", ">>"];
 
+const EXPR_TYPES = {
+    // PROCEDURES
+    "PrintProc" : expr => new PrintProc(expr),
+    "WhenProc"  : expr => new WhenProc(expr),
+    "LoopProc"  : expr => new LoopProc(expr),
+    
+    // OTHER STUFF
+    "Assignment" : expr => new Assignment(expr),
+};
+
 export default class Compiler {
     constructor(state) {
         this.init();
@@ -30,15 +40,7 @@ export default class Compiler {
     }
 
     obtainExpressions_fromAST(AST) {
-        const expressions = [];
-        for(const expr of AST) {
-            switch(expr.type) {
-                case "PrintProc" : expressions.push(new PrintProc(expr)); break;
-                case "WhenProc"  : expressions.push(new WhenProc(expr));  break;
-                case "LoopProc"  : expressions.push(new LoopProc(expr));  break;
-            }
-        }
-        return expressions;
+        return AST.map(expr => EXPR_TYPES[expr.type](expr));
     }
 
     compile() {
@@ -63,6 +65,19 @@ export default class Compiler {
             await expr.exec();
         }
         if(this.state == "debug") print("Execution complete.");
+    }
+}
+
+class Assignment {
+    constructor(args) {
+        this.target = new CallChain(args.target);
+        this.value  = new StackExpr(args.value); 
+    }
+
+    async exec() {
+        raise("Assignments don't run yet!");
+        const target = await this.target.exec(); // TODO: get writeable reference
+        target.set(await this.value.exec());
     }
 }
 
@@ -161,7 +176,7 @@ class StackExpr {
         this.stackEls = stackEls.map(stackElm => {
             switch(stackElm.type) {
                 case "stackOp": return this.getStackOp(stackElm.value, typeStack);
-                case "IndexedProperty": return new Property(stackElm, typeStack);
+                case "CallChain": return new CallChain(stackElm.value, typeStack);
 
                 case "num":
                 case "str": return new StackValue(stackElm.value, typeStack);
@@ -397,13 +412,11 @@ class Inp_stackOp extends StackEl.StackOp {
     }
 }
 
-class Property {
-    constructor(property, typeStack) {
-        this.properties = [];
-        while(property || !this.properties.length) {
-            this.properties.push(new StackExpr(property.value));
-            property = property.next;
-        }
+class CallChain {
+    constructor(properties, typeStack) {
+        this.properties = properties.map(
+            property => property.type == "IndexedProperty" ? new StackExpr(property.value) : raise("We don't support variables yet!")
+        );
     }
 
     async exec(stack) {

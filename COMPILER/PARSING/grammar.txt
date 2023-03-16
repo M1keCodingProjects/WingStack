@@ -8,7 +8,7 @@ Program    : Expression*
 
 Expression : (Procedure | Assignment) ";"?
 
-Procedure  : PrintProc | WhenProc
+Procedure  : PrintProc | WhenProc | LoopProc
 
 PrintProc  : "print" StackExpr
 
@@ -27,3 +27,5 @@ WhenProc   : "when" StackExpr "loop"? Block ElseProc?
 Block      : "{" Program "}"
 
 ElseProc   : "else" (WhenProc | Block)
+
+LoopProc   : "loop" StackExpr Block

@@ -18,13 +18,13 @@ export default class Parser {
             if(tokenType in IGNORED_TOKEN_TYPES || (tokenType == "space" && this.tokens[this.tokens.length - 1]?.type != "]")) return;
             
             tokens.push({
-                type  : tokenType,
+                type  : tokenType == "op"  ? "stackOp" : tokenType,
                 value : tokenType == "num" ? Number(match) :
                         tokenType == "str" ? match.slice(1, -1) : match,
             });
         }, this.tokens);
                 
-        console.log(...this.tokens.map(t => t.type));
+        //console.log(...this.tokens.map(t => t.type));
         return this.Program(true).value;
     }
 
@@ -61,12 +61,13 @@ export default class Parser {
         return token;
     }
 
-    Procedure() { // Procedure : PrintProc | WhenProc
+    Procedure() { // Procedure : PrintProc | WhenProc | LoopProc
         const keyword = this.eat("keyword");
 
         switch(keyword.value) {
             case "print" : return this.PrintProc();
             case "when"  : return this.WhenProc();
+            case "loop"  : return this.LoopProc();
         }
     }
 
@@ -111,6 +112,14 @@ export default class Parser {
         };
     }
 
+    LoopProc() { // LoopProc : "loop" StackExpr Block
+        return {
+            type  : "LoopProc",
+            value : this.StackExpr().value,
+            block : this.Block().value,
+        };
+    }
+
     StackExpr(atLineEnd = false) { // StackExpr : (StackValue | STACKOP | CallChain)+
         const token = {
             type    : "StackExpr",
@@ -136,7 +145,7 @@ export default class Parser {
         this.eat("[");
         const token = {
             type  : "IndexedProperty",
-            value : this.StackExpr(true).value,
+            value : this.StackExpr().value,
         };
         this.eat("]");
 

@@ -72,7 +72,6 @@ const HIGHLIGHT_KEYWORDS = {
     inp    : "stackOp",
     flip   : "stackOp",
     rand   : "stackOp",
-    in     : "stackOp",
 };
 
 export default function tokenize(text, onMatchedToken_callback = () => {}, ...args) {

@@ -500,23 +500,6 @@ export class Obj_stackOp extends StackOp {
   }
 }
 
-export class In_stackOp extends StackOp {
-  constructor(typeStack) {
-    super(typeStack);
-  }
-  
-  checkType(typeStack) {
-    //TODO
-  }
-
-  exec(stack) {
-    const [container, containerType] = this.grabItemFromTop(stack, 0, true, "list", "obj");
-    const [item] = this.grabItemFromTop(stack, 1, true, "any");
-    stack.push(1 * (containerType == "obj" ? (item in container) : container.indexOf(item) >= 0));
-    //the object implementation is not ready!!
-  }
-}
-
 /*
 export class _stackOp extends StackOp {
   constructor(typeStack) {

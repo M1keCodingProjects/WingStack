@@ -35,6 +35,7 @@ export default class Compiler {
             switch(expr.type) {
                 case "PrintProc" : expressions.push(new PrintProc(expr)); break;
                 case "WhenProc"  : expressions.push(new WhenProc(expr));  break;
+                case "LoopProc"  : expressions.push(new LoopProc(expr));  break;
             }
         }
         return expressions;
@@ -96,14 +97,42 @@ class WhenProc extends Proc {
         this.stackExpr = new StackExpr(args.value);
         this.block     = new Block(args.block);
         
+        this.exec = args.loops ? this.exec_loop : this.exec_noLoop;
+        
         if(args.else) this.else = args.else.type == "WhenProc" ? new WhenProc(args.else) : new Block(args.else.block);
     }
 
-    async exec() {
+    async exec_noLoop() {
         const result = await this.stackExpr.exec();
         if(!["int", "float"].includes(StackEl.Type_stackOp.prototype.getType(result))) raise('Conditions for "When" procedures must evaluate to "int", "float" or any "num" derived custom type.');
         if(result) await this.block.exec();
         else if(this.else) await this.else.exec();
+    }
+
+    async exec_loop() {
+        while(true) {
+            const result = await this.stackExpr.exec();
+            if(!["int", "float"].includes(StackEl.Type_stackOp.prototype.getType(result))) raise('Conditions for "When" procedures must evaluate to "int", "float" or any "num" derived custom type.');
+            if(result) await this.block.exec();
+            else if(this.else) return await this.else.exec();
+        }
+    }
+}
+
+class LoopProc extends Proc {
+    constructor(args) {
+        super(args);
+    }
+
+    buildArgs(args) {
+        this.stackExpr = new StackExpr(args.value);
+        this.block     = new Block(args.block);
+    }
+
+    async exec() {
+        const result = await this.stackExpr.exec();
+        if(StackEl.Type_stackOp.prototype.getType(result) != "int") raise(`"Loop" procedure expected its StackExpression argument to evaluate to "int", got "??" instead.`);
+        for(let i = 0; i < (result * (result >= 0)); i++) await this.block.exec();
     }
 }
 

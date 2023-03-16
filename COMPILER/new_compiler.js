@@ -115,6 +115,7 @@ class WhenProc extends Proc {
             if(!["int", "float"].includes(StackEl.Type_stackOp.prototype.getType(result))) raise('Conditions for "When" procedures must evaluate to "int", "float" or any "num" derived custom type.');
             if(result) await this.block.exec();
             else if(this.else) return await this.else.exec();
+            else return;
         }
     }
 }

@@ -24,7 +24,7 @@ IDProp     : "[" StackExpr "]"
 
 WhenProc   : "when" StackExpr "loop"? Block ElseProc?
 
-Block      : "{" Program "}"
+Block      : ("{" Program "}") | ("then" Expression)
 
 ElseProc   : "else" (WhenProc | Block)
 

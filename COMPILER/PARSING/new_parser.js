@@ -44,37 +44,46 @@ export default class Parser {
         };
     }
 
-    Block() { // Block : "{" Program "}"
+    Block(noThen = false) { // Block : ("{" Program "}") | ("then" Expression)
+        const token = {
+            type  : "Block",
+            value : [],
+        };
+
+        const nextTokenValue = this.peek_nextToken()?.value;
+        if(nextTokenValue == "then" || (noThen && nextTokenValue != "{")) { // no "and then?"!!
+            if(!noThen || nextTokenValue == "then") this.eat("keyword");
+            token.value.push(this.Expression(false));
+            return token;
+        }
+
         this.eat("{");
-        const expressions = this.Program().value;
+        token.value = this.Program().value;
         this.eat("}");
 
-        return {
-            type  : "Block",
-            value : expressions,
-        };
+        return token;
     }
 
-    Expression() { // Expression : (Procedure | Assignment) ";"?
-        const token = this.Procedure(); // doesn't implement assignments yet.
+    Expression(needsTerminator = true) { // Expression : (Procedure | Assignment) ";"?
+        const token = this.Procedure(needsTerminator); // doesn't implement assignments yet.
         if(this.peek_nextToken()?.type == ";") this.eat(";");
         return token;
     }
 
-    Procedure() { // Procedure : PrintProc | WhenProc | LoopProc
+    Procedure(needsTerminator) { // Procedure : PrintProc | WhenProc | LoopProc
         const keyword = this.eat("keyword");
 
         switch(keyword.value) {
-            case "print" : return this.PrintProc();
+            case "print" : return this.PrintProc(needsTerminator);
             case "when"  : return this.WhenProc();
             case "loop"  : return this.LoopProc();
         }
     }
 
-    PrintProc() { // PrintProc : "print" StackExpr
+    PrintProc(needsTerminator) { // PrintProc : "print" StackExpr
         return {
             type  : "PrintProc",
-            value : this.StackExpr(true).value,
+            value : this.StackExpr(needsTerminator).value,
         };
     }
 
@@ -85,22 +94,20 @@ export default class Parser {
             value : this.StackExpr().value,
         };
 
-        if(this.peek_nextToken()?.type == "keyword") {
-            const keyword = this.eat("keyword").value;
-            if(keyword != "loop") this.throw(`Found unexpected specifier "${keyword}" in "When" procedure, expected optional "loop".`);
+        if(this.peek_nextToken()?.value == "loop") {
+            this.eat("keyword");
             token.loops = true;
         }
         
-        token.block = this.Block().value;
+        token.block = this.Block(token.loops).value;
         if(this.peek_nextToken()?.value == "else") token.else = this.ElseProc();
         return token;
     }
 
     ElseProc() { // ElseProc : "else" (WhenProc | Block)
         this.eat("keyword");
-        if(this.peek_nextToken()?.type == "keyword") {
-            const keyword = this.eat("keyword").value;
-            if(keyword != "when") this.throw(`Found unexpected specifier "${keyword}" in "Else" procedure, expected optional "when".`);
+        if(this.peek_nextToken()?.value == "when") {
+            this.eat("keyword");
             const token = this.WhenProc();
             if(token.loops) this.throw('"Else-When" procedures cannot loop.');
             return token;
@@ -108,7 +115,7 @@ export default class Parser {
         
         return {
             type  : "ElseProc",
-            block : this.Block().value,
+            block : this.Block(true).value,
         };
     }
 

@@ -374,13 +374,11 @@ export class Rand_stackOp extends StackOp {
     //TODO
   }
 
-  getRandomStackItem(stack) {
-    return stack[ Math.floor(Math.random() * stack.length) ];
-  }
-
   exec(stack) {
     this.checkStackMinLength(stack, 1);
-    stack.push(this.getRandomStackItem(stack));
+    const [item2] = this.grabItemFromTop(stack, 0, false, "num");
+    const [item1] = this.grabItemFromTop(stack, 1, false, "num");
+    stack.push(Math.random() * (item2 - item1) + item1); // remember to implement rounding
   }
 }
 

@@ -1,15 +1,25 @@
-import      Parser  from "./PARSING/new_parser.js";
-import      Editor  from "../EDITOR/editor.js";
 import * as StackEl from "./stack operators.js";
+import {Type, runtime_checkGot_asValidExpected} from "./type checker.js";
 
-const editor = new Editor();
-const print = msg => editor.console.appendLog(msg);
+// GameLangParser (GLP) Instance
+import Parser from "./PARSING/new_parser.js";
+const GLP = new Parser();
 
-const raise = msg => {
-    editor.console.appendLog(msg, "Error");
+// Custom Console Instance
+import Console from '../EDITOR/console.js';
+const customConsole = new Console();
+
+function print(msg) {
+    customConsole.appendLog(msg);
+}
+
+function raise(msg) {
+    customConsole.appendLog(msg, "Error");
     throw new Error(msg);
 }
 
+// TODO: clean up
+import iota from "../../UTILS/general.js";
 const mathSymbols = ["+", "-", "*", "/", "**", "and", "or", ">", "<", "==", "<<", ">>"];
 
 const EXPR_TYPES = {
@@ -24,43 +34,58 @@ const EXPR_TYPES = {
 
 export default class Compiler {
     constructor(state) {
-        this.init();
-        this.state = state;
-        this.parser = new Parser(editor);
-        this.editor = editor;
-    }
+        this.VALID_STATES = {
+            debug    : iota(),
+            debugAST : iota(),
+            deploy   : iota(),
+        };
 
-    init() {
-        this.AST = [];
+        if(!(state in this.VALID_STATES)) throw new Error(`INVALID COMPILER STATE ${state}.`);
+        this.state = state;
     }
 
     reset_runtime() {
         this.vars = [];
-        if(this.state != "debug") print("\\clear");
+        if(this.state == this.VALID_STATES.deploy) print("\\clear");
     }
 
-    compile() {
-        this.init();
-        this.AST = this.parser.parse_fileContents();
-        if(this.state == "AST-debug") print(JSON.stringify(this.AST, null, 2)); 
-
-        this.expressions = this.AST.map(expr => EXPR_TYPES[expr.type](expr, this));
-        print("Build complete.");
+    parse(text) {
+        try {
+            const AST = GLP.parse(text);
+            if(this.state == this.VALID_STATES.debugAST) print(JSON.stringify(AST, null, 2));
+            return AST;
+        }
+        catch(err) {
+            raise(err.message);
+        }
     }
 
-    build() {
-        this.compile();
-        this.run();
+    compile(AST) {
+        this.expressions = AST.map(expr => EXPR_TYPES[expr.type](expr, this));
+        if(this.state == this.VALID_STATES.debug) print("Code compiled successfully.");
     }
 
     async run() {
         this.reset_runtime();
         if(!this.expressions) raise("Couldn't find any previous build to run.");
 
+        //console.time("runtime");
         for(const expr of this.expressions) {
             await expr.exec();
         }
-        if(this.state == "debug") print("Execution complete.");
+        //console.timeEnd("runtime");
+        if(this.state == this.VALID_STATES.debug) print("Execution complete.");
+    }
+
+    build(text) {
+        const AST = this.parse(text);
+        this.compile(AST);
+        print("Build complete.");
+    }
+
+    build_and_run(text) {
+        this.build(text);
+        this.run();
     }
 }
 
@@ -80,12 +105,25 @@ class Variable {
 class Assignment {
     constructor(args) {
         this.target = new CallChain(args.target);
-        this.value  = new StackExpr(args.value); 
+        this.value  = new StackExpr(args.value);
+        if(args.typeSignature) this.expectedType = new Type(...this.parse_typeSignature(args.typeSignature));
+    }
+
+    parse_typeSignature(typeSignature) {
+        const types = [];
+        for(const type of typeSignature) {
+            switch(type.type) {
+                case "stackOp" : types.push(type.value); break;
+                case "WORD"    : raise("not implemented!");
+                case "Type"    : types.push([...this.parse_typeSignature(type.value)]); break;
+            }
+        }
+        return types;        
     }
 
     async exec() {
         raise("Assignments don't run yet!");
-        const target = await this.target.exec(); // TODO: get writeable reference
+        const target = await this.target.exec("write"); // TODO: get writeable reference
         target.set(await this.value.exec());
     }
 }
@@ -163,7 +201,7 @@ class LoopProc extends Proc {
 
 class Block {
     constructor(expressions) {
-        this.expressions = Compiler.prototype.obtainExpressions_fromAST(expressions);
+        this.expressions = expressions.map(expr => EXPR_TYPES[expr.type](expr, null));
     }
 
     async exec() {
@@ -416,7 +454,7 @@ class Inp_stackOp extends StackEl.StackOp {
     }
 
     async exec(stack) {
-        const userInput = await editor.console.requestInput();
+        const userInput = await customConsole.requestInput();
         stack.push(userInput);
     }
 }
@@ -424,7 +462,7 @@ class Inp_stackOp extends StackEl.StackOp {
 class CallChain {
     constructor(properties, typeStack) {
         this.properties = properties.map(
-            property => property.type == "IndexedProperty" ? new StackExpr(property.value) : raise("We don't support variables yet!")
+            property => property.type == "IndexedProperty" ? new StackExpr(property.value) : property.value
         );
     }
 

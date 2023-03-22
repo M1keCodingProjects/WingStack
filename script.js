@@ -1,7 +1,30 @@
 import Compiler    from "./COMPILER/new_compiler.js";
-import FileManager from './FILES/fileManager.js';
+import Editor      from "./EDITOR/editor.js";
 
-//old code
+const GLC = new Compiler("debug");
+const IDE = new Editor();
+
+const [ // re-work, I hate this:
+    compileBtn,
+    runBtn,
+    buildBtn
+] = Array.from(document.querySelectorAll("#Code-dropdown > .dropdown-opts > .dropdown-option"));
+
+compileBtn.onclick =_=> {
+    const text = IDE.getText(false); // get text, don't save file
+    GLC.build(text); // parse text into AST, save expressions
+}
+
+runBtn.onclick =_=> {
+    GLC.run();
+}
+
+buildBtn.onclick =_=> {
+    const text = IDE.getText(false);
+    GLC.build_and_run(text);
+};
+
+/* old code:
 import { loadFile } from "./FILES/file loader.js";
 
 const preloadedModuleList = {
@@ -11,9 +34,9 @@ const preloadedModuleList = {
     "Vector2D"          : (await(await fetch(`./FILES/Vector2D.GL`)).text()).split("\r").join(""),
 };
 const usedFilePath = "EXAMPLES/presentation";
-//end
+*/
 
-const GLC         = new Compiler("deploy");
+import FileManager from './FILES/fileManager.js';
 const fileManager = new FileManager();
 
 //GUI Buttons setup
@@ -31,19 +54,4 @@ saveFileBtn.onclick = async _=> {
 
 saveFileAsBtn.onclick = async _=> {
     await fileManager.saveFileAs(GLC.editor.getText());
-};
-
-
-const [compileBtn, runBtn, buildBtn] = Array.from(document.querySelectorAll("#Code-dropdown > .dropdown-opts > .dropdown-option"));
-
-compileBtn.onclick =_=> {
-    GLC.compile();
-}
-
-runBtn.onclick =_=> {
-    GLC.run();
-}
-
-buildBtn.onclick =_=> {
-    GLC.build();
 };

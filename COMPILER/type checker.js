@@ -22,7 +22,10 @@ export class Type {
     setType(type, value = true) {
         if(this[type]) {
             if(type != "list") return;
-            for(const opt of value.asOptions) this.list.addType(opt);
+            for(const opt of value.asOptions) { // I have no idea why this works..
+                if(opt == "list") this.list.addType(opt, value.list.asOptions);
+                else this.list.addType(opt);
+            }
             return;
         }
         

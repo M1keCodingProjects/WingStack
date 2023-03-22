@@ -375,7 +375,7 @@ export class Rand_stackOp extends StackOp {
   }
 
   exec(stack) {
-    this.checkStackMinLength(stack, 1);
+    this.checkStackMinLength(stack, 2);
     const [item2] = this.grabItemFromTop(stack, 0, false, "num");
     const [item1] = this.grabItemFromTop(stack, 1, false, "num");
     stack.push(Math.random() * (item2 - item1) + item1); // remember to implement rounding

@@ -1,5 +1,4 @@
 import tokenize from "../COMPILER/PARSING/tokenizer.js";
-import Console  from './console.js';
 const GUIfileTab = document.querySelector(".openFilesContainer .fileName");
 
 import iota from "../UTILS/general.js";
@@ -18,7 +17,6 @@ export default class Editor {
        [this.textTarget,
         this.textContainer,
         this.lineCounter ] = document.querySelectorAll(".editorContainer > .shownEditor, .editor, .lineCounter");
-        this.console       = new Console();
         this.fileIsSaved   = false;
         this.currentLineID = 0;
 
@@ -56,8 +54,8 @@ export default class Editor {
         this.updateSaveState(true);
     }
 
-    getText() {
-        this.updateSaveState(true);
+    getText(updateSaveState = true) {
+        if(updateSaveState) this.updateSaveState(true);
         return this.textContainer.value;
     }
 

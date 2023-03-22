@@ -7,14 +7,14 @@ const IGNORED_TOKEN_TYPES = {
 };
 
 export default class Parser {
-    constructor(editor) {
-        this.editor = editor;
+    constructor() {
+
     }
 
-    parse_fileContents() {
+    parse(text) {
         this.tokens = [];
 
-        tokenize(this.editor.textContainer.value, (match, tokenType, tokens) => {
+        tokenize(text, (match, tokenType, tokens) => {
             if(tokenType in IGNORED_TOKEN_TYPES || (tokenType == "space" && this.tokens[this.tokens.length - 1]?.type != "]")) return;
             
             tokens.push({
@@ -140,7 +140,7 @@ export default class Parser {
 
         if(this.peek_nextToken()?.type == ":") {
             this.eat(":");
-            token.typeSignature = this.Type();
+            token.typeSignature = this.Type().value;
         }
 
         this.eat("=");
@@ -262,7 +262,6 @@ export default class Parser {
 
     throw(errorMsg) {
         errorMsg = "Syntax Error: " + errorMsg;
-        this.editor.console.appendLog(errorMsg, "Error");
         throw new Error(errorMsg);
     }
 }

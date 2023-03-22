@@ -18,7 +18,9 @@ export default class Parser {
             if(tokenType in IGNORED_TOKEN_TYPES || (tokenType == "space" && this.tokens[this.tokens.length - 1]?.type != "]")) return;
             
             tokens.push({
-                type  : tokenType == "op"  ? "stackOp" : tokenType,
+                type  : tokenType == "op"  ? "stackOp" :
+                        (tokenType == "WORD" && match == "any" ? "stackOp" : tokenType),
+    
                 value : tokenType == "num" ? Number(match) :
                         tokenType == "str" ? match.slice(1, -1) : match,
             });
@@ -130,16 +132,50 @@ export default class Parser {
         };
     }
 
-    Assignment() {// Assignment : CallChain "=" StackExpr
+    Assignment() {// Assignment : CallChain (":" Type)? "=" StackExpr
         const token = {
             type   : "Assignment",
             target : this.CallChain(true).value,
         };
+
+        if(this.peek_nextToken()?.type == ":") {
+            this.eat(":");
+            token.typeSignature = this.Type();
+        }
+
         this.eat("=");
         token.value = this.StackExpr(true).value;
         return token;
     }
     
+    Type() { // Type : SingleType ("|" SingleType)*
+        const token = {
+            type  : "Type",
+            value : [],
+        };
+
+        while(true) {
+            const nextSingleType = this.SingleType();
+            if(!nextSingleType) return token;
+            token.value.push(nextSingleType);
+            if(this.peek_nextToken()?.type != "|") return token;
+            this.eat("|");
+        }
+    }
+
+    SingleType() { // SingleType : (TYPE | WORD) | "[" Type "]"
+        const nextTokenType = this.peek_nextToken()?.type;
+        if(nextTokenType == "[") {
+            this.eat("[");
+            const token = this.Type();
+            this.eat("]");
+            this.eatOptionalSpace();
+            return token;
+        }
+
+        if(["WORD", "stackOp"].includes(nextTokenType)) return this.eat(nextTokenType);
+    }
+
     StackExpr(atLineEnd = false) { // StackExpr : (StackValue | STACKOP | CallChain)+
         const token = {
             type    : "StackExpr",

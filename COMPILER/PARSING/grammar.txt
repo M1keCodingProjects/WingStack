@@ -30,4 +30,8 @@ ElseProc   : "else" (WhenProc | Block)
 
 LoopProc   : "loop" StackExpr Block
 
-Assignment : CallChain "=" StackExpr
+Assignment : CallChain (":" Type)? "=" StackExpr
+
+Type       : SingleType ("|" SingleType)*
+
+SingleType : (TYPE | WORD) | "[" Type "]"

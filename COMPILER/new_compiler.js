@@ -14,12 +14,12 @@ const mathSymbols = ["+", "-", "*", "/", "**", "and", "or", ">", "<", "==", "<<"
 
 const EXPR_TYPES = {
     // PROCEDURES
-    "PrintProc" : expr => new PrintProc(expr),
-    "WhenProc"  : expr => new WhenProc(expr),
-    "LoopProc"  : expr => new LoopProc(expr),
+    "PrintProc" : (expr, compilerRef) => new PrintProc(expr, compilerRef),
+    "WhenProc"  : (expr, compilerRef) => new WhenProc(expr, compilerRef),
+    "LoopProc"  : (expr, compilerRef) => new LoopProc(expr, compilerRef),
     
     // OTHER STUFF
-    "Assignment" : expr => new Assignment(expr),
+    "Assignment" : (expr, compilerRef) => new Assignment(expr, compilerRef),
 };
 
 export default class Compiler {
@@ -39,16 +39,12 @@ export default class Compiler {
         if(this.state != "debug") print("\\clear");
     }
 
-    obtainExpressions_fromAST(AST) {
-        return AST.map(expr => EXPR_TYPES[expr.type](expr));
-    }
-
     compile() {
         this.init();
         this.AST = this.parser.parse_fileContents();
         if(this.state == "AST-debug") print(JSON.stringify(this.AST, null, 2)); 
 
-        this.expressions = this.obtainExpressions_fromAST(this.AST);
+        this.expressions = this.AST.map(expr => EXPR_TYPES[expr.type](expr, this));
         print("Build complete.");
     }
 
@@ -65,6 +61,19 @@ export default class Compiler {
             await expr.exec();
         }
         if(this.state == "debug") print("Execution complete.");
+    }
+}
+
+class Variable {
+    constructor(name, value, type = "any") {
+        this.name = name;
+        this.type = type;
+        this.set(value);
+    }
+
+    set(value) {
+        // verify that value is of type : 'valid for' this.type
+        this.value = value;
     }
 }
 

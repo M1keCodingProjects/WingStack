@@ -4,7 +4,7 @@ const TOKEN_MATCH_PATTERNS = [
     [/^ +/, "space"],
     [/^#.*/, "comment"],
     [/^\n+/, "EOL"],
-    ...createMatchPatterns("()[]{}.,;:?="),
+    ...createMatchPatterns("()[]{}.,;:?=|"),
     [/^((\"[^\"\n]*\"?)|(\'[^\'\n]*\'?))/, "str"],
     [/^-?\d+(\.\d+)?/, "num"],
     [/^(\+|\-|\*|\/|\=\=|<|>)/, "op"],

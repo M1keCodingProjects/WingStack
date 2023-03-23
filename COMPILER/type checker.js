@@ -10,30 +10,23 @@ const PRIMITIVE_TYPES = {
 
 export class Type {
     constructor(...types) {
-        this.asOptions = [];
-        for(const type of types) {
-            this.addType(type);
-        }
-        
+        this.asOptions = new Set();
+        this.itemsType = [];
+
+        types.forEach(type => this.addType(type));
+        this.asOptions = Array.from(this.asOptions);
+
         if(!this.num && this.int && this.float) this.num = true;
         if(!this.any && this.num && this.str && this.list && this.obj) this.any = true;
     }
 
-    setType(type, value = true) {
-        if(this[type]) {
-            if(type != "list") return;
-            for(const opt of value.asOptions) { // I have no idea why this works..
-                if(opt == "list") this.list.addType(opt, value.list.asOptions);
-                else this.list.addType(opt);
-            }
-            return;
-        }
-        
-        this[type] = value;
-        this.asOptions.push(type);
+    setType(type, ifList_itemsType) {
+        if(type == "list") this.itemsType.push(ifList_itemsType);
+        this[type] = true;
+        this.asOptions.add(type);
     }
 
-    addType(type, value) {
+    addType(type) {
         if(type instanceof Array) this.setType("list", new Type(...type)); // not supporting obj 
         else if(type == "list") this.setType("list", new Type("any", "void"));
         else this.setType(type);
@@ -41,14 +34,29 @@ export class Type {
 
     canBe(type) {
         if(this.any) return type == "void" ? this.void == true : true;
-        if(type == "num") return this.int && this.float;
+        if(this.num && (type == "int" || type == "float")) return true; 
         return this[type] !== undefined;
     }
 }
 
 export function runtime_checkGot_asValidExpected(expected, got) { // pietro
+    if(expected.any) {
+        if((!got.void) || expected.void) return true;
+    }
+
     for(const type of got.asOptions) {
-        if(!expected.canBe(type) || (type == "list" && !runtime_checkGot_asValidExpected(expected.list, got.list))) return false;
+        if(!expected.canBe(type)) return false;
+        if(type != "list") continue;
+        for(const typeInList of got.itemsType) {
+            let expectedContains = false;
+            for(const expectedTypeInList of expected.itemsType) {
+                if(runtime_checkGot_asValidExpected(expectedTypeInList, typeInList)) {
+                    expectedContains = true;
+                    break;
+                }
+            }
+            if(!expectedContains) return false;
+        }
     }
     return true;
 }
@@ -63,8 +71,8 @@ export function runtime_checkType(value) {
 }
 
 /*
-const got      = new Type(["str", "void"], ["num"]);
-const expected = new Type(["any"]);
+const got      = new Type(["num"]);
+const expected = new Type(["str"], ["int"], "list");
 
 console.log("expected:", expected);
 console.log("got:", got);

@@ -75,7 +75,7 @@ export default class Compiler {
             await expr.exec();
         }
         //console.timeEnd("runtime");
-        if(this.state == this.VALID_STATES.debug) print("Execution complete.");
+        print("Execution complete.");
     }
 
     build(text) {

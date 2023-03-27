@@ -174,6 +174,173 @@ export class StackOp {
   }
 }
 
+export class Math_stackOp extends StackOp {
+  constructor(symbol, typeStack) {
+      super(typeStack);
+      this.init_exec(symbol);
+  }
+
+  checkType(typeStack) { // num num -2-> num
+      this.requestItem(typeStack, true, "num");
+      this.requestItem(typeStack, true, "num");
+      typeStack.addOption("num");
+  }
+
+  getOperands(stack) {
+      const  [item2] = this.grabItemFromTop(stack, 0, false, "num");
+      const  [item1] = this.grabItemFromTop(stack, 1, false, "num");
+      return [item1, item2];
+  }
+
+  round(n) {
+      return Number(Math.round(`${n}e${5}`) + `e-${5}`);
+  }
+
+  checkNaN(res) {
+      if(isNaN(res)) raise("A math error has occurred inside of a StackExpression.");
+  }
+
+  init_exec(symbol) {
+      const operationFunc = this.getOperationFunc(symbol);
+      this.exec = (stack => {
+          const res = operationFunc(...this.getOperands(stack));
+          this.checkNaN(res);
+          stack.push(res);
+      }).bind(this);
+  }
+
+  getOperationFunc(symbol) {
+      switch(symbol) {
+          case "-"   : return (el1, el2) => el1 - el2;
+          case "/"   : return (el1, el2) => el1 / el2;
+          case "**"  : return (el1, el2) => el1 ** el2;
+          case "and" : return (el1, el2) => 1 * (Boolean(el1) && Boolean(el2));
+          case "or"  : return (el1, el2) => 1 * (Boolean(el1) || Boolean(el2));
+          case ">"   : return (el1, el2) => 1 * (el1 > el2);
+          case "<"   : return (el1, el2) => 1 * (el1 < el2);
+          case ">>"  : return (el1, el2) => 1 * (el1 >> el2);
+          case "<<"  : return (el1, el2) => 1 * (el1 << el2);
+      }
+  }
+}
+
+export class Plus_stackOp extends StackOp {
+  constructor(typeStack) {
+      super(typeStack);
+  }
+
+  checkType(typeStack) { // num|str num|str -2-> num|str
+      const el2 = this.requestItem(typeStack, true, "num", "str");
+      const el1 = this.requestItem(typeStack, true, "num", "str");
+
+      const typeScore = (0.5 + 0.5 * (el1.canBe("num") - el1.canBe("str"))) *
+                        (0.5 + 0.5 * (el2.canBe("num") - el2.canBe("str")));
+      
+      const options = [];
+      if(typeScore > 0) { // 0.25, 0.5 relate to num|str, 1 is num
+          const numTypeScore = Math.round(1.4 * el1.canBe("float") + 0.4 * el1.canBe("int")) +
+                               Math.round(1.4 * el2.canBe("float") + 0.4 * el2.canBe("int"));
+
+          options.push(["int", "float", "num"][Math.min(numTypeScore, 2)]); // 0 : int, 1 : float, 2 : num
+      }
+      if(typeScore < 1) options.push("str"); // 0.25, 0.5 relate to num|str, 0 is str
+      typeStack.addOption(...options);
+  }
+
+  exec(stack) {
+      const [el2]    = this.grabItemFromTop(stack, 0, false, "num", "str");
+      const [el1]    = this.grabItemFromTop(stack, 1, false, "num", "str");
+      const res      = el1 + el2;
+      const resIsNum = Type_stackOp.prototype.getType(res) == "num";
+      if(resIsNum) Math_stackOp.prototype.checkNaN(res);
+      stack.push(resIsNum ? Math_stackOp.prototype.round(res) : res);
+  }
+}
+
+export class Eqs_stackOp extends StackOp {
+  constructor(typeStack) {
+      super(typeStack);
+  }
+
+  checkType(typeStack) { // any any -2-> num
+      const el2 = this.requestItem(typeStack, true, "any");
+      const el1 = this.requestItem(typeStack, true, "any");
+      typeStack.addOption("num");
+  }
+
+  exec(stack) {
+      const [el2] = this.grabItemFromTop(stack, 0, false, "any");
+      const [el1] = this.grabItemFromTop(stack, 1, false, "any");
+      const res   = 1 * (el1 === el2);
+      stack.push(res);
+  }
+}
+
+export class Mult_stackOp extends StackOp {
+  constructor(typeStack) {
+      super(typeStack);
+  }
+
+  checkType(typeStack) { // num|str num|str -2-> num|str
+      const el2 = this.requestItem(typeStack, true, "num", "str");
+      const el1 = this.requestItem(typeStack, true, "num", "str");
+
+      if(el1.isOnly("str") && el2.isOnly("str")) raise("Cannot multiply str with str.");
+      if((el1.isOnly("float") && el2.isOnly("str")) ||
+         (el2.isOnly("float") && el1.isOnly("str"))) raise("Cannot multiply str with float.");
+      
+      const typeScore = (0.5 + 0.5 * (el1.canBe("num") - el1.canBe("str"))) *
+                        (0.5 + 0.5 * (el2.canBe("num") - el2.canBe("str")));
+  
+      const options = [];
+      if(typeScore > 0) { // 0.25, 0.5 relate to num|str, 1 is num
+          const numTypeScore = Math.round(1.4 * el1.canBe("float") + 0.4 * el1.canBe("int")) +
+                               Math.round(1.4 * el2.canBe("float") + 0.4 * el2.canBe("int"));
+
+          options.push(["int", "float", "num"][Math.min(numTypeScore, 2)]); // 0 : int, 1 : float, 2 : num
+      }
+      if(typeScore < 1) options.push("str"); // 0.25, 0.5 relate to num|str, 0 is str
+      typeStack.addOption(...options);
+  }
+
+  _multiplyNumWithStr(num, str) {
+      if(Type_stackOp.prototype.getType(num) == "float") raise("Runtime Error: Cannot repeat a str value with a float amount of times.");
+      return str.repeat(num);
+  }
+
+  exec(stack) {
+      const [el2, type2] = this.grabItemFromTop(stack, 0, false, "num", "str");
+      const [el1, type1] = this.grabItemFromTop(stack, 1, false, "num", "str");
+      const el1_isStr    = type1 == "str";
+      const el2_isStr    = type2 == "str";
+
+      if(el1_isStr && el2_isStr) raise("Runtime Error: Cannot multiply two strings together");
+
+      const res = el1_isStr ? this._multiplyNumWithStr(el2, el1) :
+                  el2_isStr ? this._multiplyNumWithStr(el1, el2) :
+                  el1 * el2;
+      
+      if(typeof res == "number") Math_stackOp.prototype.checkNaN(res);
+      stack.push(res);
+  }
+}
+
+import { requestInput } from "./new_compiler.js";
+export class Inp_stackOp extends StackOp {
+  constructor(typeStack) {
+      super(typeStack);
+  }
+
+  checkType(typeStack) { // any|void -0-> num|str
+      typeStack.addOption("num", "str");
+  }
+
+  async exec(stack) {
+      const userInput = await requestInput();
+      stack.push(userInput);
+  }
+}
+
 export class Not_stackOp extends StackOp {
   constructor(typeStack) {
     super(typeStack);

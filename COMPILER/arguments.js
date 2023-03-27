@@ -10,8 +10,8 @@ export class Block {
     }
 }
 
-import * as StackEl from "./stack operators.js";
-import iota from "../../UTILS/general.js";
+import * as StackOp from "./stack operators.js";
+import iota from "../UTILS/general.js";
 const MATH_SYMBOLS = {
     "+"   : iota(),
     "-"   : iota(),
@@ -33,7 +33,7 @@ export class StackExpr {
     }
 
     buildArgs(stackEls) {
-        const typeStack = new StackEl.TypeStack();
+        const typeStack = new StackOp.TypeStack();
 
         this.stackEls = stackEls.map(stackElm => {
             switch(stackElm.type) {
@@ -49,36 +49,35 @@ export class StackExpr {
     getStackOp(symbol, typeStack) {
         if(symbol in MATH_SYMBOLS) {
             switch(symbol) {
-                case "+" : return new Plus_stackOp(typeStack);
-                case "==": return new Eqs_stackOp(typeStack);
-                case "*" : return new Mult_stackOp(typeStack);
-                default  : return new Math_stackOp(symbol, typeStack);
+                case "+" : return new StackOp.Plus_stackOp(typeStack);
+                case "==": return new StackOp.Eqs_stackOp(typeStack);
+                case "*" : return new StackOp.Mult_stackOp(typeStack);
+                default  : return new StackOp.Math_stackOp(symbol, typeStack);
             }
         }
 
         switch(symbol) {
-            case "not"  : return new StackEl.Not_stackOp(typeStack);
-            case "dup"  : return new StackEl.Dup_stackOp(typeStack);
-            case "size" : return new StackEl.Size_stackOp(typeStack); 
-            case "rot<" : return new StackEl.RotL_stackOp(typeStack);
-            case "rot>" : return new StackEl.RotR_stackOp(typeStack);
-            case "spill": return new StackEl.Spill_stackOp(typeStack);
-            case "type" : return new StackEl.Type_stackOp(typeStack);
-            case "swap" : return new StackEl.Swap_stackOp(typeStack);
-            case "drop" : return new StackEl.Drop_stackOp(typeStack);
-            case "pop"  : return new StackEl.Pop_stackOp(typeStack);
-            case "flip" : return new StackEl.Flip_stackOp(typeStack);
-            case "rand" : return new StackEl.Rand_stackOp(typeStack);
-            case "char" : return new StackEl.Char_stackOp(typeStack);
+            case "not"  : return new StackOp.Not_stackOp(typeStack);
+            case "dup"  : return new StackOp.Dup_stackOp(typeStack);
+            case "size" : return new StackOp.Size_stackOp(typeStack); 
+            case "rot<" : return new StackOp.RotL_stackOp(typeStack);
+            case "rot>" : return new StackOp.RotR_stackOp(typeStack);
+            case "spill": return new StackOp.Spill_stackOp(typeStack);
+            case "type" : return new StackOp.Type_stackOp(typeStack);
+            case "swap" : return new StackOp.Swap_stackOp(typeStack);
+            case "drop" : return new StackOp.Drop_stackOp(typeStack);
+            case "pop"  : return new StackOp.Pop_stackOp(typeStack);
+            case "flip" : return new StackOp.Flip_stackOp(typeStack);
+            case "rand" : return new StackOp.Rand_stackOp(typeStack);
+            case "char" : return new StackOp.Char_stackOp(typeStack);
             
             //type-casting
-            case "num"  : return new StackEl.Num_stackOp(typeStack);
-            case "int"  : return new StackEl.Int_stackOp(typeStack);
-            case "str"  : return new StackEl.Str_stackOp(typeStack);
-            case "list" : return new StackEl.List_stackOp(typeStack);
-            case "obj"  : return new StackEl.Obj_stackOp(typeStack);
-
-            case "inp"  : return new Inp_stackOp(typeStack);
+            case "num"  : return new StackOp.Num_stackOp(typeStack);
+            case "int"  : return new StackOp.Int_stackOp(typeStack);
+            case "str"  : return new StackOp.Str_stackOp(typeStack);
+            case "list" : return new StackOp.List_stackOp(typeStack);
+            case "obj"  : return new StackOp.Obj_stackOp(typeStack);
+            case "inp"  : return new StackOp.Inp_stackOp(typeStack);
         }
     }
 
@@ -91,182 +90,15 @@ export class StackExpr {
     }
 }
 
-class Math_stackOp extends StackEl.StackOp {
-    constructor(symbol, typeStack) {
-        super(typeStack);
-        this.init_exec(symbol);
-    }
-
-    checkType(typeStack) { // num num -2-> num
-        this.requestItem(typeStack, true, "num");
-        this.requestItem(typeStack, true, "num");
-        typeStack.addOption("num");
-    }
-
-    getOperands(stack) {
-        const  [item2] = this.grabItemFromTop(stack, 0, false, "num");
-        const  [item1] = this.grabItemFromTop(stack, 1, false, "num");
-        return [item1, item2];
-    }
-
-    round(n) {
-        return Number(Math.round(`${n}e${5}`) + `e-${5}`);
-    }
-
-    checkNaN(res) {
-        if(isNaN(res)) raise("A math error has occurred inside of a StackExpression.");
-    }
-
-    init_exec(symbol) {
-        const operationFunc = this.getOperationFunc(symbol);
-        this.exec = (stack => {
-            const res = operationFunc(...this.getOperands(stack));
-            this.checkNaN(res);
-            stack.push(res);
-        }).bind(this);
-    }
-
-    getOperationFunc(symbol) {
-        switch(symbol) {
-            case "-"   : return (el1, el2) => el1 - el2;
-            case "/"   : return (el1, el2) => el1 / el2;
-            case "**"  : return (el1, el2) => el1 ** el2;
-            case "and" : return (el1, el2) => 1 * (Boolean(el1) && Boolean(el2));
-            case "or"  : return (el1, el2) => 1 * (Boolean(el1) || Boolean(el2));
-            case ">"   : return (el1, el2) => 1 * (el1 > el2);
-            case "<"   : return (el1, el2) => 1 * (el1 < el2);
-            case ">>"  : return (el1, el2) => 1 * (el1 >> el2);
-            case "<<"  : return (el1, el2) => 1 * (el1 << el2);
-        }
-    }
-}
-  
-class Plus_stackOp extends StackEl.StackOp {
-    constructor(typeStack) {
-        super(typeStack);
-    }
-
-    checkType(typeStack) { // num|str num|str -2-> num|str
-        const el2 = this.requestItem(typeStack, true, "num", "str");
-        const el1 = this.requestItem(typeStack, true, "num", "str");
-
-        const typeScore = (0.5 + 0.5 * (el1.canBe("num") - el1.canBe("str"))) *
-                          (0.5 + 0.5 * (el2.canBe("num") - el2.canBe("str")));
-        
-        const options = [];
-        if(typeScore > 0) { // 0.25, 0.5 relate to num|str, 1 is num
-            const numTypeScore = Math.round(1.4 * el1.canBe("float") + 0.4 * el1.canBe("int")) +
-                                 Math.round(1.4 * el2.canBe("float") + 0.4 * el2.canBe("int"));
-
-            options.push(["int", "float", "num"][Math.min(numTypeScore, 2)]); // 0 : int, 1 : float, 2 : num
-        }
-        if(typeScore < 1) options.push("str"); // 0.25, 0.5 relate to num|str, 0 is str
-        typeStack.addOption(...options);
-    }
-
-    exec(stack) {
-        const [el2]    = this.grabItemFromTop(stack, 0, false, "num", "str");
-        const [el1]    = this.grabItemFromTop(stack, 1, false, "num", "str");
-        const res      = el1 + el2;
-        const resIsNum = StackEl.Type_stackOp.prototype.getType(res) == "num";
-        if(resIsNum) Math_stackOp.prototype.checkNaN(res);
-        stack.push(resIsNum ? Math_stackOp.prototype.round(res) : res);
-    }
-}
-
-class Eqs_stackOp extends StackEl.StackOp {
-    constructor(typeStack) {
-        super(typeStack);
-    }
-
-    checkType(typeStack) { // any any -2-> num
-        const el2 = this.requestItem(typeStack, true, "any");
-        const el1 = this.requestItem(typeStack, true, "any");
-        typeStack.addOption("num");
-    }
-
-    exec(stack) {
-        const [el2] = this.grabItemFromTop(stack, 0, false, "any");
-        const [el1] = this.grabItemFromTop(stack, 1, false, "any");
-        const res   = 1 * (el1 === el2);
-        stack.push(res);
-    }
-}
-
-class Mult_stackOp extends StackEl.StackOp {
-    constructor(typeStack) {
-        super(typeStack);
-    }
-
-    checkType(typeStack) { // num|str num|str -2-> num|str
-        const el2 = this.requestItem(typeStack, true, "num", "str");
-        const el1 = this.requestItem(typeStack, true, "num", "str");
-
-        if(el1.isOnly("str") && el2.isOnly("str")) raise("Cannot multiply str with str.");
-        if((el1.isOnly("float") && el2.isOnly("str")) ||
-           (el2.isOnly("float") && el1.isOnly("str"))) raise("Cannot multiply str with float.");
-        
-        const typeScore = (0.5 + 0.5 * (el1.canBe("num") - el1.canBe("str"))) *
-                          (0.5 + 0.5 * (el2.canBe("num") - el2.canBe("str")));
-    
-        const options = [];
-        if(typeScore > 0) { // 0.25, 0.5 relate to num|str, 1 is num
-            const numTypeScore = Math.round(1.4 * el1.canBe("float") + 0.4 * el1.canBe("int")) +
-                                 Math.round(1.4 * el2.canBe("float") + 0.4 * el2.canBe("int"));
-
-            options.push(["int", "float", "num"][Math.min(numTypeScore, 2)]); // 0 : int, 1 : float, 2 : num
-        }
-        if(typeScore < 1) options.push("str"); // 0.25, 0.5 relate to num|str, 0 is str
-        typeStack.addOption(...options);
-    }
-
-    _multiplyNumWithStr(num, str) {
-        if(StackEl.Type_stackOp.prototype.getType(num) == "float") raise("Runtime Error: Cannot repeat a str value with a float amount of times.");
-        return str.repeat(num);
-    }
-
-    exec(stack) {
-        const [el2, type2] = this.grabItemFromTop(stack, 0, false, "num", "str");
-        const [el1, type1] = this.grabItemFromTop(stack, 1, false, "num", "str");
-        const el1_isStr    = type1 == "str";
-        const el2_isStr    = type2 == "str";
-
-        if(el1_isStr && el2_isStr) raise("Runtime Error: Cannot multiply two strings together");
-
-        const res = el1_isStr ? this._multiplyNumWithStr(el2, el1) :
-                    el2_isStr ? this._multiplyNumWithStr(el1, el2) :
-                    el1 * el2;
-        
-        if(typeof res == "number") Math_stackOp.prototype.checkNaN(res);
-        stack.push(res);
-    }
-}
-
-import { requestInput } from "./new_compiler.js";
-class Inp_stackOp extends StackEl.StackOp {
-    constructor(typeStack) {
-        super(typeStack);
-    }
-
-    checkType(typeStack) { // any|void -0-> num|str
-        typeStack.addOption("num", "str");
-    }
-
-    async exec(stack) {
-        const userInput = await requestInput();
-        stack.push(userInput);
-    }
-}
-
 export class StackValue {
     constructor(value, typeStack) {
         this.value = value;
-        this.type = StackEl.Type_stackOp.prototype.getType(value);
+        this.type = StackOp.Type_stackOp.prototype.getType(value);
         this.checkType(typeStack);
     }
 
     checkType(typeStack) {
-        const typeOfValue = StackEl.Type_stackOp.prototype.getType(this.value);
+        const typeOfValue = StackOp.Type_stackOp.prototype.getType(this.value);
         typeStack.addOption(typeOfValue == "str" ? [typeOfValue, this.value.length] : typeOfValue);
     }
 
@@ -289,8 +121,8 @@ export class CallChain {
         let res = newListItem;
         for(let i = 1; i < this.properties.length; i++) {
             const id      = await this.properties[i].exec();
-            const idType  = StackEl.Type_stackOp.prototype.getType(id);
-            const resType = StackEl.Type_stackOp.prototype.getType(res);
+            const idType  = StackOp.Type_stackOp.prototype.getType(id);
+            const resType = StackOp.Type_stackOp.prototype.getType(res);
             if(resType   != "list") raise(`Runtime List Error: cannot index properties of a non-list item: got ${resType}`);
             if(idType    != "int" ) raise(`Runtime List Error: cannot index properties of a list item with a non-int index: got ${idType}`);
             res = res[id < 0 ? res.length + id : id];
@@ -299,6 +131,7 @@ export class CallChain {
         stack.push(res);
     }
 }
+
 /*
 class Arg {
     constructor(type, ID, compilerRef, content) {

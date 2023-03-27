@@ -37,6 +37,10 @@ export class Type {
         if(this.num && (type == "int" || type == "float")) return true; 
         return this[type] !== undefined;
     }
+
+    toString() {
+        return this.asOptions.join("|");
+    }
 }
 
 export function runtime_checkGot_asValidExpected(expected, got) { // pietro
@@ -63,10 +67,10 @@ export function runtime_checkGot_asValidExpected(expected, got) { // pietro
 
 export function runtime_checkType(value) {
     switch(typeof value) {
-        case "undefined" : return PRIMITIVE_TYPES.void;
-        case "number"    : return Math.floor(value) === value ? PRIMITIVE_TYPES.int : PRIMITIVE_TYPES.float;
-        case "string"    : return PRIMITIVE_TYPES.str;
-        case "object"    : return value instanceof Array ? PRIMITIVE_TYPES.list : PRIMITIVE_TYPES.obj;
+        case "undefined" : return "void";
+        case "number"    : return Math.floor(value) === value ? "int" : "float";
+        case "string"    : return "str";
+        case "object"    : return value instanceof Array ? "list" : "obj";
     }
 }
 

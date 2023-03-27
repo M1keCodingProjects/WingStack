@@ -24,6 +24,10 @@ buildBtn.onclick =_=> {
     GLC.build_and_run(text);
 };
 
+function accessCompilerInstance() {
+    console.log(GLC);
+}
+
 /* old code:
 import { loadFile } from "./FILES/file loader.js";
 

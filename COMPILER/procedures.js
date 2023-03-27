@@ -1,71 +1,71 @@
 import * as ArgClasses from "./arguments.js";
-import {StackOp, StackValue} from "./stack operators.js";
-import * as Errors from "./errors.js";
+import {Type, runtime_checkGot_asValidExpected, runtime_checkType} from "./type checker.js";
+import {print, raise} from "./new_compiler.js";
 
 class Proc {
-    constructor(compilerRef, line) {
-        this.ID = line.ID;
-        this.compiler = compilerRef;
-        this.getArguments(line);
+    constructor(args) {
+        this.buildArgs(args);
     }
 
-    getArguments(line) {}
+    buildArgs(args) {
+        if(args.value) this.stackExpr = new ArgClasses.StackExpr(args.value);
+        if(args.block) this.block     = new ArgClasses.Block(args.block);
+    }
 }
 
 export class PrintProc extends Proc {
-    constructor(compilerRef, line) {
-        super(compilerRef, line);
+    constructor(args) {
+        super(args);
     }
 
-    getArguments(line) {
-        this.colorOptions = [ "aliceblue", "aqua", "beige", "black", "blue", "brown", "coral", "crimson", "cyan", "fuchsia", "gold", "gray", "green", "grey", "indigo", "ivory", "lavender", "lightblue", "lime", "magenta", "navy", "orange", "pink", "purple", "red", "silver", "teal", "transparent", "turquoise", "violet", "white", "yellow" ];
-        this.styleOptions = {
-            "bold"      : "font-weight : bold; ",
-            "italic"    : "font-style : italic; ",
-            "underline" : "text-decoration : underline; ",
-        };
-
-        this.stackExpr = new ArgClasses.StackExprArg(this.ID, this.compiler, line.value);
-        if(line.style) this.style = new ArgClasses.StackExprArg(this.ID, this.compiler, line.style);
-    }
-
-    applyStyle() {
-        let evaluation = this.style.execute();
-        if(StackValue.prototype.get_type(evaluation) !== "string") throw new Errors.RuntimeError(this.ID, "tried to style <print> procedure with non-string type style argument");
-        const styleArray = evaluation.split(" ").filter(str => str.length);
-        if(styleArray.length < 1) throw new Errors.CompileTimeError(this.ID, `invalid style string : not enough arguments, minimum one`);
-        if(styleArray[0][0] === "#") {
-            if(styleArray[0].length !== 7) throw new Errors.CompileTimeError(this.ID, `invalid style string : hex-base colors must have exactly 6 digits`);
-            if(isNaN(Number(`0x${styleArray[0].slice(1)}`))) throw new Errors.CompileTimeError(this.ID, `invalid style string : hex-base colors must be valid hex numbers`);
-        }
-        else if(!this.colorOptions.includes(styleArray[0])) {
-            if(styleArray[0] === "error") {
-                if(styleArray.length != 1) throw new Errors.CompileTimeError(this.ID, "invalid style string : cannot append any other markers after \"error\"");
-                return "error";
-            }
-            throw new Errors.CompileTimeError(this.ID, `invalid style string : "${styleArray[0]}" is not an available color`);
-        }
-        evaluation = `color : ${styleArray.shift()};`
-
-        for(const style of styleArray) {
-            if(style in this.styleOptions) evaluation += this.styleOptions[style];
-            else throw new Errors.CompileTimeError(this.ID, `invalid style string : "${style}" is not an available style marker`);
-        }
-        return evaluation;
-    }
-
-    execute() {
-        const evaluation = this.stackExpr.execute();
-        if(this.style) {
-            if(typeof evaluation !== "string") throw new Errors.RuntimeError(this.ID, `cannot style <StackExpression> result, expected STRING but got ${StackValue.prototype.get_type(evaluation).toUpperCase()}`);
-            const style = this.applyStyle();
-            if(style === "error") throw new Errors.FlagError(this.ID, evaluation);
-            else console.log(`%c${evaluation}`, style);
-        }
-        else console.log(evaluation);
+    async exec() {
+        const result = await this.stackExpr.exec();
+        print(result);
     }
 }
 
+export class WhenProc extends Proc {
+    constructor(args) {
+        super(args);
+        this.expectedType = new Type("num");
+    }
+
+    buildArgs(args) {
+        super.buildArgs(args);
+        
+        if(args.loops) this.exec = (async _=> {
+            while(true) this.exec();
+        }).bind(this);
+
+        if(args.else) this.else = args.else.type == "WhenProc" ?
+                                  new WhenProc(args.else) :
+                                  new ArgClasses.Block(args.else.block);
+    }
+
+    async exec() {
+        const result = await this.stackExpr.exec();
+        const resultType = new Type(runtime_checkType(result));
+        if(!runtime_checkGot_asValidExpected(this.expectedType, resultType)) raise(`"When" procedure condition expected "num" evaluation but got "${resultType.toString()}"`);
+        if(result) await this.block.exec();
+        else if(this.else) return await this.else.exec();
+        else return; // these returns are vital for When-Loop procedures.
+    }
+}
+
+export class LoopProc extends Proc {
+    constructor(args) {
+        super(args);
+        this.expectedType = new Type("int");
+    }
+
+    async exec() {
+        const result = await this.stackExpr.exec();
+        const resultType = new Type(runtime_checkType(result));
+        if(!runtime_checkGot_asValidExpected(this.expectedType, resultType)) raise(`"Loop" procedure iteration expected "int" but got "${resultType}" instead.`);
+        for(let i = 0; i < (result * (result >= 0)); i++) await this.block.exec();
+    }
+}
+/*
 export class MakeProc extends Proc {
     constructor(compilerRef, line) {
         super(compilerRef, line);
@@ -309,3 +309,4 @@ export class HelperExpr extends Proc {
         console.timeEnd("Global Helper Timer");
     }
 }
+*/

@@ -1,37 +1,12 @@
 import {Type, runtime_checkGot_asValidExpected, runtime_checkType} from "./type checker.js";
+import {print, requestInput, RuntimeError} from "./customErrors.js";
 
 // GameLangParser (GLP) Instance
 import Parser from "./PARSING/new_parser.js";
 const GLP = new Parser();
 
-// Custom Console Instance
-import Console from '../EDITOR/console.js';
-const customConsole = new Console();
-
-export function print(msg) {
-    customConsole.appendLog(msg);
-}
-
-export function raise(msg) {
-    customConsole.appendLog(msg, "Error");
-    throw new Error(msg);
-}
-
-export async function requestInput() {
-    return await customConsole.requestInput();
-}
-
 import * as Proc from "./procedures.js";
-const EXPR_TYPES = {
-    // PROCEDURES
-    "PrintProc" : (expr, compilerRef) => new Proc.PrintProc(expr, compilerRef),
-    "WhenProc"  : (expr, compilerRef) => new Proc.WhenProc(expr, compilerRef),
-    "LoopProc"  : (expr, compilerRef) => new Proc.LoopProc(expr, compilerRef),
-    
-    // OTHER STUFF
-    "Assignment" : (expr, compilerRef) => new Assignment(expr, compilerRef),
-};
-
+import {Block} from "./arguments.js";
 import iota from "../UTILS/general.js";
 export default class Compiler {
     constructor(state) {
@@ -51,29 +26,22 @@ export default class Compiler {
     }
 
     parse(text) {
-        try {
-            const AST = GLP.parse(text);
-            if(this.state == this.VALID_STATES.debugAST) print(JSON.stringify(AST, null, 2));
-            return AST;
-        }
-        catch(err) {
-            raise(err.message);
-        }
+        const AST = GLP.parse(text);
+        if(this.state == this.VALID_STATES.debugAST) print(JSON.stringify(AST, null, 2));
+        return AST;
     }
 
     compile(AST) {
-        this.expressions = AST.map(expr => EXPR_TYPES[expr.type](expr, this));
+        this.expressions = new Block(AST);
         if(this.state == this.VALID_STATES.debug) print("Code compiled successfully.");
     }
 
     async run() {
         this.reset_runtime();
-        if(!this.expressions) raise("Couldn't find any previous build to run.");
+        if(this.expressions.isEmpty()) throw new RuntimeError("Couldn't find any previous build to run.");
 
         //console.time("runtime");
-        for(const expr of this.expressions) {
-            await expr.exec();
-        }
+        await this.expressions.exec();
         //console.timeEnd("runtime");
         print("Execution complete.");
     }
@@ -100,31 +68,5 @@ class Variable {
     set(value) {
         // verify that value is of type : 'valid for' this.type
         this.value = value;
-    }
-}
-
-class Assignment {
-    constructor(args) {
-        this.target = new CallChain(args.target);
-        this.value  = new StackExpr(args.value);
-        if(args.typeSignature) this.expectedType = new Type(...this.parse_typeSignature(args.typeSignature));
-    }
-
-    parse_typeSignature(typeSignature) {
-        const types = [];
-        for(const type of typeSignature) {
-            switch(type.type) {
-                case "stackOp" : types.push(type.value); break;
-                case "WORD"    : raise("not implemented!");
-                case "Type"    : types.push([...this.parse_typeSignature(type.value)]); break;
-            }
-        }
-        return types;        
-    }
-
-    async exec() {
-        raise("Assignments don't run yet!");
-        const target = await this.target.exec("write"); // TODO: get writeable reference
-        target.set(await this.value.exec());
     }
 }

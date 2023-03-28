@@ -95,16 +95,9 @@ export default class Console {
                            `List(${text.length})`;
     }
 
-    appendLog(text, style) {
+    appendLog(text) {
         const original_text = text;
         text = this.format(text);
-        switch(style) {
-            case "Error" : {
-                text = `<span style="color:var(--error-col)">${text}</span>`;
-                //console.clear();
-                break;
-            }
-        }
         
         if(original_text == "\\clear") {
             this.clearLog();

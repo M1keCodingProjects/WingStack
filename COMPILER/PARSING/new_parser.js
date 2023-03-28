@@ -6,6 +6,7 @@ const IGNORED_TOKEN_TYPES = {
     comment : iota(),
 };
 
+import {ParsingError} from "../customErrors.js";
 export default class Parser {
     constructor() {
 
@@ -261,7 +262,6 @@ export default class Parser {
     }
 
     throw(errorMsg) {
-        errorMsg = "Syntax Error: " + errorMsg;
-        throw new Error(errorMsg);
+        throw new ParsingError(errorMsg, "Syntax ");
     }
 }

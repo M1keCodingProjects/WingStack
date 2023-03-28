@@ -325,7 +325,7 @@ export class Mult_stackOp extends StackOp {
   }
 }
 
-import { requestInput } from "./new_compiler.js";
+import { requestInput } from "./customErrors.js";
 export class Inp_stackOp extends StackOp {
   constructor(typeStack) {
       super(typeStack);

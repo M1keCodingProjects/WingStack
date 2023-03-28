@@ -1,6 +1,21 @@
+import * as Proc from "./procedures.js";
+const EXPR_TYPES = {
+    // PROCEDURES
+    "PrintProc" : (expr, compilerRef) => new Proc.PrintProc(expr, compilerRef),
+    "WhenProc"  : (expr, compilerRef) => new Proc.WhenProc(expr, compilerRef),
+    "LoopProc"  : (expr, compilerRef) => new Proc.LoopProc(expr, compilerRef),
+    
+    // OTHER STUFF
+    "Assignment" : (expr, compilerRef) => new Assignment(expr, compilerRef),
+};
+
 export class Block {
     constructor(expressions) {
         this.expressions = expressions.map(expr => EXPR_TYPES[expr.type](expr, null));
+    }
+
+    isEmpty() {
+        return this.expressions.length == 0;
     }
 
     async exec() {
@@ -129,6 +144,33 @@ export class CallChain {
             if(res === undefined) raise(`Runtime List Error: cannot find item at position ${id} in list.`);
         }
         stack.push(res);
+    }
+}
+
+import {print, RuntimeError} from "./customErrors.js";
+export class Assignment {
+    constructor(args) {
+        this.target = new CallChain(args.target);
+        this.value  = new StackExpr(args.value);
+        if(args.typeSignature) this.expectedType = new Type(...this.parse_typeSignature(args.typeSignature));
+    }
+
+    parse_typeSignature(typeSignature) {
+        const types = [];
+        for(const type of typeSignature) {
+            switch(type.type) {
+                case "stackOp" : types.push(type.value); break;
+                case "WORD"    : throw new RuntimeError("not implemented!");
+                case "Type"    : types.push([...this.parse_typeSignature(type.value)]); break;
+            }
+        }
+        return types;        
+    }
+
+    async exec() {
+        throw new RuntimeError("Assignments don't run yet!");
+        const target = await this.target.exec("write"); // TODO: get writeable reference
+        target.set(await this.value.exec());
     }
 }
 

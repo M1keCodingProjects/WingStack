@@ -1,6 +1,6 @@
 import * as ArgClasses from "./arguments.js";
 import {Type, runtime_checkGot_asValidExpected, runtime_checkType} from "./type checker.js";
-import {print, raise} from "./new_compiler.js";
+import {print, RuntimeError} from "./customErrors.js";
 
 class Proc {
     constructor(args) {
@@ -45,7 +45,7 @@ export class WhenProc extends Proc {
     async exec() {
         const result = await this.stackExpr.exec();
         const resultType = new Type(runtime_checkType(result));
-        if(!runtime_checkGot_asValidExpected(this.expectedType, resultType)) raise(`"When" procedure condition expected "num" evaluation but got "${resultType.toString()}"`);
+        if(!runtime_checkGot_asValidExpected(this.expectedType, resultType)) throw new RuntimeError(`"When" procedure condition expected "num" evaluation but got "${resultType.toString()}"`);
         if(result) await this.block.exec();
         else if(this.else) return await this.else.exec();
         else return; // these returns are vital for When-Loop procedures.
@@ -61,7 +61,7 @@ export class LoopProc extends Proc {
     async exec() {
         const result = await this.stackExpr.exec();
         const resultType = new Type(runtime_checkType(result));
-        if(!runtime_checkGot_asValidExpected(this.expectedType, resultType)) raise(`"Loop" procedure iteration expected "int" but got "${resultType}" instead.`);
+        if(!runtime_checkGot_asValidExpected(this.expectedType, resultType)) throw new RuntimeError(`"Loop" procedure iteration expected "int" but got "${resultType}" instead.`);
         for(let i = 0; i < (result * (result >= 0)); i++) await this.block.exec();
     }
 }

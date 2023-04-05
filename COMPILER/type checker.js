@@ -13,6 +13,8 @@ export class Type {
         this.asOptions = new Set();
         this.itemsType = [];
 
+        if(types.length == 0) types = ["any"];
+
         types.forEach(type => this.addType(type));
         this.asOptions = Array.from(this.asOptions);
 

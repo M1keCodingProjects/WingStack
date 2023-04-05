@@ -33,22 +33,33 @@ export class WhenProc extends Proc {
     buildArgs(args) {
         super.buildArgs(args);
         
-        if(args.loops) this.exec = (async _=> {
-            while(true) this.exec();
-        }).bind(this);
+        if(args.loops) this.exec = this.execLoop;
 
         if(args.else) this.else = args.else.type == "WhenProc" ?
                                   new WhenProc(args.else) :
                                   new ArgClasses.Block(args.else.block);
     }
 
-    async exec() {
-        const result = await this.stackExpr.exec();
+    async getConditionEval() {
+        const result     = await this.stackExpr.exec();
         const resultType = new Type(runtime_checkType(result));
         if(!runtime_checkGot_asValidExpected(this.expectedType, resultType)) throw new RuntimeError(`"When" procedure condition expected "num" evaluation but got "${resultType.toString()}"`);
-        if(result) await this.block.exec();
-        else if(this.else) return await this.else.exec();
-        else return; // these returns are vital for When-Loop procedures.
+        return result;
+    }
+
+    async exec() {
+        if(await this.getConditionEval()) await this.block.exec();
+        else if(this.else)                await this.else.exec();
+    }
+
+    async execLoop() {
+        while(true) {
+            if(await this.getConditionEval()) await this.block.exec();
+            else {
+                if(this.else) await this.else.exec();
+                return;
+            }
+        }
     }
 }
 

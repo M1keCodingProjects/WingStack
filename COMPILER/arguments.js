@@ -26,6 +26,7 @@ export class Block {
 }
 
 import * as StackOp from "./stack operators.js";
+import { Type, runtime_checkType } from "./type checker.js";
 import iota from "../UTILS/general.js";
 const MATH_SYMBOLS = {
     "+"   : iota(),
@@ -48,8 +49,7 @@ export class StackExpr {
     }
 
     buildArgs(stackEls) {
-        const typeStack = new StackOp.TypeStack();
-
+        const typeStack = undefined; // TODO: implement compile-time type-checking.
         this.stackEls = stackEls.map(stackElm => {
             switch(stackElm.type) {
                 case "stackOp": return this.getStackOp(stackElm.value, typeStack);
@@ -108,13 +108,10 @@ export class StackExpr {
 export class StackValue {
     constructor(value, typeStack) {
         this.value = value;
-        this.type = StackOp.Type_stackOp.prototype.getType(value);
-        this.checkType(typeStack);
+        this.type = runtime_checkType(value);
     }
 
     checkType(typeStack) {
-        const typeOfValue = StackOp.Type_stackOp.prototype.getType(this.value);
-        typeStack.addOption(typeOfValue == "str" ? [typeOfValue, this.value.length] : typeOfValue);
     }
 
     exec(stack) {
@@ -130,24 +127,30 @@ export class CallChain {
     }
 
     async exec(stack) {
+        if(typeof this.properties[0] == "string") {
+            if(this.properties.length > 1) throw new RuntimeError("No support provided for properties yet", "Demo");
+            return stack.push(GLC.getVar(this.properties[0]).get()); //unused
+        }
+
         const newListItem = await this.properties[0].exec(true);
         if(this.properties.length == 1) return stack.push(newListItem);
         
         let res = newListItem;
         for(let i = 1; i < this.properties.length; i++) {
             const id      = await this.properties[i].exec();
-            const idType  = StackOp.Type_stackOp.prototype.getType(id);
-            const resType = StackOp.Type_stackOp.prototype.getType(res);
-            if(resType   != "list") raise(`Runtime List Error: cannot index properties of a non-list item: got ${resType}`);
-            if(idType    != "int" ) raise(`Runtime List Error: cannot index properties of a list item with a non-int index: got ${idType}`);
+            const idType  = runtime_checkType(id);
+            const resType = runtime_checkType(res);
+            if(resType   != "list") throw new RuntimeError(`cannot index properties of a non-list item: got ${resType}`, "Property");
+            if(idType    != "int" ) throw new RuntimeError(`cannot index properties of a list item with a non-int index: got ${idType}`, "Property");
             res = res[id < 0 ? res.length + id : id];
-            if(res === undefined) raise(`Runtime List Error: cannot find item at position ${id} in list.`);
+            if(res === undefined) throw new RuntimeError(`cannot find item at position ${id} in list.`, "Property");
         }
         stack.push(res);
     }
 }
 
-import {print, RuntimeError} from "./customErrors.js";
+import { RuntimeError } from "./customErrors.js";
+import { GLC } from "./new_compiler.js";
 export class Assignment {
     constructor(args) {
         this.target = new CallChain(args.target);
@@ -164,12 +167,11 @@ export class Assignment {
                 case "Type"    : types.push([...this.parse_typeSignature(type.value)]); break;
             }
         }
-        return types;        
+        return types;
     }
 
     async exec() {
-        throw new RuntimeError("Assignments don't run yet!");
-        const target = await this.target.exec("write"); // TODO: get writeable reference
+        const target = GLC.getVar(this.target.properties[0]); // TODO: get writeable reference
         target.set(await this.value.exec());
     }
 }

@@ -5,7 +5,7 @@ class CustomError extends Error {
     constructor(message, name = "", ID = "?") {
         super(message);
         this.name = `${name}Error at line ${ID}`;
-        customConsole.appendLog(`$<color:red; text-decoration:underline;>${this.name}: ${message}.<$>`);
+        customConsole.appendErrorLog(`${this.name}: ${message}.`);
     }
 }
 
@@ -29,6 +29,10 @@ export class RuntimeError extends CustomError {
 
 export function print(msg) {
     customConsole.appendLog(msg);
+}
+
+export function warn(msg) {
+    customConsole.appendWarnLog(msg);
 }
 
 export async function requestInput() {

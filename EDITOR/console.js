@@ -111,6 +111,14 @@ export default class Console {
         this.log.scrollLeft = 0;
     }
 
+    appendErrorLog(text) {
+        this.appendLog(`$<color:red; text-decoration:underline;>${text}<$>`);
+    }
+
+    appendWarnLog(text) {
+        this.appendLog(`$<color:orange; font-style:italic;>Warning: ${text}<$>`);
+    }
+
     clearLog() {
         this.log.innerHTML = "";
     }

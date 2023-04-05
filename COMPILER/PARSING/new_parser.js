@@ -12,6 +12,14 @@ export default class Parser {
 
     }
 
+    correct_tokenType(tokenType, match) {
+        switch(tokenType) {
+            case "op"       : return "stackOp";
+            case "WORD"     : return match == "any" ? "stackOp" : tokenType;
+            default         : return tokenType;
+        }
+    }
+
     parse(text) {
         this.tokens = [];
 
@@ -19,8 +27,7 @@ export default class Parser {
             if(tokenType in IGNORED_TOKEN_TYPES || (tokenType == "space" && this.tokens[this.tokens.length - 1]?.type != "]")) return;
             
             tokens.push({
-                type  : tokenType == "op"  ? "stackOp" :
-                        (tokenType == "WORD" && match == "any" ? "stackOp" : tokenType),
+                type  : this.correct_tokenType(tokenType, match),
     
                 value : tokenType == "num" ? Number(match) :
                         tokenType == "str" ? match.slice(1, -1) : match,
@@ -186,18 +193,19 @@ export default class Parser {
         while(true) {
             const nextToken = this.peek_nextToken();
             switch(nextToken?.type) {
-                case "["       :
-                case "WORD"    :token.value.push(this.CallChain()); break;
+                case "["        :
+                case "WORD"     :
+                case "instance" : token.value.push(this.CallChain()); break;
                 
-                case "num"     :
-                case "str"     : token.value.push(this.Value()); break;
+                case "num"      :
+                case "str"      : token.value.push(this.Value()); break;
                 
-                case "stackOp" : token.value.push(this.eat("stackOp")); break;
-                default        : if(atLineEnd) this.throw(`Unexpected token "${nextToken.value}" of type "${nextToken.type}" in Stack Expression, expected LiteralValue, CallChain or StackOperator.`);
+                case "stackOp"  : token.value.push(this.eat("stackOp")); break;
+                default         : if(atLineEnd) this.throw(`Unexpected token "${nextToken.value}" of type "${nextToken.type}" in Stack Expression, expected LiteralValue, CallChain or StackOperator.`);
                 
-                case "}"       :
-                case ";"       :
-                case undefined : return token;
+                case "}"        :
+                case ";"        :
+                case undefined  : return token;
             }
         }
     }
@@ -221,7 +229,8 @@ export default class Parser {
     }
 
     Property(asTarget = false) { // Property : IDProp | WORD
-        if(this.peek_nextToken()?.type != "[") return this.eat("WORD");
+        const nextTokenType = this.peek_nextToken()?.type;
+        if(nextTokenType != "[") return this.eat(nextTokenType == "instance" ? "instance" : "WORD");
         if(asTarget) this.throw("Cannot build list as target of assignment.");
         return this.IDProp();
     }

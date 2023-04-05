@@ -1,7 +1,6 @@
-import Compiler    from "./COMPILER/new_compiler.js";
-import Editor      from "./EDITOR/editor.js";
+import { GLC } from "./COMPILER/new_compiler.js";
+import Editor  from "./EDITOR/editor.js";
 
-const GLC = new Compiler("debug");
 const IDE = new Editor();
 
 const [ // re-work, I hate this:
@@ -24,10 +23,6 @@ buildBtn.onclick =_=> {
     GLC.build_and_run(text);
 };
 
-function accessCompilerInstance() {
-    console.log(GLC);
-}
-
 /* old code:
 import { loadFile } from "./FILES/file loader.js";
 
@@ -49,13 +44,13 @@ const [saveFileBtn, saveFileAsBtn, openFileBtn] = Array.from(document.querySelec
 openFileBtn.onclick = async _=> {
     await fileManager.openFile();
     const [fileName, fileContents] = await fileManager.readFile();
-    GLC.editor.loadText(fileName, fileContents);
+    IDE.loadText(fileName, fileContents);
 };
 
 saveFileBtn.onclick = async _=> {
-    await fileManager.saveFile(GLC.editor.getText());
+    await fileManager.saveFile(IDE.getText());
 };
 
 saveFileAsBtn.onclick = async _=> {
-    await fileManager.saveFileAs(GLC.editor.getText());
+    await fileManager.saveFileAs(IDE.getText());
 };

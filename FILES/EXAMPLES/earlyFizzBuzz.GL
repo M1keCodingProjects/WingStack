@@ -1,0 +1,11 @@
+a = runtimeElapsed;
+b = 1;
+loop 99 {
+  c = "";
+  when b dup 3 / int 3 * - not then c = "Fizz";
+  when b dup 5 / int 5 * - not then c = "Buzz";
+  when c "" == then print b else print c;
+  b = b 1 +;
+}
+
+print runtimeElapsed a - int "This program ran for " swap " ms" str;

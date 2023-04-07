@@ -1,0 +1,18 @@
+a = "crane" spill;
+c = 0;
+when c 5 < loop {
+  b = [];
+  print "Make a guess!";
+  when b spill size pop 5 == not loop b = inp spill;
+  when a spill str [b spill str][0] == {
+     print "You won!";
+     c = 4;
+  } else {
+    b = [b a];
+    loop 5 {
+      
+    }
+  }
+  c = c 1 +;
+}
+print "The word was " a spill "!" str;

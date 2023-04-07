@@ -311,7 +311,7 @@ export class Spill_stackOp extends StackOp {
 
   exec(stack) {
     const [item, type] = this.getValidatedItemAndType_fromStackTop(stack, 0, false, "str", "list", "obj");
-    switch(type) {
+    switch(type.asOptions[0]) {
       case "str"  : stack.push(...item.split("")); return;
       case "list" : stack.push(...item); return;
       case "obj"  : stack.push(...item.listEnumerable()); return; //NOT READY

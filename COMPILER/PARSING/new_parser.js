@@ -6,6 +6,13 @@ const IGNORED_TOKEN_TYPES = {
     comment : iota(),
 };
 
+const CONSTANT_REPLACE_MAP = {
+    TRUE  : 1,
+    FALSE : 0,
+    PI    : Math.PI,
+    INF   : Infinity,
+};
+
 import {ParsingError} from "../customErrors.js";
 export default class Parser {
     constructor() {
@@ -20,8 +27,15 @@ export default class Parser {
         }
     }
 
+    onNumberToken(tokenValue) {
+        return tokenValue in CONSTANT_REPLACE_MAP ?
+               CONSTANT_REPLACE_MAP[tokenValue]   :
+               Number(tokenValue.replace("_", ""));
+    }
+
     parse(text) {
-        this.tokens = [];
+        this.tokens       = [];
+        this.defloopStack = []; // keep track of functions and loops, to manage "next" and "exit" procedures.
 
         tokenize(text, (match, tokenType, tokens) => {
             if(tokenType in IGNORED_TOKEN_TYPES || (tokenType == "space" && this.tokens[this.tokens.length - 1]?.type != "]")) return;
@@ -29,11 +43,11 @@ export default class Parser {
             tokens.push({
                 type  : this.correct_tokenType(tokenType, match),
     
-                value : tokenType == "num" ? Number(match) :
+                value : tokenType == "num" ? this.onNumberToken(match) :
                         tokenType == "str" ? match.slice(1, -1) : match,
             });
         }, this.tokens);
-                
+
         //console.log(...this.tokens.map(t => t.type));
         return this.Program(true).value;
     }
@@ -62,14 +76,14 @@ export default class Parser {
 
         const nextTokenValue = this.peek_nextToken()?.value;
         if(nextTokenValue == "then" || (noThen && nextTokenValue != "{")) { // no "and then?"!!
-            if(!noThen || nextTokenValue == "then") this.eat("keyword");
+            if(!noThen || nextTokenValue == "then") this.get_nextToken_ifOfType("keyword");
             token.value.push(this.Expression(false));
             return token;
         }
 
-        this.eat("{");
+        this.get_nextToken_ifOfType("{");
         token.value = this.Program().value;
-        this.eat("}");
+        this.get_nextToken_ifOfType("}");
 
         return token;
     }
@@ -79,17 +93,19 @@ export default class Parser {
                       this.Procedure(needsTerminator) :
                       this.Assignment();
         
-        if(this.peek_nextToken()?.type == ";") this.eat(";");
+        if(this.peek_nextToken()?.type == ";") this.get_nextToken_ifOfType(";");
         return token;
     }
 
     Procedure(needsTerminator) { // Procedure : PrintProc | WhenProc | LoopProc
-        const keyword = this.eat("keyword");
+        const keyword = this.get_nextToken_ifOfType("keyword");
 
         switch(keyword.value) {
             case "print" : return this.PrintProc(needsTerminator);
             case "when"  : return this.WhenProc();
             case "loop"  : return this.LoopProc();
+            case "next"  : return this.NextProc();
+            case "exit"  : return this.ExitProc();
         }
     }
 
@@ -108,19 +124,22 @@ export default class Parser {
         };
 
         if(this.peek_nextToken()?.value == "loop") {
-            this.eat("keyword");
+            this.get_nextToken_ifOfType("keyword");
             token.loops = true;
+            this.defloopStack.push(token); // the token is valid only if it loops and needs to be validated before its block is parsed.
         }
         
         token.block = this.Block(token.loops).value;
+        if(token.loops) this.defloopStack.pop();
+        
         if(this.peek_nextToken()?.value == "else") token.else = this.ElseProc();
         return token;
     }
 
     ElseProc() { // ElseProc : "else" (WhenProc | Block)
-        this.eat("keyword");
+        this.get_nextToken_ifOfType("keyword");
         if(this.peek_nextToken()?.value == "when") {
-            this.eat("keyword");
+            this.get_nextToken_ifOfType("keyword");
             const token = this.WhenProc();
             if(token.loops) this.throw('"Else-When" procedures cannot loop.');
             return token;
@@ -133,10 +152,48 @@ export default class Parser {
     }
 
     LoopProc() { // LoopProc : "loop" StackExpr Block
-        return {
+        const token = {
             type  : "LoopProc",
             value : this.StackExpr().value,
-            block : this.Block().value,
+        };
+
+        this.defloopStack.push(token); // loop is always valid but must be validated before its block is parsed.
+        token.block = this.Block().value;
+        this.defloopStack.pop();
+        return token;
+    }
+
+    NextProc() { // NextProc : "next"
+        const nextTokenType = this.peek_nextToken()?.type;
+        if(nextTokenType && nextTokenType != "}") this.get_nextToken_ifOfType(";", false);
+        
+        if(!this.defloopStack.length) this.throw('Cannot use "Next" procedure outside of a looping block');
+        if(this.defloopStack[this.defloopStack.length - 1].type == "DefProc") this.throw("Next procedure cannot bypass the scope of a function");
+        
+        return {
+            type : "NextProc",
+        };
+    }
+
+    ExitProc() { // ExitProc : "exit" StackExpr?
+        const tokenValue = this.StackExpr(true, true).value; // can be empty
+        
+        if(!this.defloopStack.length) this.throw('Cannot use "Exit" procedure outside of a looping or function block');
+        const targetProc = this.defloopStack[this.defloopStack.length - 1];
+        if(targetProc.type == "DefProc") {
+            if(!tokenValue.length) this.throw("Exit procedure can be used with functions only if containing a Stack Expression argument");
+            // handle functions stuff..
+        }
+        else {
+            if(tokenValue.length) this.throw("Exit procedure can be used with looping blocks only with no arguments");
+        }
+
+        if(!targetProc.trigger) targetProc.trigger = { sent : false };
+
+        return {
+            type    : "ExitProc",
+            value   : tokenValue.length ? tokenValue : null,
+            trigger : targetProc.trigger,
         };
     }
 
@@ -147,11 +204,11 @@ export default class Parser {
         };
 
         if(this.peek_nextToken()?.type == ":") {
-            this.eat(":");
+            this.get_nextToken_ifOfType(":");
             token.typeSignature = this.Type().value;
         }
 
-        this.eat("=");
+        this.get_nextToken_ifOfType("=");
         token.value = this.StackExpr(true).value;
         return token;
     }
@@ -167,24 +224,24 @@ export default class Parser {
             if(!nextSingleType) return token;
             token.value.push(nextSingleType);
             if(this.peek_nextToken()?.type != "|") return token;
-            this.eat("|");
+            this.get_nextToken_ifOfType("|");
         }
     }
 
     SingleType() { // SingleType : (TYPE | WORD) | "[" Type "]"
         const nextTokenType = this.peek_nextToken()?.type;
         if(nextTokenType == "[") {
-            this.eat("[");
+            this.get_nextToken_ifOfType("[");
             const token = this.Type();
-            this.eat("]");
+            this.get_nextToken_ifOfType("]");
             this.eatOptionalSpace();
             return token;
         }
 
-        if(["WORD", "stackOp"].includes(nextTokenType)) return this.eat(nextTokenType);
+        if(["WORD", "stackOp"].includes(nextTokenType)) return this.get_nextToken_ifOfType(nextTokenType);
     }
 
-    StackExpr(atLineEnd = false) { // StackExpr : (StackValue | STACKOP | CallChain)+
+    StackExpr(atLineEnd = false, allowEmpty = false) { // StackExpr : (StackValue | STACKOP | CallChain)+
         const token = {
             type    : "StackExpr",
             value   : [],
@@ -200,12 +257,13 @@ export default class Parser {
                 case "num"      :
                 case "str"      : token.value.push(this.Value()); break;
                 
-                case "stackOp"  : token.value.push(this.eat("stackOp")); break;
+                case "stackOp"  : token.value.push(this.get_nextToken_ifOfType("stackOp")); break;
                 default         : if(atLineEnd) this.throw(`Unexpected token "${nextToken.value}" of type "${nextToken.type}" in Stack Expression, expected LiteralValue, CallChain or StackOperator.`);
                 
                 case "}"        :
                 case ";"        :
-                case undefined  : return token;
+                case undefined  : if(!allowEmpty && !token.value.length) this.throw("Missing Stack Expression argument");
+                                  return token;
             }
         }
     }
@@ -218,7 +276,7 @@ export default class Parser {
 
         while(true) {
             const nextTokenType = this.peek_nextToken()?.type;
-            if(nextTokenType == ".") this.eat(".");
+            if(nextTokenType == ".") this.get_nextToken_ifOfType(".");
             else if(nextTokenType != "[") {
                 this.eatOptionalSpace();
                 return token;
@@ -230,18 +288,18 @@ export default class Parser {
 
     Property(asTarget = false) { // Property : IDProp | WORD
         const nextTokenType = this.peek_nextToken()?.type;
-        if(nextTokenType != "[") return this.eat(nextTokenType == "instance" ? "instance" : "WORD");
+        if(nextTokenType != "[") return this.get_nextToken_ifOfType(nextTokenType == "instance" ? "instance" : "WORD");
         if(asTarget) this.throw("Cannot build list as target of assignment.");
         return this.IDProp();
     }
 
     IDProp() { // IDProp : "[" StackExpr "]"
-        this.eat("[");
+        this.get_nextToken_ifOfType("[");
         const token = {
             type  : "IndexedProperty",
-            value : this.StackExpr().value,
+            value : this.StackExpr(false, true).value,
         };
-        this.eat("]");
+        this.get_nextToken_ifOfType("]");
         return token;
     }
 
@@ -252,7 +310,7 @@ export default class Parser {
     }
 
     peek_nextToken() {
-        return this.tokens[0];
+        return this.tokens[0] || null;
     }
 
     grab_nextToken() {
@@ -260,14 +318,20 @@ export default class Parser {
     }
 
     eatOptionalSpace() {
-        if(this.peek_nextToken()?.type == "space") this.eat("space");
+        if(this.peek_nextToken()?.type == "space") this.get_nextToken_ifOfType("space");
     }
 
-    eat(tokenType) {
-        const token = this.grab_nextToken();
-        if(token === null) this.throw(`Unexpected end of input, expected ${tokenType}`);
-        if(token.type !== tokenType) this.throw(`Unexpected token of type "${token.type}", expected "${tokenType}"`);
+    demand(token, expectedType) {
+        if(token === null) this.throw(`Unexpected end of input, expected ${expectedType}`);
+        if(token.type !== expectedType) this.throw(`Unexpected token of type "${token.type}", expected "${expectedType}"`);
         return token;
+    }
+
+    get_nextToken_ifOfType(expectedType, consume = true) {
+        return this.demand(
+            consume ? this.grab_nextToken() : this.peek_nextToken(),
+            expectedType
+        );
     }
 
     throw(errorMsg) {

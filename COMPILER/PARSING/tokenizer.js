@@ -1,13 +1,14 @@
 const createMatchPatterns = str => str.split("").map(ch => [new RegExp(`^\\${ch}`, "g"), ch]);
 
+export const NUMBER_MATCH_PATTERN = /^-?\d+(_\d{3})*(\.\d+)?/; ///^-?\d+(\.\d+)?/;
 const TOKEN_MATCH_PATTERNS = [
     [/^ +/, "space"],
     [/^#.*/, "comment"],
     [/^\n+/, "EOL"],
+    [NUMBER_MATCH_PATTERN, "num"],
     [/^(\+|\-|\*|\/|\=\=|<|>)/, "op"],
     ...createMatchPatterns("()[]{}.,;:?=|"),
     [/^((\"[^\"\n]*\"?)|(\'[^\'\n]*\'?))/, "str"],
-    [/^-?\d+(\.\d+)?/, "num"],
     [/^-?[a-zA-Z_](\w|<|>)*/, "WORD"],
     [/^./, "any"],
 ];

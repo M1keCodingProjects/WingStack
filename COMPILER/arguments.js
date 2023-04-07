@@ -1,27 +1,34 @@
 import * as Proc from "./procedures.js";
 const EXPR_TYPES = {
     // PROCEDURES
-    "PrintProc" : (expr, compilerRef) => new Proc.PrintProc(expr, compilerRef),
-    "WhenProc"  : (expr, compilerRef) => new Proc.WhenProc(expr, compilerRef),
-    "LoopProc"  : (expr, compilerRef) => new Proc.LoopProc(expr, compilerRef),
+    "PrintProc" : expr => new Proc.PrintProc(expr),
+    "WhenProc"  : expr => new Proc.WhenProc(expr),
+    "LoopProc"  : expr => new Proc.LoopProc(expr),
+    "NextProc"  : expr => null,
+    "ExitProc"  : expr => new Proc.ExitProc(expr),
     
     // OTHER STUFF
-    "Assignment" : (expr, compilerRef) => new Assignment(expr, compilerRef),
+    "Assignment" : expr => new Assignment(expr),
 };
 
 export class Block {
     constructor(expressions) {
-        this.expressions = expressions.map(expr => EXPR_TYPES[expr.type](expr, null));
-    }
-
-    isEmpty() {
-        return this.expressions.length == 0;
+        this.expressions = [];
+        this.earlyStop   = false;
+        for(let i = 0; i < expressions.length; i++) {
+            const exprType = expressions[i].type;
+            const exprObj = EXPR_TYPES[exprType](expressions[i]);
+            if(this.earlyStop) continue;
+            if(exprType == "NextProc" || exprType == "ExitProc") this.earlyStop = true;
+            if(exprType != "NextProc") this.expressions.push(exprObj);
+        }
     }
 
     async exec() {
         for(const expr of this.expressions) {
-            await expr.exec();
+            if(await expr.exec()) return true;
         }
+        return this.earlyStop;
     }
 }
 

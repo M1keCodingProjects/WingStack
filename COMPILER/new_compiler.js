@@ -74,7 +74,7 @@ export class Compiler {
 
     async run() {
         this.reset_runtime();
-        if(this.expressions.isEmpty()) throw new RuntimeError("Couldn't find any previous build to run.");
+        if(!this.expressions) throw new RuntimeError("Couldn't find any previous build to run.");
 
         //console.time("runtime");
         this.runtimeElapsedVar.value = window.performance.now(); // bypass freeze, quicker.

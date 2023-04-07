@@ -32,12 +32,11 @@ export class WhenProc extends Proc {
 
     buildArgs(args) {
         super.buildArgs(args);
-        
-        if(args.loops) this.exec = this.execLoop;
-
-        if(args.else) this.else = args.else.type == "WhenProc" ?
-                                  new WhenProc(args.else) :
-                                  new ArgClasses.Block(args.else.block);
+        if(args.trigger) this.trigger = args.trigger;
+        if(args.loops)   this.exec    = this.execLoop;
+        if(args.else)    this.else    = args.else.type == "WhenProc" ?
+                                        new WhenProc(args.else) :
+                                        new ArgClasses.Block(args.else.block);
     }
 
     async getConditionEval() {
@@ -48,17 +47,24 @@ export class WhenProc extends Proc {
     }
 
     async exec() {
-        if(await this.getConditionEval()) await this.block.exec();
-        else if(this.else)                await this.else.exec();
+        let sentTrigger = false;
+        if(await this.getConditionEval()) sentTrigger = await this.block.exec();
+        else if(this.else)                sentTrigger = await this.else.exec();
+        
+        if(sentTrigger) return sentTrigger;   
     }
 
     async execLoop() {
         while(true) {
-            if(await this.getConditionEval()) await this.block.exec();
-            else {
-                if(this.else) await this.else.exec();
+            if(await this.getConditionEval()) {
+                await this.block.exec();
+                if(!this.trigger?.sent) continue;
+                if(this.trigger.sent !== true) return true; // trigger was meant for function.
+                this.trigger.sent = false;
                 return;
             }
+
+            return this.else ? await this.else.exec() : false; // if the condition is false the loop stops anyway, but it might need to bubble up a trigger.
         }
     }
 }
@@ -69,13 +75,42 @@ export class LoopProc extends Proc {
         this.expectedType = new Type("int");
     }
 
+    buildArgs(args) {
+        super.buildArgs(args);
+        if(args.trigger) this.trigger = args.trigger;
+    }
+
     async exec() {
-        const result = await this.stackExpr.exec();
+        let result = await this.stackExpr.exec();
         const resultType = new Type(runtime_checkType(result));
         if(!runtime_checkGot_asValidExpected(this.expectedType, resultType)) throw new RuntimeError(`"Loop" procedure iteration expected "int" but got "${resultType}" instead.`);
-        for(let i = 0; i < (result * (result >= 0)); i++) await this.block.exec();
+        
+        result *= result >= 0;
+        for(let i = 0; i < result; i++) {
+            await this.block.exec();
+            if(!this.trigger?.sent) continue;
+            if(this.trigger.sent !== true) return true; // trigger was meant for function.
+            this.trigger.sent = false;
+            return;
+        }
     }
 }
+
+export class ExitProc extends Proc {
+    constructor(args) {
+        super(args);
+    }
+
+    buildArgs(args) {
+        super.buildArgs(args);
+        if(args.trigger) this.trigger = args.trigger;
+    }
+
+    async exec() {
+        this.trigger.sent = this.stackExpr ? await this.stackExpr.exec() : true;
+    }
+}
+
 /*
 export class MakeProc extends Proc {
     constructor(compilerRef, line) {

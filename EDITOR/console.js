@@ -1,3 +1,4 @@
+import { NUMBER_MATCH_PATTERN } from "../COMPILER/PARSING/tokenizer.js";
 export default class Console {
     constructor() {
         [this.log, this.input] = document.querySelectorAll("#mainConsole > .console-log, .console-input");
@@ -12,7 +13,7 @@ export default class Console {
     submit(event) {
         if(event.key != "Enter") return null;
         let userInput = this.input.value;
-        userInput = userInput.match(/^-?\d+(\.\d+)?/)?.[0] == userInput ? Number(userInput) : userInput;
+        userInput = userInput.match(NUMBER_MATCH_PATTERN)?.[0] == userInput ? Number(userInput) : userInput;
         this.input.value = "";
         
         if(!this.inputRequested && userInput) this.appendLog(userInput);

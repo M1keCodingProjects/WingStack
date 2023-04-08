@@ -41,7 +41,7 @@ export class WhenProc extends Proc {
 
     async getConditionEval() {
         const result     = await this.stackExpr.exec();
-        const resultType = new Type(runtime_checkType(result));
+        const resultType = runtime_checkType(result);
         if(!runtime_checkGot_asValidExpected(this.expectedType, resultType)) throw new RuntimeError(`"When" procedure condition expected "num" evaluation but got "${resultType.toString()}"`);
         return result;
     }
@@ -82,7 +82,7 @@ export class LoopProc extends Proc {
 
     async exec() {
         let result = await this.stackExpr.exec();
-        const resultType = new Type(runtime_checkType(result));
+        const resultType = runtime_checkType(result);
         if(!runtime_checkGot_asValidExpected(this.expectedType, resultType)) throw new RuntimeError(`"Loop" procedure iteration expected "int" but got "${resultType}" instead.`);
         
         result *= result >= 0;
@@ -111,23 +111,22 @@ export class ExitProc extends Proc {
     }
 }
 
-/*
 export class MakeProc extends Proc {
-    constructor(compilerRef, line) {
-        super(compilerRef, line);
+    constructor(args) {
+        super(args);
     }
 
-    getArguments(line) {
-        if(line.isGlobal) this.isGlobal = true;
-        this.assignment = new ArgClasses.Assignment(this.ID, this.compiler, line.value);
+    buildArgs(args) {
+        this.assignment = new ArgClasses.Assignment(args.value);
+        this.assignment.frozen = args.frozen;
     }
 
-    execute() {
-        this.compiler.makeVar(this.assignment.target, this.isGlobal);
-        this.assignment.execute();
+    async exec() {
+        await this.assignment.exec(true);
     }
 }
 
+/*
 export class FreeProc extends Proc {
     constructor(compilerRef, line) {
         super(compilerRef, line);

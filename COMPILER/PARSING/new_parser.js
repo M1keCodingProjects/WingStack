@@ -106,6 +106,7 @@ export default class Parser {
             case "loop"  : return this.LoopProc();
             case "next"  : return this.NextProc();
             case "exit"  : return this.ExitProc();
+            case "make"  : return this.MakeProc();
         }
     }
 
@@ -197,9 +198,25 @@ export default class Parser {
         };
     }
 
-    Assignment() {// Assignment : CallChain (":" Type)? "=" StackExpr
+    MakeProc() { // MakeProc : "make" "frozen"? Assignment
+        const token = {
+            type  : "MakeProc",
+        };
+        
+        if(this.peek_nextToken()?.type == "keyword") {
+            const nextToken = this.get_nextToken_ifOfType("keyword");
+            if(nextToken.value != "frozen") this.throw(`"Make" procedure expected optional specifier "frozen" but got "${nextToken.value}"`);
+            token.frozen = true;
+        }
+
+        token.value = this.Assignment(true);
+        return token;
+    }
+
+    Assignment(inMakeProc = false) { // Assignment : CallChain (":" Type)? "=" StackExpr
         const token = {
             type   : "Assignment",
+            inMake : inMakeProc,
             target : this.CallChain(true).value,
         };
 

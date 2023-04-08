@@ -6,6 +6,7 @@ const EXPR_TYPES = {
     "LoopProc"  : expr => new Proc.LoopProc(expr),
     "NextProc"  : expr => null,
     "ExitProc"  : expr => new Proc.ExitProc(expr),
+    "MakeProc"  : expr => new Proc.MakeProc(expr),
     
     // OTHER STUFF
     "Assignment" : expr => new Assignment(expr),
@@ -33,7 +34,7 @@ export class Block {
 }
 
 import * as StackOp from "./stack operators.js";
-import { Type, runtime_checkType } from "./type checker.js";
+import { Type, runtime_getTypeStr } from "./type checker.js";
 import iota from "../UTILS/general.js";
 const MATH_SYMBOLS = {
     "+"   : iota(),
@@ -115,7 +116,7 @@ export class StackExpr {
 export class StackValue {
     constructor(value, typeStack) {
         this.value = value;
-        this.type = runtime_checkType(value);
+        this.type = runtime_getTypeStr(value);
     }
 
     checkType(typeStack) {
@@ -145,8 +146,8 @@ export class CallChain {
         let res = newListItem;
         for(let i = 1; i < this.properties.length; i++) {
             const id      = await this.properties[i].exec();
-            const idType  = runtime_checkType(id);
-            const resType = runtime_checkType(res);
+            const idType  = runtime_getTypeStr(id);
+            const resType = runtime_getTypeStr(res);
             if(resType   != "list") throw new RuntimeError(`cannot index properties of a non-list item: got ${resType}`, "Property");
             if(idType    != "int" ) throw new RuntimeError(`cannot index properties of a list item with a non-int index: got ${idType}`, "Property");
             res = res[id < 0 ? res.length + id : id];
@@ -160,9 +161,11 @@ import { RuntimeError } from "./customErrors.js";
 import { GLC } from "./new_compiler.js";
 export class Assignment {
     constructor(args) {
-        this.target = new CallChain(args.target);
-        this.value  = new StackExpr(args.value);
+        this.target    = new CallChain(args.target);
+        this.stackExpr = new StackExpr(args.value);
+        
         if(args.typeSignature) this.expectedType = new Type(...this.parse_typeSignature(args.typeSignature));
+        if(args.inMake) this.exec = this.execCreate;
     }
 
     parse_typeSignature(typeSignature) {
@@ -179,7 +182,11 @@ export class Assignment {
 
     async exec() {
         const target = GLC.getVar(this.target.properties[0]); // TODO: get writeable reference
-        target.set(await this.value.exec());
+        target.set(await this.stackExpr.exec());
+    }
+
+    async execCreate() {
+        GLC.createVar(this.target.properties[0], await this.stackExpr.exec(), this.frozen, this.expectedType);
     }
 }
 

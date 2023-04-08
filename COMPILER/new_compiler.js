@@ -11,14 +11,14 @@ import iota from "../UTILS/general.js";
 class Variable {
     constructor(name, value, frozen, ...types) {
         this.name = name;
-        this.type = new Type(...types);
+        this.type = types.length == 1 && types[0] instanceof Type ? types[0] : new Type(...types);
         this.set(value);
         this.frozen = frozen;
     }
 
     set(value) {
         if(this.frozen) throw new RuntimeError(`Cannot assign to frozen variable "${this.name}"`, "Scope");
-        const got = new Type(runtime_checkType(value));
+        const got = runtime_checkType(value);
         if(runtime_checkGot_asValidExpected(this.type, got)) return this.value = value; //uncaught
         throw new RuntimeError(`Variable "${this.name}" expected value to be of type <${this.type}> but got <${got}> instead`, "Type");
     }
@@ -47,12 +47,9 @@ export class Compiler {
     }
 
     reset_runtime() {
-        this.vars = [
-            new Variable("a", 23, false, "any"),
-            new Variable("b", 23, false, "any"),
-            new Variable("c", 23, false, "any"),
-            this.runtimeElapsedVar,
-        ];
+        this.vars = {
+            runtimeElapsed : this.runtimeElapsedVar,
+        };
 
         if(this.state == "deploy") print("\\clear");
     }
@@ -94,15 +91,16 @@ export class Compiler {
         this.run();
     }
 
-    createVar(name, value, type = "any") {
-        const newVar = new Variable(name, value, type);
-        this.vars.push(newVar);
+    createVar(name, value, frozen = false, type = "any") {
+        if(this.vars[name]) throw new RuntimeError(`Attempted to recreate existing variable "${name}"`, "Name");
+        const newVar = new Variable(name, value, frozen, type);
+        this.vars[name] = newVar;
         return newVar;
     }
 
     getVar(name) {
-        const searchedVar = this.vars.find(v => v.name == name);
-        if(!searchedVar) throw new RuntimeError(`Unknown variable "${name}" referenced`, "Name");
+        const searchedVar = this.vars[name];
+        if(!searchedVar) throw new RuntimeError(`Tried accessing unknown variable "${name}"`, "Name");
         return searchedVar;
     }
 }

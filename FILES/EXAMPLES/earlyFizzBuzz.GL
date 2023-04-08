@@ -1,11 +1,13 @@
-a = runtimeElapsed;
-b = 1;
-loop 99 {
-  c = "";
-  when b dup 3 / int 3 * - not then c = "Fizz";
-  when b dup 5 / int 5 * - not then c = "Buzz";
-  when c "" == then print b else print c;
-  b = b 1 +;
+make benchmarkOffset :num = runtimeElapsed;
+make n :int = 1;
+make buffer :str = "";
+make frozen SIZE :int = 99;
+loop SIZE {
+  buffer = "";
+  when n dup 3 / int 3 * - not then buffer = "Fizz";
+  when n dup 5 / int 5 * - not then buffer = buffer "Buzz" +;
+  when buffer "" == then print n else print buffer;
+  n = n 1 +;
 }
 
-print runtimeElapsed a - int "This program ran for " swap " ms" str;
+print runtimeElapsed benchmarkOffset - int "This program ran for " swap " ms" str;

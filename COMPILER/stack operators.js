@@ -9,7 +9,7 @@
   <=  : > not
 */
 import { requestInput, RuntimeError } from "./customErrors.js";
-import { Type, runtime_checkGot_asValidExpected, runtime_checkType } from "./type checker.js";
+import { Type, runtime_checkGot_asValidExpected, runtime_checkType, runtime_getTypeStr } from "./type checker.js";
 export class StackOp {
   constructor(typeStack) {
     //this.checkType(typeStack); Temporarily paused development on compile-time typechecking
@@ -44,7 +44,7 @@ export class StackOp {
 
   getValidatedItemType(item, inputID, ...validTypes) {
     const expected = new Type(...validTypes);
-    const got      = new Type(runtime_checkType(item));
+    const got      = runtime_checkType(item);
     if(!runtime_checkGot_asValidExpected(expected, got)) throw new RuntimeError(`${this.constructor.name} expected ${inputID + 1}° input value to be of type "${expected.toString()}" but got "${got.toString()}" instead`, "Type");
     return got;
   }
@@ -127,7 +127,7 @@ export class Plus_stackOp extends StackOp {
       const [el2]    = this.getValidatedItemAndType_fromStackTop(stack, 0, false, "num", "str");
       const [el1]    = this.getValidatedItemAndType_fromStackTop(stack, 1, false, "num", "str");
       const res      = el1 + el2;
-      const resIsNum = runtime_checkType(res) != "str";
+      const resIsNum = runtime_getTypeStr(res) != "str";
       if(resIsNum) Math_stackOp.prototype.checkNaN(res);
       stack.push(resIsNum ? Math_stackOp.prototype.round(res) : res);
   }
@@ -180,7 +180,7 @@ export class Mult_stackOp extends StackOp {
   }
 
   _multiplyNumWithStr(num, str) {
-      if(runtime_checkType(num) == "float") this.raise("Cannot repeat a str value with a float amount of times");
+      if(runtime_getTypeStr(num) == "float") this.raise("Cannot repeat a str value with a float amount of times");
       return str.repeat(num);
   }
 
@@ -330,7 +330,8 @@ export class Type_stackOp extends StackOp {
   }
 
   exec(stack) {
-    stack.push(runtime_checkType(stack[stack.length - 1]));
+    const value = stack[stack.length - 1];
+    stack.push(runtime_getTypeStr(value));
   }
 }
 

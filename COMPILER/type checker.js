@@ -41,7 +41,16 @@ export class Type {
     }
 
     toString() {
-        return this.asOptions.join("|");
+        const result = [];
+        for(const typeStr of this.asOptions) {
+            if(typeStr != "list") {
+                result.push(typeStr);
+                continue;
+            }
+            
+            for(const itemType of this.itemsType) result.push(`[${itemType.toString()}]`);
+        }
+        return result.join("|");
     }
 }
 
@@ -67,13 +76,26 @@ export function runtime_checkGot_asValidExpected(expected, got) { // pietro
     return true;
 }
 
-export function runtime_checkType(value) {
+export function runtime_getTypeStr(value) {
     switch(typeof value) {
         case "undefined" : return "void";
         case "number"    : return Math.floor(value) === value ? "int" : "float";
         case "string"    : return "str";
         case "object"    : return value instanceof Array ? "list" : "obj";
     }
+}
+
+function runtime_buildContainerTypeStr(value) {
+    return value.length ? value.map(item => runtime_getTypeStr(item)) : ["void"];
+}
+
+function runtime_buildCompleteTypeStr(value) {
+    const typeStr = runtime_getTypeStr(value);
+    return typeStr == "list" ? runtime_buildContainerTypeStr(value) : typeStr;
+}
+
+export function runtime_checkType(value) {
+    return new Type(runtime_buildCompleteTypeStr(value));
 }
 
 /*

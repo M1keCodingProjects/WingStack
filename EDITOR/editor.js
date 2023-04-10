@@ -12,7 +12,7 @@ const HIGHLIGHT_COLORS = {
     "instance"   : iota(),
 };
 
-export default class Editor {
+class Editor {
     constructor() {
        [this.textTarget,
         this.textContainer,
@@ -120,7 +120,13 @@ export default class Editor {
         this.textTarget.style.setProperty("--current-line-ID", this.currentLineID);
     }
 
+    showError(lineID) {
+        this.errorShown = lineID > 0;
+        this.textTarget.style.setProperty("--error-line-ID", lineID);
+    }
+
     updateText(event) {
+        if(this.errorShown) this.showError(-10);
         this.textTarget.innerHTML = this.highlight(event.target.value);
         this.updateSaveState(false);
         this.updateLineCounter(event);
@@ -162,3 +168,5 @@ export default class Editor {
         this.lineCounter.scrollTop = event.target.scrollTop;
     }
 }
+
+export const IDE = new Editor();

@@ -34,21 +34,23 @@ export default class Parser {
     }
 
     parse(text) {
-        this.tokens       = [];
-        this.defloopStack = []; // keep track of functions and loops, to manage "next" and "exit" procedures.
-
+        this.tokens           = [];
+        this.defloopStack     = []; // keep track of functions and loops, to manage "next" and "exit" procedures.
+        this.beginExpr_lineID = 1;  // more so for a general indication
+        
+        let lineNumber    = 1;
         tokenize(text, (match, tokenType, tokens) => {
+            if(tokenType == "EOL") lineNumber += match.length;
             if(tokenType in IGNORED_TOKEN_TYPES || (tokenType == "space" && this.tokens[this.tokens.length - 1]?.type != "]")) return;
             
             tokens.push({
+                line  : lineNumber,
                 type  : this.correct_tokenType(tokenType, match),
-    
                 value : tokenType == "num" ? this.onNumberToken(match) :
                         tokenType == "str" ? match.slice(1, -1) : match,
             });
         }, this.tokens);
 
-        //console.log(...this.tokens.map(t => t.type));
         return this.Program(true).value;
     }
 
@@ -60,7 +62,12 @@ export default class Parser {
             expressions.push(this.Expression());
         }
         
-        if(isGlobal && this.tokens.length) this.throw(`Trailing content found outside of main program: ${this.tokens.reduce((acc, token) => acc + token.value, "")}`);
+        if(isGlobal && this.tokens.length) {
+            this.throw(`Trailing content found outside of main program: ${
+                this.tokens.reduce((acc, token) => acc + token.value, "")
+            }`,
+            this.tokens[0].line);
+        }
 
         return {
             type  : "Program",
@@ -89,6 +96,7 @@ export default class Parser {
     }
 
     Expression(needsTerminator = true) { // Expression : (Procedure | Assignment) ";"?
+        this.beginExpr_lineID = this.peek_nextToken()?.line;
         const token = this.peek_nextToken()?.type == "keyword" ?
                       this.Procedure(needsTerminator) :
                       this.Assignment();
@@ -140,9 +148,9 @@ export default class Parser {
     ElseProc() { // ElseProc : "else" (WhenProc | Block)
         this.get_nextToken_ifOfType("keyword");
         if(this.peek_nextToken()?.value == "when") {
-            this.get_nextToken_ifOfType("keyword");
+            const procKW_lineID = this.get_nextToken_ifOfType("keyword").line;
             const token = this.WhenProc();
-            if(token.loops) this.throw('"Else-When" procedures cannot loop.');
+            if(token.loops) this.throw('"Else-When" procedures cannot loop.', procKW_lineID);
             return token;
         }
         
@@ -185,9 +193,7 @@ export default class Parser {
             if(!tokenValue.length) this.throw("Exit procedure can be used with functions only if containing a Stack Expression argument");
             // handle functions stuff..
         }
-        else {
-            if(tokenValue.length) this.throw("Exit procedure can be used with looping blocks only with no arguments");
-        }
+        else if(tokenValue.length) this.throw("Exit procedure can be used with looping blocks only with no arguments", tokenValue[0].line); //get lineID from first stackEl
 
         if(!targetProc.trigger) targetProc.trigger = { sent : false };
 
@@ -205,7 +211,7 @@ export default class Parser {
         
         if(this.peek_nextToken()?.type == "keyword") {
             const nextToken = this.get_nextToken_ifOfType("keyword");
-            if(nextToken.value != "frozen") this.throw(`"Make" procedure expected optional specifier "frozen" but got "${nextToken.value}"`);
+            if(nextToken.value != "frozen") this.throw(`"Make" procedure expected optional specifier "frozen" but got "${nextToken.value}"`, nextToken.line);
             token.frozen = true;
         }
 
@@ -275,7 +281,7 @@ export default class Parser {
                 case "str"      : token.value.push(this.Value()); break;
                 
                 case "stackOp"  : token.value.push(this.get_nextToken_ifOfType("stackOp")); break;
-                default         : if(atLineEnd) this.throw(`Unexpected token "${nextToken.value}" of type "${nextToken.type}" in Stack Expression, expected LiteralValue, CallChain or StackOperator.`);
+                default         : if(atLineEnd) this.throw(`Unexpected token "${nextToken.value}" of type "${nextToken.type}" in Stack Expression, expected LiteralValue, CallChain or StackOperator`, nextToken.line);
                 
                 case "}"        :
                 case ";"        :
@@ -304,9 +310,9 @@ export default class Parser {
     }
 
     Property(asTarget = false) { // Property : IDProp | WORD
-        const nextTokenType = this.peek_nextToken()?.type;
-        if(nextTokenType != "[") return this.get_nextToken_ifOfType(nextTokenType == "instance" ? "instance" : "WORD");
-        if(asTarget) this.throw("Cannot build list as target of assignment.");
+        const nextToken = this.peek_nextToken();
+        if(nextToken?.type != "[") return this.get_nextToken_ifOfType(nextToken?.type == "instance" ? "instance" : "WORD");
+        if(asTarget) this.throw("Cannot build list as target of assignment", nextToken?.line);
         return this.IDProp();
     }
 
@@ -322,7 +328,7 @@ export default class Parser {
 
     Value() { // Value : NUM | STR
         const token = {...this.grab_nextToken()};
-        if(!["num", "str"].includes(token.type)) this.throw(`Unexpected token of type ${token.type}, expected: NUM or STR`);
+        if(!["num", "str"].includes(token.type)) this.throw(`Unexpected token of type ${token.type}, expected: NUM or STR`, token.line);
         return token;
     }
 
@@ -340,7 +346,7 @@ export default class Parser {
 
     demand(token, expectedType) {
         if(token === null) this.throw(`Unexpected end of input, expected ${expectedType}`);
-        if(token.type !== expectedType) this.throw(`Unexpected token of type "${token.type}", expected "${expectedType}"`);
+        if(token.type !== expectedType) this.throw(`Unexpected token of type "${token.type}", expected "${expectedType}"`, token.line);
         return token;
     }
 
@@ -351,7 +357,7 @@ export default class Parser {
         );
     }
 
-    throw(errorMsg) {
-        throw new ParsingError(errorMsg, "Syntax ");
+    throw(errorMsg, lineID = this.beginExpr_lineID) {
+        throw new ParsingError(errorMsg, "Syntax ", lineID);
     }
 }

@@ -57,6 +57,7 @@ input[type="text"] {
     min-height : 80%;
     --lineCounter-space : 3rem;
     --current-line-ID : 1;
+    --error-line-ID : -10;
 }
 
 .editorContainer > * {
@@ -121,6 +122,17 @@ input[type="text"] {
     height : 1.5rem;
     margin-top: .5rem;
     background: #ffffff07;
+}
+
+.editorContainer > .shownEditor::after {
+    content: "";
+    position: absolute;
+    top: calc(1.5rem * (var(--error-line-ID) - 1));
+    left: 0;
+    width : 100vw;
+    height : 1.5rem;
+    margin-top: .5rem;
+    background: #ff000022;
 }
 
 .editorContainer > .shownEditor {

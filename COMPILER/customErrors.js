@@ -1,10 +1,12 @@
+import { IDE } from '../EDITOR/editor.js';
 import Console from '../EDITOR/console.js';
 const customConsole = new Console();
 
 class CustomError extends Error {
-    constructor(message, name = "", ID = "?") {
+    constructor(message, name = "", ID) {
         super(message);
-        this.name = `${name}Error at line ${ID}`;
+        this.name = `${name}Error at line ${ID || "?"}`;
+        if(ID) IDE.showError(ID);
         customConsole.appendErrorLog(`${this.name}: ${message}.`);
     }
 }

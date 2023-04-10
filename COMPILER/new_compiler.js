@@ -39,7 +39,7 @@ class InstanceVariable extends Variable {
     }
 }
 
-export class Compiler {
+class Compiler {
     constructor(state) {
         this.state = state;
         if(state != "deploy") warn(`Compiler working in ${state} mode.`);
@@ -105,4 +105,4 @@ export class Compiler {
     }
 }
 
-export const GLC = new Compiler("deploy");
+export const GLC = new Compiler("debug");

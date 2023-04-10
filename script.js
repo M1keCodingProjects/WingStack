@@ -1,7 +1,5 @@
 import { GLC } from "./COMPILER/new_compiler.js";
-import Editor  from "./EDITOR/editor.js";
-
-const IDE = new Editor();
+import { IDE } from "./EDITOR/editor.js";
 
 const [ // re-work, I hate this:
     compileBtn,

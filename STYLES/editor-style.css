@@ -15,6 +15,11 @@
     --comment-col: rgb(76, 75, 85);
 }
 
+@font-face {
+    font-family: Cleanmono;
+    src: url(../ASSETS/FONT/Anonymous\ Pro\ B.ttf), url(../ASSETS/FONT/Anonymous\ Pro\ BI.ttf);
+}
+
 html, body {
     margin: 0;
     padding: 0;
@@ -22,7 +27,7 @@ html, body {
     height: 100%;
     overflow: hidden;
     background: var(--bg-col);
-    font-family: monospace;
+    font-family: Cleanmono;
     font-size: 1rem;
     font-weight: bold;
     color: var(--idle-text-col);

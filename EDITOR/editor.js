@@ -145,12 +145,13 @@ export default class Editor {
     highlight(text) {
         const result = [];
         tokenize(text, (match, tokenType, result) => {
-            const cleanMatch = this.replaceCharacters(match);
-            result.push(
-                tokenType in HIGHLIGHT_COLORS ?
-                `<span style="color : var(--${tokenType}-col);">${cleanMatch}</span>` :
-                cleanMatch
-            );
+            let cleanMatch = this.replaceCharacters(match);
+            if(tokenType in HIGHLIGHT_COLORS) {
+                let appliedStyle = `color:var(--${tokenType}-col);`;
+                if(tokenType == "comment") appliedStyle += "font-style:italic";
+                cleanMatch = `<span style="${appliedStyle}">${cleanMatch}</span>`;
+            }
+            result.push(cleanMatch);
         }, result);
         return result.join("");
     }

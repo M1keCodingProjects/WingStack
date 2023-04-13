@@ -8,6 +8,7 @@
   >=  : < not
   <=  : > not
 */
+import { MATH_SYMBOLS } from "./arguments.js";
 import { requestInput, RuntimeError } from "./customErrors.js";
 import { Type, runtime_checkGot_asValidExpected, runtime_checkType, runtime_getTypeStr } from "./type checker.js";
 export class StackOp {
@@ -21,15 +22,6 @@ export class StackOp {
 
   checkType(typeStack) { // any|void -0-> any : default behaviour wants at least 0 any:items, takes 0 and returns 1 any:item
     typeStack.addOption("any");
-  }
-
-  requestItem(typeStack, itemPos = -1, pop = false, ...options) {
-    const typeOpt = new TypeOption(...options);
-    const result = typeStack.verifyItem_isOfType(typeOpt, itemPos);
-    if(typeof result == "string") throw new RuntimeError(`${this.constructor.name} expected ${typeOpt.toStr()} but got ${result}`, "Type");
-    if(!pop) return;
-    const lastElement = typeStack.items[typeStack.items.length - 1];
-    return lastElement.canBe("many") ? lastElement.options.many.copy() : typeStack.items.pop();
   }
 
   checkStackMinLength(stack, amt) {
@@ -77,26 +69,12 @@ export class Math_stackOp extends StackOp {
   }
 
   init_exec(symbol) {
-      const operationFunc = this.getOperationFunc(symbol);
+      const operationFunc = MATH_SYMBOLS[symbol];
       this.exec = (stack => {
           const res = operationFunc(...this.getOperands(stack));
           this.checkNaN(res);
           stack.push(res);
       }).bind(this);
-  }
-
-  getOperationFunc(symbol) {
-      switch(symbol) {
-          case "-"   : return (el1, el2) => el1 - el2;
-          case "/"   : return (el1, el2) => el1 / el2;
-          case "**"  : return (el1, el2) => el1 ** el2;
-          case "and" : return (el1, el2) => 1 * (Boolean(el1) && Boolean(el2));
-          case "or"  : return (el1, el2) => 1 * (Boolean(el1) || Boolean(el2));
-          case ">"   : return (el1, el2) => 1 * (el1 > el2);
-          case "<"   : return (el1, el2) => 1 * (el1 < el2);
-          case ">>"  : return (el1, el2) => 1 * (el1 >> el2);
-          case "<<"  : return (el1, el2) => 1 * (el1 << el2);
-      }
   }
 }
 
@@ -259,7 +237,9 @@ export class Size_stackOp extends StackOp {
   }
 
   exec(stack) {
-    stack.push(stack.length);
+    const item = stack.length;
+    stack.length = 1;
+    stack[0] = item;
   }
 }
 
@@ -330,7 +310,7 @@ export class Type_stackOp extends StackOp {
   }
 
   exec(stack) {
-    const value = stack[stack.length - 1];
+    const value = stack.pop();
     stack.push(runtime_getTypeStr(value));
   }
 }
@@ -408,10 +388,7 @@ export class Rand_stackOp extends StackOp {
   }
 
   exec(stack) {
-    this.checkStackMinLength(stack, 2);
-    const [item2] = this.getValidatedItemAndType_fromStackTop(stack, 0, false, "num");
-    const [item1] = this.getValidatedItemAndType_fromStackTop(stack, 1, false, "num");
-    stack.push(Math.random() * (item2 - item1) + item1); // remember to implement rounding
+    stack.push(Math.random());
   }
 }
 

@@ -10,10 +10,20 @@ import {Block} from "./arguments.js";
 class Variable {
     constructor(name, value, frozen, depth, ...types) {
         this.name = name;
-        this.type = types.length == 1 && types[0] instanceof Type ? types[0] : new Type(...types);
-        this.set(value);
+        this.init(value, types);
         this.frozen = frozen;
         this.depth  = depth;
+    }
+
+    init(value, types) {
+        if(types[0] == "inferred") {
+            this.type  = runtime_checkType(value);
+            if(this.type.canBe("void")) throw new RuntimeError("Cannot expect target of assignment to be of type <void>");
+            return this.value = value; //uncaught
+        }
+
+        this.type = types[0] instanceof Type ? types[0] : new Type(...types);
+        this.set(value);
     }
 
     set(value) {
@@ -76,6 +86,7 @@ class Compiler {
         this.runtimeElapsedVar.value = window.performance.now(); // bypass freeze, quicker.
         await this.expressions.exec();
         print("Execution complete.");
+        //console.log(this.vars);
     }
 
     build(text) {

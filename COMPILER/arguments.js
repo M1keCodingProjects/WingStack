@@ -1,9 +1,8 @@
-import * as Proc                    from "./procedures.js";
-import * as StackOp                 from "./stack operators.js";
-import iota                         from "../UTILS/general.js";
-import { GLC }                      from "./new_compiler.js";
-import { RuntimeError }             from "./customErrors.js";
-import { Type, runtime_getTypeStr } from "./type checker.js";
+import * as Proc                          from "./procedures.js";
+import * as StackOp                       from "./stack operators.js";
+import { GLC }                            from "./new_compiler.js";
+import { CompileTimeError, RuntimeError } from "./customErrors.js";
+import { Type, runtime_getTypeStr }       from "./type checker.js";
 
 const EXPR_TYPES = {
     // PROCEDURES
@@ -18,19 +17,21 @@ const EXPR_TYPES = {
     "Assignment" : expr => new Assignment(expr),
 };
 
-const MATH_SYMBOLS = {
-    "+"   : iota(),
-    "-"   : iota(),
-    "*"   : iota(),
-    "/"   : iota(),
-    "**"  : iota(),
-    "and" : iota(),
-    "or"  : iota(),
-    ">"   : iota(),
-    "<"   : iota(),
-    "=="  : iota(),
-    "<<"  : iota(),
-    ">>"  : iota(),
+export const MATH_SYMBOLS = {
+    "+"   : null,
+    "*"   : null,
+    "=="  : null,
+    "-"   : (el1, el2) => el1 - el2,
+    "/"   : (el1, el2) => el1 / el2,
+    "^"   : (el1, el2) => el1 ** el2,
+    "and" : (el1, el2) => 1 * (Boolean(el1) && Boolean(el2)),
+    "or"  : (el1, el2) => 1 * (Boolean(el1) || Boolean(el2)),
+    ">"   : (el1, el2) => 1 * (el1 > el2),
+    ">="  : (el1, el2) => 1 * (el1 >= el2),
+    "<"   : (el1, el2) => 1 * (el1 < el2),
+    "<="  : (el1, el2) => 1 * (el1 <= el2),
+    ">>"  : (el1, el2) => 1 * (el1 >> el2),
+    "<<"  : (el1, el2) => 1 * (el1 << el2),
 };
 
 export class Block {
@@ -118,7 +119,7 @@ export class StackExpr {
         for(const stackEl of this.stackEls) {
             await stackEl.exec(stack);
         }
-        return stack.length == 1 && !keepPacked ? stack[0] : stack;
+        return stack.length < 2 && !keepPacked ? stack[0] : stack;
     }
 }
 
@@ -173,7 +174,14 @@ export class Assignment {
         this.target    = new CallChain(args.target.value, this.depth);
         this.stackExpr = new StackExpr(args.value);
         
-        if(args.typeSignature) this.expectedType = new Type(...this.parse_typeSignature(args.typeSignature));
+        if(args.typeSignature) {
+            this.expectedType = args.typeSignature.length ?
+                                new Type(...this.parse_typeSignature(args.typeSignature)) :
+                                "inferred";
+            
+            if(this.expectedType.canBe?.("void")) throw new CompileTimeError("Cannot expect target of assignment to be of type <void>");
+        }
+
         if(args.inMake) this.exec = this.execCreate;
     }
 
@@ -181,9 +189,9 @@ export class Assignment {
         const types = [];
         for(const type of typeSignature) {
             switch(type.type) {
-                case "stackOp" : types.push(type.value); break;
-                case "WORD"    : throw new RuntimeError("not implemented!");
-                case "Type"    : types.push([...this.parse_typeSignature(type.value)]); break;
+                case "type" : types.push(type.value); break;
+                case "WORD" : throw new RuntimeError("not implemented!");
+                case "Type" : types.push([...this.parse_typeSignature(type.value)]); break;
             }
         }
         return types;

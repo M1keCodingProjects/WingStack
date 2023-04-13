@@ -6,7 +6,7 @@ const TOKEN_MATCH_PATTERNS = [
     [/^#.*/, "comment"],
     [/^\n+/, "EOL"],
     [NUMBER_MATCH_PATTERN, "num"],
-    [/^(\+|\-|\*|\/|\=\=|<|>)/, "op"],
+    [/^(\+|\-|\^|\*|\/|\=\=|<<|>>|((<|>)\=?))/, "op"],
     ...createMatchPatterns("()[]{}.,;:?=|"),
     [/^((\"[^\"\n]*\"?)|(\'[^\'\n]*\'?))/, "str"],
     [/^-?[a-zA-Z_](\w|<|>)*/, "WORD"],
@@ -53,14 +53,7 @@ const HIGHLIGHT_KEYWORDS = {
     "rot>" : "stackOp",
     dup    : "stackOp",
     drop   : "stackOp",
-    num    : "stackOp",
-    int    : "stackOp",
-    float  : "stackOp",
-    str    : "stackOp",
     char   : "stackOp",
-    list   : "stackOp",
-    obj    : "stackOp",
-    void   : "stackOp",
     spill  : "stackOp",
     swap   : "stackOp",
     over   : "stackOp",
@@ -73,6 +66,14 @@ const HIGHLIGHT_KEYWORDS = {
     inp    : "stackOp",
     flip   : "stackOp",
     rand   : "stackOp",
+
+    num    : "type",
+    int    : "type",
+    float  : "type",
+    str    : "type",
+    list   : "type",
+    obj    : "type",
+    void   : "type",
 };
 
 export default function tokenize(text, onMatchedToken_callback = () => {}, ...args) {

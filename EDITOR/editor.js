@@ -8,6 +8,7 @@ const HIGHLIGHT_COLORS = {
     "num"        : iota(),
     "keyword"    : iota(),
     "stackOp"    : iota(),
+    "type"       : iota(),
     "errorClass" : iota(),
     "instance"   : iota(),
 };

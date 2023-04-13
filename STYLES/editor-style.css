@@ -10,6 +10,7 @@
     --str-col: rgb(48, 253, 249);
     --num-col: rgb(227, 93, 207);
     --stackOp-col: rgb(68, 255, 54);
+    --type-col: var(--stackOp-col);
     --errorClass-col: rgb(0, 129, 121);
     --instance-col: rgb(190, 143, 255);
     --comment-col: rgb(76, 75, 85);

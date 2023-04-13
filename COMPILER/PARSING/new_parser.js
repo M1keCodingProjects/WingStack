@@ -263,7 +263,7 @@ export default class Parser {
             return token;
         }
 
-        if(["WORD", "stackOp"].includes(nextTokenType)) return this.get_nextToken_ifOfType(nextTokenType);
+        if(nextTokenType == "WORD" || nextTokenType == "type") return this.get_nextToken_ifOfType(nextTokenType);
     }
 
     StackExpr(atLineEnd = false, allowEmpty = false) { // StackExpr : (StackValue | STACKOP | CallChain)+
@@ -279,16 +279,19 @@ export default class Parser {
                 case "WORD"     :
                 case "instance" : token.value.push(this.CallChain()); break;
                 
-                case "num"      :
-                case "str"      : token.value.push(this.Value()); break;
+                case "num" :
+                case "str" : token.value.push(this.Value()); break;
                 
-                case "stackOp"  : token.value.push(this.get_nextToken_ifOfType("stackOp")); break;
-                default         : if(atLineEnd) this.throw(`Unexpected token "${nextToken.value}" of type "${nextToken.type}" in Stack Expression, expected LiteralValue, CallChain or StackOperator`, nextToken.line);
-                
-                case "}"        :
-                case ";"        :
-                case undefined  : if(!allowEmpty && !token.value.length) this.throw("Missing Stack Expression argument");
-                                  return token;
+                case "type"    : if(nextToken.value == "void") this.throw("Cannot cast to <void> in any circumstance");
+                                 nextToken.type = "stackOp";
+                case "stackOp" : token.value.push(this.get_nextToken_ifOfType("stackOp")); break;
+
+                default        : if(atLineEnd) this.throw(`Unexpected token "${nextToken.value}" of type "${nextToken.type}" in Stack Expression, expected LiteralValue, CallChain or StackOperator`, nextToken.line);
+                case "}"       :
+                case ";"       :
+                case undefined :
+                    if(!allowEmpty && !token.value.length) this.throw("Missing Stack Expression argument");
+                    return token;
             }
         }
     }

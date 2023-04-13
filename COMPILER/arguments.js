@@ -1,4 +1,10 @@
-import * as Proc from "./procedures.js";
+import * as Proc                    from "./procedures.js";
+import * as StackOp                 from "./stack operators.js";
+import iota                         from "../UTILS/general.js";
+import { GLC }                      from "./new_compiler.js";
+import { RuntimeError }             from "./customErrors.js";
+import { Type, runtime_getTypeStr } from "./type checker.js";
+
 const EXPR_TYPES = {
     // PROCEDURES
     "PrintProc" : expr => new Proc.PrintProc(expr),
@@ -12,30 +18,6 @@ const EXPR_TYPES = {
     "Assignment" : expr => new Assignment(expr),
 };
 
-export class Block {
-    constructor(expressions) {
-        this.expressions = [];
-        this.earlyStop   = false;
-        for(let i = 0; i < expressions.length; i++) {
-            const exprType = expressions[i].type;
-            const exprObj = EXPR_TYPES[exprType](expressions[i]);
-            if(this.earlyStop) continue;
-            if(exprType == "NextProc" || exprType == "ExitProc") this.earlyStop = true;
-            if(exprType != "NextProc") this.expressions.push(exprObj);
-        }
-    }
-
-    async exec() {
-        for(const expr of this.expressions) {
-            if(await expr.exec()) return true;
-        }
-        return this.earlyStop;
-    }
-}
-
-import * as StackOp from "./stack operators.js";
-import { Type, runtime_getTypeStr } from "./type checker.js";
-import iota from "../UTILS/general.js";
 const MATH_SYMBOLS = {
     "+"   : iota(),
     "-"   : iota(),
@@ -51,6 +33,33 @@ const MATH_SYMBOLS = {
     ">>"  : iota(),
 };
 
+export class Block {
+    constructor(expressions) {
+        this.expressions = [];
+        this.earlyStop   = false;
+        for(let i = 0; i < expressions.length; i++) {
+            const exprType = expressions[i].type;
+            const exprObj = EXPR_TYPES[exprType](expressions[i]);
+            if(!this.depth && exprType == "MakeProc") this.depth = exprObj.depth;
+            if(this.earlyStop) continue;
+            if(exprType == "NextProc" || exprType == "ExitProc") this.earlyStop = true;
+            if(exprType != "NextProc") this.expressions.push(exprObj);
+        }
+    }
+
+    onEnd(triggerSent = false) {
+        if(this.depth) GLC.freeVars_fromDepth(this.depth);
+        return triggerSent;
+    }
+
+    async exec() {
+        for(const expr of this.expressions) {
+            if(await expr.exec()) return this.onEnd(true);
+        }
+        return this.onEnd(this.earlyStop);
+    }
+}
+
 export class StackExpr {
     constructor(stackEls) {
         this.buildArgs(stackEls);
@@ -61,7 +70,7 @@ export class StackExpr {
         this.stackEls = stackEls.map(stackElm => {
             switch(stackElm.type) {
                 case "stackOp": return this.getStackOp(stackElm.value, typeStack);
-                case "CallChain": return new CallChain(stackElm.value, typeStack);
+                case "CallChain": return new CallChain(stackElm.value, stackElm.depth, typeStack);
 
                 case "num":
                 case "str": return new StackValue(stackElm.value, typeStack);
@@ -128,7 +137,8 @@ export class StackValue {
 }
 
 export class CallChain {
-    constructor(properties, typeStack) {
+    constructor(properties, depth, typeStack) {
+        this.depth = depth;
         this.properties = properties.map(
             property => property.type == "IndexedProperty" ? new StackExpr(property.value) : property.value
         );
@@ -137,7 +147,7 @@ export class CallChain {
     async exec(stack) {
         if(typeof this.properties[0] == "string") {
             if(this.properties.length > 1) throw new RuntimeError("No support provided for properties yet", "Demo");
-            return stack.push(GLC.getVar(this.properties[0]).get()); //unused
+            return stack.push(GLC.getVar(this.properties[0]).get()); //uncaught
         }
 
         const newListItem = await this.properties[0].exec(true);
@@ -157,11 +167,10 @@ export class CallChain {
     }
 }
 
-import { RuntimeError } from "./customErrors.js";
-import { GLC } from "./new_compiler.js";
 export class Assignment {
     constructor(args) {
-        this.target    = new CallChain(args.target);
+        this.depth     = args.target.depth;
+        this.target    = new CallChain(args.target.value, this.depth);
         this.stackExpr = new StackExpr(args.value);
         
         if(args.typeSignature) this.expectedType = new Type(...this.parse_typeSignature(args.typeSignature));
@@ -186,7 +195,7 @@ export class Assignment {
     }
 
     async execCreate() {
-        GLC.createVar(this.target.properties[0], await this.stackExpr.exec(), this.frozen, this.expectedType);
+        GLC.createVar(this.target.properties[0], await this.stackExpr.exec(), this.expectedType, this.depth, this.frozen);
     }
 }
 

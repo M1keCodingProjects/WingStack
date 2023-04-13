@@ -119,6 +119,7 @@ export class MakeProc extends Proc {
     buildArgs(args) {
         this.assignment = new ArgClasses.Assignment(args.value);
         this.assignment.frozen = args.frozen;
+        this.depth = this.assignment.depth;
     }
 
     async exec() {

@@ -37,7 +37,8 @@ export default class Parser {
         this.tokens           = [];
         this.defloopStack     = []; // keep track of functions and loops, to manage "next" and "exit" procedures.
         this.beginExpr_lineID = 1;  // more so for a general indication
-        
+        this.currentDepth     = 0;  // global scope
+
         let lineNumber    = 1;
         tokenize(text, (match, tokenType, tokens) => {
             if(tokenType == "EOL") lineNumber += match.length;
@@ -81,6 +82,7 @@ export default class Parser {
             value : [],
         };
 
+        this.currentDepth++;
         const nextTokenValue = this.peek_nextToken()?.value;
         if(nextTokenValue == "then" || (noThen && nextTokenValue != "{")) { // no "and then?"!!
             if(!noThen || nextTokenValue == "then") this.get_nextToken_ifOfType("keyword");
@@ -91,7 +93,7 @@ export default class Parser {
         this.get_nextToken_ifOfType("{");
         token.value = this.Program().value;
         this.get_nextToken_ifOfType("}");
-
+        this.currentDepth--;
         return token;
     }
 
@@ -223,7 +225,7 @@ export default class Parser {
         const token = {
             type   : "Assignment",
             inMake : inMakeProc,
-            target : this.CallChain(true).value,
+            target : this.CallChain(true),
         };
 
         if(this.peek_nextToken()?.type == ":") {
@@ -294,6 +296,7 @@ export default class Parser {
     CallChain(asTarget = false) { // CallChain : Property (("." Property) | IDProp)*
         const token = {
             type  : "CallChain",
+            depth : this.currentDepth,
             value : [this.Property(asTarget)],
         };
 

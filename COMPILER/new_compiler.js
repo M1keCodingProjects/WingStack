@@ -6,14 +6,14 @@ import Parser from "./PARSING/new_parser.js";
 const GLP = new Parser();
 
 import {Block} from "./arguments.js";
-import iota from "../UTILS/general.js";
 
 class Variable {
-    constructor(name, value, frozen, ...types) {
+    constructor(name, value, frozen, depth, ...types) {
         this.name = name;
         this.type = types.length == 1 && types[0] instanceof Type ? types[0] : new Type(...types);
         this.set(value);
         this.frozen = frozen;
+        this.depth  = depth;
     }
 
     set(value) {
@@ -47,9 +47,9 @@ class Compiler {
     }
 
     reset_runtime() {
-        this.vars = {
-            runtimeElapsed : this.runtimeElapsedVar,
-        };
+        this.vars = [
+            this.runtimeElapsedVar,
+        ];
 
         if(this.state == "deploy") print("\\clear");
     }
@@ -73,10 +73,8 @@ class Compiler {
         this.reset_runtime();
         if(!this.expressions) throw new RuntimeError("Couldn't find any previous build to run.");
 
-        //console.time("runtime");
         this.runtimeElapsedVar.value = window.performance.now(); // bypass freeze, quicker.
         await this.expressions.exec();
-        //console.timeEnd("runtime");
         print("Execution complete.");
     }
 
@@ -91,18 +89,36 @@ class Compiler {
         this.run();
     }
 
-    createVar(name, value, frozen = false, type = "any") {
-        if(this.vars[name]) throw new RuntimeError(`Attempted to recreate existing variable "${name}"`, "Name");
-        const newVar = new Variable(name, value, frozen, type);
-        this.vars[name] = newVar;
+    createVar(name, value, type = "any", depth = 0, frozen = false) {
+        for(let i = this.vars.length - 1; i >= 0; i--) {
+            if(this.vars[i].depth < depth) break;
+            if(this.vars[i].name == name) throw new RuntimeError(`Variable "${name}" already defined in scope`, "Name");
+        }
+
+        const newVar = new Variable(name, value, frozen, depth, type);
+        this.vars.push(newVar);
         return newVar;
     }
 
-    getVar(name) {
-        const searchedVar = this.vars[name];
-        if(!searchedVar) throw new RuntimeError(`Tried accessing unknown variable "${name}"`, "Name");
-        return searchedVar;
+    getVar(name, free = false) {
+        for(let i = this.vars.length - 1; i >= 0; i--) { //from the top, the first match is always the deepest.
+            if(this.vars[i].name != name) continue;
+            return free ? this.vars.splice(i, 1) : this.vars[i];
+        }
+        
+        throw new RuntimeError(`Variable "${name}" is either not defined or not available in the current scope`, "Name");
+    }
+
+    freeVars_fromDepth(depth) {
+        let deletionStartPos = 0;
+        for(let i = this.vars.length - 1; i > 0; i--) {
+            if(this.vars[i - 1].depth == depth) continue;
+            deletionStartPos = i;
+            break;
+        }
+        
+        this.vars.splice(deletionStartPos);
     }
 }
 
-export const GLC = new Compiler("debug");
+export const GLC = new Compiler("deploy");

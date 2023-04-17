@@ -40,7 +40,7 @@ class Variable {
 
 class InstanceVariable extends Variable {
     constructor(name, value, frozen, whenReferenced_callback, ...types) {
-        super(name, value, frozen, ...types);
+        super(name, value, frozen, 0, ...types);
         this.whenReferenced = whenReferenced_callback;
     }
 
@@ -86,7 +86,7 @@ class Compiler {
         this.runtimeElapsedVar.value = window.performance.now(); // bypass freeze, quicker.
         await this.expressions.exec();
         print("Execution complete.");
-        //console.log(this.vars);
+        console.log(this.vars);
     }
 
     build(text) {
@@ -107,7 +107,8 @@ class Compiler {
         }
 
         const newVar = new Variable(name, value, frozen, depth, type);
-        this.vars.push(newVar);
+        if(depth) this.vars.push(newVar);
+        else      this.vars.unshift(newVar);
         return newVar;
     }
 
@@ -122,7 +123,7 @@ class Compiler {
 
     freeVars_fromDepth(depth) {
         let deletionStartPos = 0;
-        for(let i = this.vars.length - 1; i > 0; i--) {
+        for(let i = this.vars.length - 1; i > 0; i--) { 
             if(this.vars[i - 1].depth == depth) continue;
             deletionStartPos = i;
             break;
@@ -132,4 +133,4 @@ class Compiler {
     }
 }
 
-export const GLC = new Compiler("deploy");
+export const GLC = new Compiler("debug");

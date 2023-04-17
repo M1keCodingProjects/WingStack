@@ -34,7 +34,7 @@ NextProc   : "next"
 
 ExitProc   : "exit" StackExpr?
 
-MakeProc   : "make" "frozen"? Assignment
+MakeProc   : "make" ("frozen" | "dynamic" | "global")? Assignment
 
 Assignment : CallChain (":" Type)? "=" StackExpr
 

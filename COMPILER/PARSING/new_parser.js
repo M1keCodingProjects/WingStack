@@ -206,15 +206,25 @@ export default class Parser {
         };
     }
 
-    MakeProc() { // MakeProc : "make" "frozen"? Assignment
+    MakeProc() { // MakeProc : "make" ("frozen" | "dynamic" | "global")? Assignment
         const token = {
             type  : "MakeProc",
         };
         
         if(this.peek_nextToken()?.type == "keyword") {
             const nextToken = this.get_nextToken_ifOfType("keyword");
-            if(nextToken.value != "frozen") this.throw(`"Make" procedure expected optional specifier "frozen" but got "${nextToken.value}"`, nextToken.line);
-            token.frozen = true;
+            switch(nextToken.value) {
+                case "frozen"  : token.frozen  = true; break;
+                case "global"  :
+                    if(!this.currentDepth) this.throw("No point in declaring a variable \"global\" in the global scope", nextToken.line);    
+                    token.global  = true; break;
+                
+                case "dynamic" : token.dynamic = true; break;
+                default        : this.throw(
+                    `"Make" procedure expected optional specifier "frozen", "dynamic" or "global" but got "${nextToken.value}"`,
+                    nextToken.line
+                );
+            }
         }
 
         token.value = this.Assignment(true);

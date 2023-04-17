@@ -46,6 +46,7 @@ export class Block {
             if(exprType == "NextProc" || exprType == "ExitProc") this.earlyStop = true;
             if(exprType != "NextProc") this.expressions.push(exprObj);
         }
+        console.log(this.depth);
     }
 
     onEnd(triggerSent = false) {

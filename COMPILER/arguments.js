@@ -46,7 +46,6 @@ export class Block {
             if(exprType == "NextProc" || exprType == "ExitProc") this.earlyStop = true;
             if(exprType != "NextProc") this.expressions.push(exprObj);
         }
-        console.log(this.depth);
     }
 
     onEnd(triggerSent = false) {
@@ -170,20 +169,36 @@ export class CallChain {
 }
 
 export class Assignment {
-    constructor(args) {
-        this.depth     = args.target.depth;
-        this.target    = new CallChain(args.target.value, this.depth);
-        this.stackExpr = new StackExpr(args.value);
+    constructor(exprToken) {
+        const assignmentExprToken = this.extractAssignmentToken_ifInMakeProc(exprToken);
         
-        if(args.typeSignature) {
-            this.expectedType = args.typeSignature.length ?
-                                new Type(...this.parse_typeSignature(args.typeSignature)) :
-                                "inferred";
-            
-            if(this.expectedType.canBe?.("void")) throw new CompileTimeError("Cannot expect target of assignment to be of type <void>");
+        this.target    = new CallChain(assignmentExprToken.target.value, this.depth);
+        this.stackExpr = new StackExpr(assignmentExprToken.value);
+    }
+
+    extractAssignmentToken_ifInMakeProc(exprToken) {
+        let assignmentExprToken = exprToken;
+        if(exprToken.type == "MakeProc") {
+            assignmentExprToken = assignmentExprToken.value;
+            this.frozen  = exprToken.frozen;
+            this.dynamic = exprToken.dynamic;
+            this.depth   = assignmentExprToken.target.depth * !exprToken.global;
+            this.exec    = this.execCreate;
+            this.buildTypeArg(assignmentExprToken.typeSignature);
         }
 
-        if(args.inMake) this.exec = this.execCreate;
+        return assignmentExprToken;
+    }
+
+    buildTypeArg(typeSignature) {
+        if(!typeSignature) return;
+        this.expectedType = typeSignature.length ?
+                            new Type(...this.parse_typeSignature(typeSignature)) :
+                            "inferred";
+        
+        if(this.expectedType.canBe?.("void")) {
+            throw new CompileTimeError("Cannot expect target of assignment to be of type <void>");
+        }
     }
 
     parse_typeSignature(typeSignature) {
@@ -204,7 +219,8 @@ export class Assignment {
     }
 
     async execCreate() {
-        GLC.createVar(this.target.properties[0], await this.stackExpr.exec(), this.expectedType, this.depth, this.frozen);
+        const target = GLC.createVar(this.target.properties[0], await this.stackExpr.exec(), this.expectedType, this.depth, this.frozen);
+        if(this.dynamic) target.type = new Type();
     }
 }
 

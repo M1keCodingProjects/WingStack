@@ -13,6 +13,12 @@ const CONSTANT_REPLACE_MAP = {
     INF   : Infinity,
 };
 
+const MAKEPROC_SPECS = {
+    frozen  : iota(),
+    global  : iota(),
+    dynamic : iota(),
+}
+
 import {ParsingError} from "../customErrors.js";
 export default class Parser {
     constructor() {
@@ -206,39 +212,58 @@ export default class Parser {
         };
     }
 
-    MakeProc() { // MakeProc : "make" ("frozen" | "dynamic" | "global")? Assignment
+    MakeProc() { // MakeProc : "make" ("frozen" | "dynamic" | "global")<?> Assignment
         const token = {
             type  : "MakeProc",
         };
         
-        if(this.peek_nextToken()?.type == "keyword") {
+        while(this.peek_nextToken()?.type == "keyword") {
             const nextToken = this.get_nextToken_ifOfType("keyword");
-            switch(nextToken.value) {
-                case "frozen"  : token.frozen  = true; break;
-                case "global"  :
-                    if(!this.currentDepth) this.throw("No point in declaring a variable \"global\" in the global scope", nextToken.line);    
-                    token.global  = true; break;
-                
-                case "dynamic" : token.dynamic = true; break;
-                default        : this.throw(
+            if(!(nextToken.value in MAKEPROC_SPECS)) {
+                this.throw(
                     `"Make" procedure expected optional specifier "frozen", "dynamic" or "global" but got "${nextToken.value}"`,
                     nextToken.line
                 );
             }
+
+            if(token[nextToken.value]) {
+                this.throw(
+                    `Optional specifier "${nextToken.value}" was declared twice`,
+                    nextToken.line
+                );
+            }
+
+            if(nextToken.value == "global" && !this.currentDepth) {
+                this.throw(
+                    "No point in declaring a variable \"global\" in the global scope",
+                    nextToken.line
+                );
+            }
+
+            token[nextToken.value] = true;
         }
 
         token.value = this.Assignment(true);
+        const assignmentTargetCallChain = token.value.target.value;
+        const firstProperty = assignmentTargetCallChain[0];
+        if(assignmentTargetCallChain.length == 1 && firstProperty.type == "instance") {
+            this.throw(
+                `Cannot use reserved word "${firstProperty.value}" to name a variable`,
+                firstProperty.line
+            );
+        }
+        
         return token;
     }
 
     Assignment(inMakeProc = false) { // Assignment : CallChain (":" Type)? "=" StackExpr
         const token = {
             type   : "Assignment",
-            inMake : inMakeProc,
             target : this.CallChain(true),
         };
 
         if(this.peek_nextToken()?.type == ":") {
+            if(!inMakeProc) this.throw("Typed assignments are only possible within \"Make\" procedures", this.peek_nextToken().line);
             this.get_nextToken_ifOfType(":");
             token.typeSignature = this.Type().value;
         }

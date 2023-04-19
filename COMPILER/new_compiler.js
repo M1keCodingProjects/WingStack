@@ -86,7 +86,7 @@ class Compiler {
         this.runtimeElapsedVar.value = window.performance.now(); // bypass freeze, quicker.
         await this.expressions.exec();
         print("Execution complete.");
-        console.log(this.vars);
+        if(this.state == "debug") console.log(this.vars);
     }
 
     build(text) {
@@ -133,4 +133,4 @@ class Compiler {
     }
 }
 
-export const GLC = new Compiler("debug");
+export const GLC = new Compiler("deploy");

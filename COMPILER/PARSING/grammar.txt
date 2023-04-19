@@ -1,7 +1,8 @@
 //
-? : 0 or 1 times (optional)
-* : 0 or more times
-+ : 1 or more times
+?   : 0 or 1 times (optional)
+*   : 0 or more times
++   : 1 or more times
+<?> : 0 or more items in group in any order
 //
 
 Program    : Expression*
@@ -34,7 +35,7 @@ NextProc   : "next"
 
 ExitProc   : "exit" StackExpr?
 
-MakeProc   : "make" ("frozen" | "dynamic" | "global")? Assignment
+MakeProc   : "make" ("frozen" | "dynamic" | "global")<?> Assignment
 
 Assignment : CallChain (":" Type)? "=" StackExpr
 

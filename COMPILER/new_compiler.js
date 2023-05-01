@@ -123,12 +123,11 @@ class Compiler {
 
     freeVars_fromDepth(depth) {
         let deletionStartPos = 0;
-        for(let i = this.vars.length - 1; i > 0; i--) { 
+        for(let i = this.vars.length; i > 0; i--) { 
             if(this.vars[i - 1].depth == depth) continue;
             deletionStartPos = i;
             break;
         }
-        
         this.vars.splice(deletionStartPos);
     }
 }

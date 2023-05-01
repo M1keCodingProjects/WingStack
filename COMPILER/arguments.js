@@ -145,40 +145,59 @@ export class CallChain {
         );
     }
 
-    async exec(stack) {
-        if(typeof this.properties[0] == "string") {
-            if(this.properties.length > 1) throw new RuntimeError("No support provided for properties yet", "Demo");
-            return stack.push(GLC.getVar(this.properties[0]).get()); //uncaught
-        }
-
-        const newListItem = await this.properties[0].exec(true);
-        if(this.properties.length == 1) return stack.push(newListItem);
-        
-        let res = newListItem;
+    async extract(res, value = null, allowNew = false) {
         for(let i = 1; i < this.properties.length; i++) {
-            const id      = await this.properties[i].exec();
-            const idType  = runtime_getTypeStr(id);
             const resType = runtime_getTypeStr(res);
-            if(resType   != "list") throw new RuntimeError(`cannot index properties of a non-list item: got ${resType}`, "Property");
+            if(resType != "list") throw new RuntimeError(`cannot index properties of a non-list item: got ${resType}`, "Property");
+            
+            let id        = await this.properties[i].exec();
+            const idType  = runtime_getTypeStr(id);
             if(idType    != "int" ) throw new RuntimeError(`cannot index properties of a list item with a non-int index: got ${idType}`, "Property");
-            res = res[id < 0 ? res.length + id : id];
-            if(res === undefined) throw new RuntimeError(`cannot find item at position ${id} in list.`, "Property");
+            if(id < 0) id = res.length + id;
+            if(res[id] === undefined) {
+                if(allowNew) {
+                    switch(id) {
+                        case -1         : return res.unshift(value); // uncaught
+                        case res.length : return res.push(value);    // uncaught
+                    }
+                }
+                throw new RuntimeError(`cannot ${allowNew ? "create" : "find"} item at position ${id} in list.`, "Property");
+            }
+            if(value !== null && i == this.properties.length - 1) return res[id] = value; //uncaught
+            res = res[id];
         }
-        stack.push(res);
+        return res;
+    }
+
+    async exec(stack) {
+        const res = typeof this.properties[0] == "string" ?
+                    GLC.getVar(this.properties[0]).get() :
+                    await this.properties[0].exec(true);
+        
+        stack.push(this.properties.length == 1 ? res : await this.extract(res));
+    }
+
+    async execWrite(value, allowNew = false) {
+        const res = GLC.getVar(this.properties[0]);
+        if(this.properties.length == 1) return res.set(value);
+        await this.extract(res.get(), value, allowNew);
     }
 }
 
 export class Assignment {
     constructor(exprToken) {
-        const assignmentExprToken = this.extractAssignmentToken_ifInMakeProc(exprToken);
+        this.inMake = exprToken.type == "MakeProc";
+        const assignmentExprToken = this.extractAssignmentToken(exprToken);
         
         this.target    = new CallChain(assignmentExprToken.target.value, this.depth);
         this.stackExpr = new StackExpr(assignmentExprToken.value);
+
+        //if(this.inMake) this.target.inMake = true;
     }
 
-    extractAssignmentToken_ifInMakeProc(exprToken) {
+    extractAssignmentToken(exprToken) {
         let assignmentExprToken = exprToken;
-        if(exprToken.type == "MakeProc") {
+        if(this.inMake) {
             assignmentExprToken = assignmentExprToken.value;
             this.frozen  = exprToken.frozen;
             this.dynamic = exprToken.dynamic;
@@ -214,12 +233,15 @@ export class Assignment {
     }
 
     async exec() {
-        const target = GLC.getVar(this.target.properties[0]); // TODO: get writeable reference
-        target.set(await this.stackExpr.exec());
+        await this.target.execWrite(await this.stackExpr.exec());
+        //const target = GLC.getVar(this.target.properties[0]); // TODO: get writeable reference
+        //target.set(await this.stackExpr.exec());
     }
 
     async execCreate() {
-        const target = GLC.createVar(this.target.properties[0], await this.stackExpr.exec(), this.expectedType, this.depth, this.frozen);
+        const value = await this.stackExpr.exec();
+        if(this.target.properties.length > 1) return await this.target.execWrite(value, true);
+        const target = GLC.createVar(this.target.properties[0], value, this.expectedType, this.depth, this.frozen);
         if(this.dynamic) target.type = new Type();
     }
 }

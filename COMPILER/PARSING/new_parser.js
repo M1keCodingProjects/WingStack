@@ -36,7 +36,7 @@ export default class Parser {
     onNumberToken(tokenValue) {
         return tokenValue in CONSTANT_REPLACE_MAP ?
                CONSTANT_REPLACE_MAP[tokenValue]   :
-               Number(tokenValue.replace("_", ""));
+               Number(tokenValue.replace(/_/g, ""));
     }
 
     parse(text) {

@@ -5,7 +5,7 @@ const [ // re-work, I hate this:
     compileBtn,
     runBtn,
     buildBtn
-] = Array.from(document.querySelectorAll("#Code-dropdown > .dropdown-opts > .dropdown-option"));
+] = document.querySelector("#console-header > #circle-btns-container").children;
 
 compileBtn.onclick =_=> {
     const text = IDE.getText(false); // get text, don't save file
@@ -37,7 +37,7 @@ import FileManager from './FILES/fileManager.js';
 const fileManager = new FileManager();
 
 //GUI Buttons setup
-const [saveFileBtn, saveFileAsBtn, openFileBtn] = Array.from(document.querySelectorAll("#File-dropdown > .dropdown-opts > .dropdown-option"));
+const [saveFileBtn, saveFileAsBtn, openFileBtn] = document.querySelector("#File-dropdown .dropdown-opts").children;
 
 openFileBtn.onclick = async _=> {
     await fileManager.openFile();

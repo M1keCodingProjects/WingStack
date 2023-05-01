@@ -1,5 +1,5 @@
 import tokenize from "../COMPILER/PARSING/tokenizer.js";
-const GUIfileTab = document.querySelector(".openFilesContainer .fileName");
+const GUIfileTab = document.getElementById("openFiles-container").children[0]; // One file at a time for now
 
 import iota from "../UTILS/general.js";
 const HIGHLIGHT_COLORS = {
@@ -17,7 +17,7 @@ class Editor {
     constructor() {
        [this.textTarget,
         this.textContainer,
-        this.lineCounter ] = document.querySelectorAll(".editorContainer > .shownEditor, .editor, .lineCounter");
+        this.lineCounter ] = document.getElementById("textEditor").children;
         this.fileIsSaved   = false;
         this.currentLineID = 0;
 
@@ -45,7 +45,7 @@ class Editor {
     }
 
     updateFileName(fileName) {
-        GUIfileTab.innerHTML = fileName;
+        GUIfileTab.innerHTML = `${fileName}.GL`;
     }
 
     loadText(fileName, text) {

@@ -12,50 +12,61 @@
     <link rel="icon" type="image/x-icon" href="./ASSETS/ICONS/GLIDE_logo.svg">
 </head>
 <body>
-    <section id="GUI" class="flex-row">
-        <div class="flex-col" style="width: 40%">
-            <div class="buttonContainer flex-row">
-                <div class="dropdown" id="File-dropdown">
-                    <button class="gui-btn" id="File">File</button>
-                    <div class="dropdown-opts">
-                        <button class="dropdown-option" id="Save">Save</button>
-                        <button class="dropdown-option" id="SaveAs">Save As</button>
-                        <button class="dropdown-option" id="Open">Open</button>
-                    </div>
-                </div>
-
-                <div class="dropdown" id="Code-dropdown">
-                    <button class="gui-btn" id="Code">Code</button>
-                    <div class="dropdown-opts">
-                        <button class="dropdown-option" id="Compile">Compile</button>
-                        <button class="dropdown-option" id="Run">Run Latest</button>
-                        <button class="dropdown-option" id="CompileRun">Compile & Run</button>
-                    </div>
+    <div id="gui-container">
+        <div id="menu-dropdowns-container">
+            <div class="dropdown" id="File-dropdown">
+                <button class="gui-btn" id="File">File</button>
+                <div class="dropdown-opts">
+                    <button class="dropdown-option" id="Save">Save</button>
+                    <button class="dropdown-option" id="SaveAs">Save As</button>
+                    <button class="dropdown-option" id="Open">Open</button>
                 </div>
             </div>
-            
-            <div style="position: relative;">
-                <input type="text" class="search-input" placeholder="Find text">
-                <span class="search-icon"></span>
-            </div>
-        </div>  
-    </section>
 
-    <div class="openFilesContainer" style="position: absolute; left:50%; top: 10%">
-            <span class="fileTab"><span class="fileName">unsaved-file</span>.gl</span>
+            <div class="dropdown" id="??-dropdown">
+                <button class="gui-btn" id="File">More</button>
+                <div class="dropdown-opts">
+                    <button class="dropdown-option" id="?">More</button>
+                    <button class="dropdown-option" id="?">Menu</button>
+                    <button class="dropdown-option" id="?">Options</button>
+                </div>
+            </div>
+
+            <div class="dropdown" id="??-dropdown">
+                <button class="gui-btn" id="File">Options</button>
+                <div class="dropdown-opts">
+                    <button class="dropdown-option" id="?">Are</button>
+                    <button class="dropdown-option" id="?">Coming</button>
+                    <button class="dropdown-option" id="?">Soon!</button>
+                </div>
+            </div>
+        </div>
     </div>
     
-    <div class="flex-row" style="height: 84%;">
-        <div class="editorContainer" id="mainTextEditor">
-            <div class="shownEditor"></div>
-            <textarea class="editor"></textarea>
-            <div class="lineCounter"></div>
+    <div class="content-container">
+        <div id="editor-container">
+            <div id="openFiles-container">
+                <span class="fileTab">unsaved-file.GL</span>
+            </div>
+            
+            <div id="textEditor">
+                <div id="shownEditor"></div>
+                <textarea></textarea>
+                <div id="lineCounter"></div>
+            </div>
         </div>
 
-        <div class="flex-col consoleContainer" id="mainConsole">
-            <div class="console-header">Console</div>
-            <div class="console-log"></div>
-            <input type="text" class="console-input">
+        <div id="console">
+            <div id="console-header">
+                Console
+                <div id="circle-btns-container">
+                    <button class="circle-btn" id="Compile"></button>
+                    <button class="circle-btn" id="Run"></button>
+                    <button class="circle-btn" id="Build"></button>
+                </div>
+            </div>
+            <div id="console-log"></div>
+            <input type="text" id="console-input" placeholder="Input here">
         </div>
     </div>
 </body>

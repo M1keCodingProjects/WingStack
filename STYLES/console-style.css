@@ -1,31 +1,31 @@
-:root {
-    --console-bg-col: #1a1a1d;
-    --error-col: #fd224b;
-}
-
-.consoleContainer {
-    width: 30rem;
-    height: 100%;
-    background: var(--gui-bg-col);
-}
-
-.consoleContainer > * {
-    margin-inline: .25rem;
-}
-
-.consoleContainer .console-header {
-    text-align: center;
-    font-size: 1.5rem;
+#console {
+    width: 30%;
+    background: var(--bg-col);
+    margin-left: .25rem;
     padding: .5rem;
-    margin-bottom: .25rem;
-    margin-top: 0;
+    flex-grow: 0;
+    display: flex;
+    flex-direction: column;
 }
 
-.consoleContainer .console-log {
-    background: var(--console-bg-col);
+#console-header {
+    --h: 2rem;
+    height: var(--h);
+    text-align: left;
+    font-size: 1.5rem;
+    padding-left: .4rem;
+    margin-bottom: .5rem;
+    margin-top: 0;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+}
+
+#console-log {
+    background: inherit;
     color: var(--comment-col);
     flex-grow: 1;
-    margin-bottom: 0;
     padding-inline: .5rem;
     padding-block: .25rem;
     line-height: 1.5rem;
@@ -34,8 +34,89 @@
     font-weight: normal;
 }
 
-.consoleContainer .console-input {
-    width: calc(100% - .5rem);
-    background: var(--console-bg-col);
-    margin-bottom: .25rem;
+#console-input {
+    width: 100%;
+    margin-top: .25rem;
+    border-radius: 0 0 .25rem .25rem;
+    background: inherit;
+    border: 0;
+}
+
+#circle-btns-container { 
+    display: flex;
+    margin-right: .4rem;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.circle-btn {
+    --size: 2.5rem;
+    width: var(--size);
+    height: var(--size);
+    border-radius: 50%;
+    background: var(--bg-col);
+    border: 2px solid transparent;
+    transition: all .2s ease-in-out;
+    position: relative;
+}
+
+.circle-btn::before {
+    display: block;
+    margin: auto;
+}
+
+.circle-btn::after {
+    position: absolute;
+    top: -3rem;
+    color: var(--idle-text-col);
+    height: 2rem;
+    width: max-content;
+    padding: 0.5rem;
+    border-radius: 0.25rem;
+    background: var(--bg-col);
+    visibility: hidden;
+}
+
+.circle-btn:hover {
+    border-color: var(--lineCounter-nums-col);
+}
+
+.circle-btn:active {
+    background: var(--lineCounter-nums-col);
+    transform: scale(.97);
+}
+
+.circle-btn:hover::after {
+    visibility: visible;
+}
+
+#Compile::before {
+    content: url(../ASSETS/ICONS/compile.svg);
+    padding-block: 0.3rem;
+}
+
+#Compile::after {
+    content: "Compile";
+    left: -1rem;
+}
+
+#Run::after {
+    content: "Run latest";
+    left: -1.25rem;
+}
+
+#Build::after {
+    content: "Compile & Run";
+    left: -3rem;
+}
+
+#Run::before {
+    content: url(../ASSETS/ICONS/run.svg);
+    padding-left: .25rem;
+    padding-top: .125rem;
+}
+
+#Build::before {
+    content: url(../ASSETS/ICONS/build.svg);
+    padding-block: 0.25rem;
 }

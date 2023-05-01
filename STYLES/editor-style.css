@@ -3,7 +3,8 @@
 }
 
 :root{
-    --bg-col: #1c1e2d;
+    --bg-col: #1c1c1e96;
+    --bg-lighter-col: #7b08ff27;
     --lineCounter-nums-col: #506882;
     --idle-text-col: rgb(231, 231, 231);
     --keyword-col: rgb(255, 220, 80);
@@ -13,7 +14,9 @@
     --type-col: var(--stackOp-col);
     --errorClass-col: rgb(0, 129, 121);
     --instance-col: rgb(190, 143, 255);
-    --comment-col: rgb(76, 75, 85);
+    --comment-col: rgb(97, 96, 108);
+    --console-bg-col: #1a1a1d;
+    --error-col: #fd224b;
 }
 
 @font-face {
@@ -27,11 +30,46 @@ html, body {
     width: 100%;
     height: 100%;
     overflow: hidden;
-    background: var(--bg-col);
     font-family: Cleanmono;
     font-size: 1rem;
     font-weight: bold;
     color: var(--idle-text-col);
+    background: linear-gradient(to bottom, rgb(51, 23, 91), var(--lineCounter-nums-col) 130%);
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+}
+
+button {
+    border: 0;
+}
+
+/* GENERAL */
+#gui-container {
+    flex-grow: 0;
+    width: 100%;
+    height: 12%;
+    padding: .5rem;
+    padding-bottom: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.content-container, #editor-container {
+    flex-grow: 1;
+    display: flex;
+}
+
+#editor-container {
+    flex-direction: column;
+    position: relative;
+}
+
+.content-container > * {
+    margin: .5rem;
+    margin-top: 0;
 }
 
 input[type="text"] {
@@ -41,80 +79,88 @@ input[type="text"] {
     outline: none;
 }
 
-.flex-row {
-    display: flex;
-    flex-direction: row;
-}
-
-.flex-col {
-    display: flex;
-    flex-direction: column;
-}
-
-.editorContainer {
-    position: relative;
-    margin: .5rem;
-    width : calc(100% - 1rem);
-    min-height : 80%;
-    --lineCounter-space : 3rem;
-    --current-line-ID : 1;
-    --error-line-ID : -10;
-}
-
-.editorContainer > * {
+/* OPEN FILES */
+#openFiles-container {
     position: absolute;
+    width: 100%;
+    top: -2rem;
+    display: flex;
+    align-items: flex-end;
+    justify-content: flex-end;
+}
+
+#openFiles-container .fileTab {
+    background: var(--bg-col);
+    margin: 0;
+    padding-inline: .75rem;
+    padding-block: .5rem;
+    border-radius: 1rem 1rem 0 0;
+    font-weight: normal;
+}
+
+#openFiles-container .fileTab:not([saved]) {
+    font-style: italic;
+}
+
+#openFiles-container .fileTab::before {
+    content: "▼ ";
+    font-size: .75rem;
+}
+
+#openFiles-container .fileTab:not([saved])::after {
+    content: "*";
+}
+
+/* TEXT EDITOR */
+#textEditor {
+    --lineCounter-space : 3rem;
+    --current-line-ID   : 1;
+    --error-line-ID     : -10;
+
+    position: relative;
+    margin-right: .25rem;
+    width : 100%;
+    flex-grow: 1;
+}
+
+#textEditor > * {
+    position: absolute;
+    inset: 0;
     height : 100%;
     font-family: monospace;
-    font-size: 1rem;
+    font-size  : 1rem;
     font-weight: bold;
     padding-top: .5rem;
+    padding-bottom: .6rem;
     line-height: 1.5rem;
     overflow: hidden;
 }
 
-.editorContainer > .editor, .shownEditor {
+#textEditor > textarea, #shownEditor {
     width : 100%;
     padding-left: var(--lineCounter-space);
 }
 
-.editorContainer > .lineCounter {
+/* LINE COUNTER */
+#lineCounter {
     width : calc(var(--lineCounter-space) * 0.8);
     text-align: right;
     padding-right: calc(var(--lineCounter-space) * 0.2);
     color: var(--lineCounter-nums-col);
-    background: var(--bg-col);
+    /*background: var(--bg-col)*/;
 }
 
-.editorContainer > .lineCounter span {
+#lineCounter span {
     counter-increment: linenumber;
 }
 
-.editorContainer > .lineCounter span::before {
+#lineCounter span::before {
     content: counter(linenumber);
     display: block;
 }
 
-.editorContainer > .editor {
-    background: transparent;
-    color: transparent;
-    caret-color: var(--idle-text-col);
-    resize: none;
-    border: none;
-    outline: none;
-    white-space: pre;
-    overflow-wrap: normal;
-    overflow: auto;
-    tab-size: 2;
-    padding-right: 0;
-    padding-bottom: 0; /*I fucking hate CSS*/
-}
-
-.editorContainer > .editor::selection {
-    background: #edffff38;
-    color: var(--idle-text-col);
-}
-
-.editorContainer > .shownEditor::before {
+/* SHOWN EDITOR */
+#shownEditor::before {
     content: "";
     position: absolute;
     top: calc(1.5rem * (var(--current-line-ID) - 1));
@@ -125,7 +171,7 @@ input[type="text"] {
     background: #ffffff07;
 }
 
-.editorContainer > .shownEditor::after {
+#shownEditor::after {
     content: "";
     position: absolute;
     top: calc(1.5rem * (var(--error-line-ID) - 1));
@@ -136,36 +182,55 @@ input[type="text"] {
     background: #ff000022;
 }
 
-.editorContainer > .shownEditor {
+#shownEditor {
     background: var(--bg-col);
     color: var(--idle-text-col);
     padding-right: .6rem;
-    padding-bottom: .6rem;
     white-space: nowrap;
 }
 
-.editorContainer > .shownEditor > span {
+#shownEditor > span {
     text-shadow: 0 0 .5rem;
 }
 
-.editorContainer > .editor.editor::-webkit-scrollbar {
+/* REAL TEXT CONTAINER */
+#textEditor > textarea {
+    background: transparent;
+    color: transparent;
+    caret-color: var(--idle-text-col);
+    resize: none;
+    border: none;
+    outline: none;
+    white-space: pre;
+    overflow-wrap: normal;
+    overflow: scroll;
+    padding-bottom: 0;
+    tab-size: 2;
+}
+
+#textEditor > textarea::selection {
+    background: #edffff38;
+    color: var(--idle-text-col);
+}
+
+#textEditor > textarea::-webkit-scrollbar {
     width: .6rem;
     height: .6rem;
 }
 
-.editorContainer > .editor::-webkit-scrollbar-track {
+#textEditor > textarea::-webkit-scrollbar-track {
     background: #ffffff0e;
 }
 
-.editorContainer > .editor::-webkit-scrollbar-thumb {
+#textEditor > textarea::-webkit-scrollbar-thumb {
     background: #ffffff15;
     border-radius: 2rem;
 }
 
-.editorContainer > .editor::-webkit-scrollbar-thumb:hover {
+#textEditor > textarea::-webkit-scrollbar-thumb:hover {
     background: #eeeeff30;
 }
 
-.editorContainer > .editor::-webkit-scrollbar-corner {
+#textEditor > textarea::-webkit-scrollbar-corner {
     background: #ffffff10;
 }

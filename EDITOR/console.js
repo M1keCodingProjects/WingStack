@@ -1,7 +1,8 @@
 import { NUMBER_MATCH_PATTERN } from "../COMPILER/PARSING/tokenizer.js";
 export default class Console {
     constructor() {
-        [this.log, this.input] = document.querySelectorAll("#mainConsole > .console-log, .console-input");
+        let _;
+        [_, this.log, this.input] = document.getElementById("console").children;
         this.inputRequested = false;
         this.init();
     }

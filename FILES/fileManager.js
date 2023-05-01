@@ -7,7 +7,7 @@ export default class FileManager {
         [this.fileHandle] = await window.showOpenFilePicker({
             multiple: false,
             excludeAcceptAllOption: true,
-            types: [{ accept: { "text/plain" : [".gl"] } }],
+            types: [{ accept: { "text/plain" : [".GL"] } }],
         });
     }
 

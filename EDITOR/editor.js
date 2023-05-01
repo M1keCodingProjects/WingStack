@@ -11,6 +11,7 @@ const HIGHLIGHT_COLORS = {
     "type"       : iota(),
     "errorClass" : iota(),
     "instance"   : iota(),
+    "apply"      : iota(),
 };
 
 class Editor {

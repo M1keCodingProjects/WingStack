@@ -12,7 +12,7 @@
     --num-col: rgb(227, 93, 207);
     --stackOp-col: rgb(68, 255, 54);
     --type-col: var(--stackOp-col);
-    --errorClass-col: rgb(0, 129, 121);
+    --apply-col: rgb(0, 129, 121);
     --instance-col: rgb(190, 143, 255);
     --comment-col: rgb(97, 96, 108);
     --console-bg-col: #1a1a1d;

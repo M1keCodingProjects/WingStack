@@ -53,7 +53,7 @@ class Compiler {
     constructor(state) {
         this.state = state;
         if(state != "deploy") warn(`Compiler working in ${state} mode.`);
-        this.runtimeElapsedVar = new InstanceVariable("runtimeElapsed", 0, true, this.getRuntimeElapsed.bind(this), "num");
+        this.runtimeElapsedVar = new InstanceVariable("time", 0, true, this.getRuntimeElapsed.bind(this), "num");
     }
 
     reset_runtime() {

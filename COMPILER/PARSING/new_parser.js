@@ -113,12 +113,12 @@ export default class Parser {
         return token;
     }
 
-    Procedure(needsTerminator) { // Procedure : PrintProc | WhenProc | LoopProc
+    Procedure(needsTerminator) { // Procedure : PrintProc | IfProc | LoopProc
         const keyword = this.get_nextToken_ifOfType("keyword");
 
         switch(keyword.value) {
             case "print" : return this.PrintProc(needsTerminator);
-            case "when"  : return this.WhenProc();
+            case "if"    : return this.IfProc();
             case "loop"  : return this.LoopProc();
             case "next"  : return this.NextProc();
             case "exit"  : return this.ExitProc();
@@ -133,9 +133,9 @@ export default class Parser {
         };
     }
 
-    WhenProc() { // WhenProc : "when" StackExpr "loop"? Block ElseProc?
+    IfProc() { // IfProc : "if" StackExpr "loop"? Block ElseProc?
         const token = {
-            type  : "WhenProc",
+            type  : "IfProc",
             loops : false,
             value : this.StackExpr().value,
         };
@@ -153,12 +153,12 @@ export default class Parser {
         return token;
     }
 
-    ElseProc() { // ElseProc : "else" (WhenProc | Block)
+    ElseProc() { // ElseProc : "else" (IfProc | Block)
         this.get_nextToken_ifOfType("keyword");
         if(this.peek_nextToken()?.value == "when") {
             const procKW_lineID = this.get_nextToken_ifOfType("keyword").line;
-            const token = this.WhenProc();
-            if(token.loops) this.throw('"Else-When" procedures cannot loop.', procKW_lineID);
+            const token = this.IfProc();
+            if(token.loops) this.throw('"Else-If" procedures cannot loop.', procKW_lineID);
             return token;
         }
         

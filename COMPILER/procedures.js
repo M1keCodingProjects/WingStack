@@ -24,7 +24,7 @@ export class PrintProc extends Proc {
     }
 }
 
-export class WhenProc extends Proc {
+export class IfProc extends Proc {
     constructor(args) {
         super(args);
         this.expectedType = new Type("num");
@@ -34,15 +34,15 @@ export class WhenProc extends Proc {
         super.buildArgs(args);
         if(args.trigger) this.trigger = args.trigger;
         if(args.loops)   this.exec    = this.execLoop;
-        if(args.else)    this.else    = args.else.type == "WhenProc" ?
-                                        new WhenProc(args.else) :
+        if(args.else)    this.else    = args.else.type == "IfProc" ?
+                                        new IfProc(args.else) :
                                         new ArgClasses.Block(args.else.block);
     }
 
     async getConditionEval() {
         const result     = await this.stackExpr.exec();
         const resultType = runtime_checkType(result);
-        if(!runtime_checkGot_asValidExpected(this.expectedType, resultType)) throw new RuntimeError(`"When" procedure condition expected "num" evaluation but got "${resultType.toString()}"`);
+        if(!runtime_checkGot_asValidExpected(this.expectedType, resultType)) throw new RuntimeError(`"If" procedure condition expected "num" evaluation but got "${resultType.toString()}"`);
         return result;
     }
 

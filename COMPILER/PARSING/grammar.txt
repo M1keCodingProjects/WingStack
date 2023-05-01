@@ -9,7 +9,7 @@ Program    : Expression*
 
 Expression : (Procedure | Assignment) ";"?
 
-Procedure  : PrintProc | WhenProc | LoopProc | NextProc | ExitProc | MakeProc
+Procedure  : PrintProc | IfProc | LoopProc | NextProc | ExitProc | MakeProc
 
 PrintProc  : "print" StackExpr
 
@@ -23,11 +23,11 @@ Property   : IDProp | WORD
 
 IDProp     : "[" StackExpr "]"
 
-WhenProc   : "when" StackExpr "loop"? Block ElseProc?
+IfProc   : "if" StackExpr "loop"? Block ElseProc?
 
 Block      : ("{" Program "}") | ("then" Expression)
 
-ElseProc   : "else" (WhenProc | Block)
+ElseProc   : "else" (IfProc | Block)
 
 LoopProc   : "loop" StackExpr Block
 

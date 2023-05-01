@@ -7,7 +7,7 @@ import { Type, runtime_getTypeStr }       from "./type checker.js";
 const EXPR_TYPES = {
     // PROCEDURES
     "PrintProc" : expr => new Proc.PrintProc(expr),
-    "WhenProc"  : expr => new Proc.WhenProc(expr),
+    "IfProc"    : expr => new Proc.IfProc(expr),
     "LoopProc"  : expr => new Proc.LoopProc(expr),
     "NextProc"  : expr => null,
     "ExitProc"  : expr => new Proc.ExitProc(expr),

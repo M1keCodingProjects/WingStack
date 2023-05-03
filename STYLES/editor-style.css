@@ -57,6 +57,10 @@ button {
     flex-direction: column;
 }
 
+.content-container {
+    height: 88%;
+}
+
 .content-container, #editor-container {
     flex-grow: 1;
     display: flex;

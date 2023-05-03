@@ -25,6 +25,7 @@
 #console-log {
     background: inherit;
     color: var(--comment-col);
+    height: 100%;
     flex-grow: 1;
     padding-inline: .5rem;
     padding-block: .25rem;

@@ -1,13 +1,25 @@
-make benchmarkOffset :num = runtimeElapsed;
-make n :int = 1;
-make buffer :str = "";
-make frozen SIZE :int = 99;
+make n = 1;
+make buffer := "";
+make container :list = [];
+make frozen SIZE := 9999;
+make benchmarkOffset :num = time;
 loop SIZE {
   buffer = "";
-  when n dup 3 / int 3 * - not then buffer = "Fizz";
-  when n dup 5 / int 5 * - not then buffer = buffer "Buzz" +;
-  when buffer "" == then print n else print buffer;
+  if n dup 3 / int 3 * - not then buffer = "Fizz";
+  if n dup 5 / int 5 * - not then buffer = buffer "Buzz" +;
+  if buffer "" == then make container[n 1 -] = n; else make container[n 1 -] = buffer;
   n = n 1 +;
 }
+print "Results for " SIZE " items:" str;
+print time benchmarkOffset - int "Classic implementation ran for " swap " ms." str;
 
-print runtimeElapsed benchmarkOffset - int "This program ran for " swap " ms" str;
+n = [1];
+make opts = n "Fizz" "Buzz" "FizzBuzz";
+container = [];
+benchmarkOffset = time;
+loop SIZE {
+  make container[n[0] 1 -] = opts[n[0] dup 3 / int 3 * - not n[0] dup 5 / int 5 * - not 2 * +];
+  n[0] = n[0] 1 +;
+}
+
+print time benchmarkOffset - int "List implementation ran for " swap " ms." str;

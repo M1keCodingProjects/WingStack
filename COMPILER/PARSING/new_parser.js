@@ -93,12 +93,13 @@ export default class Parser {
         if(nextTokenValue == "then" || (noThen && nextTokenValue != "{")) { // no "and then?"!!
             if(!noThen || nextTokenValue == "then") this.get_nextToken_ifOfType("keyword");
             token.value.push(this.Expression(false));
-            return token;
         }
-
-        this.get_nextToken_ifOfType("{");
-        token.value = this.Program().value;
-        this.get_nextToken_ifOfType("}");
+        else {
+            this.get_nextToken_ifOfType("{");
+            token.value = this.Program().value;
+            this.get_nextToken_ifOfType("}");
+        }
+        
         this.currentDepth--;
         return token;
     }
@@ -123,6 +124,7 @@ export default class Parser {
             case "next"  : return this.NextProc();
             case "exit"  : return this.ExitProc();
             case "make"  : return this.MakeProc();
+            default      : this.throw(`Procedure "${keyword.value}" is not implemented yet`);
         }
     }
 

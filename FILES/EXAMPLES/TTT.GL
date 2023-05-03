@@ -1,0 +1,90 @@
+# Initialize data
+make boardData :[int] = 0 0 0
+                        0 0 0
+                        0 0 0;
+
+make symbolMap :[str] = "$<color:var(--error-col)>X<$>" " " "$<color:var(--str-col)>O<$>";
+make players :[str] = "Bot" "Player";
+make turn :int = 0;
+make availableMoves = TRUE TRUE TRUE
+                      TRUE TRUE TRUE
+                      TRUE TRUE TRUE;
+
+# Game loop
+loop 9 {
+  print "It's now " players[turn] "'s turn!" str;
+  make move :int = -1;
+  if turn { # Player moves
+    print "Make a valid move [0-8]";
+    if TRUE loop {  
+      move = inp;
+      if move 0 < move 8 > or {
+        print "Your move must be between 0 and 8, boundaries included.";
+        next;
+      }
+      if availableMoves[move] not {
+        print "Spot " move " on the board is taken!" str;
+        next;
+      }
+      exit;
+    }
+  }
+  else { # Bot moves
+    print "Bot is deciding..";
+    move = rand 9 * int;
+    if availableMoves[move] not loop {
+      move = move 1 +;
+      if move 9 == then move = 0;
+    }
+  }
+  
+  availableMoves[move] = FALSE;
+  boardData[move] = turn 2 * 1 -;
+
+  # Print the board
+  make board := "";
+  make i := 0;
+  loop 3 {
+    board = board 10 char + "$<color:var(--idle-text-col)>─ ╋ ─ ╋ ─<$>" 10 char + i not not * +;
+    loop 3 {
+      board = board symbolMap[boardData[i] 1 +] "$<color:var(--idle-text-col)> ┃ <$>" i 1 + dup 3 / int 3 * - not not * str;
+      i = i 1 +;
+    }
+  }
+  print "\clear";
+  print board 10 char +;
+  
+  # Set the score
+  i = 0;
+  make win = FALSE;
+  loop 3 { # check rows
+    if boardData[i] boardData[i 1 +] boardData[i 2 +] + + 2 ^ 9 == {
+      win = TRUE;
+      exit;
+    }
+    i = i 3 +;
+  }
+  
+  if win not {
+    i = 0;
+    loop 3 { # check cols
+      if boardData[i] boardData[i 3 +] boardData[i 6 +] + + 2 ^ 9 == {
+        win = TRUE;
+        exit;
+      }
+      i = i 1 +;
+    }
+  }
+
+  # check diagonals
+  if win not boardData[0] boardData[4] boardData[8] + + 2 ^ 9 ==
+             boardData[2] boardData[4] boardData[6] + + 2 ^ 9 == or and then win = TRUE;
+  
+  if win {
+    print players[turn] " won!" +;
+    exit;
+  };
+  turn = turn not;
+}
+
+print "Game is over! Run script to play again.";

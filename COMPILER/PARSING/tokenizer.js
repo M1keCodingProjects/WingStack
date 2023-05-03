@@ -36,6 +36,7 @@ const HIGHLIGHT_KEYWORDS = {
     then    : "keyword",
     from    : "keyword",
     shape   : "keyword",
+    ref     : "keyword",
 
     PI    : "num",
     INF   : "num",

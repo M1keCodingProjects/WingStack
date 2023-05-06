@@ -20,6 +20,7 @@ export class PrintProc extends Proc {
 
     async exec() {
         const result = await this.stackExpr.exec();
+        if(result === undefined) throw new RuntimeError("\"Print\" procedure expected <any> evaluation, got <void>", "Type");
         print(result);
     }
 }

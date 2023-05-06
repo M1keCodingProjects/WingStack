@@ -2,6 +2,7 @@ import tokenize from "./tokenizer.js";
 
 import iota from "../../UTILS/general.js";
 const IGNORED_TOKEN_TYPES = {
+    space   : iota(),
     EOL     : iota(),
     comment : iota(),
 };
@@ -14,9 +15,10 @@ const CONSTANT_REPLACE_MAP = {
 };
 
 const MAKEPROC_SPECS = {
-    frozen  : iota(),
+    const   : iota(),
     global  : iota(),
     dynamic : iota(),
+    //type    : iota(),
 }
 
 import {ParsingError} from "../customErrors.js";
@@ -45,19 +47,26 @@ export default class Parser {
         this.beginExpr_lineID = 1;  // more so for a general indication
         this.currentDepth     = 0;  // global scope
 
-        let lineNumber    = 1;
+        let justSpaced = false;
+        let lineNumber = 1;
         tokenize(text, (match, tokenType, tokens) => {
             if(tokenType == "EOL") lineNumber += match.length;
-            if(tokenType in IGNORED_TOKEN_TYPES || (tokenType == "space" && this.tokens[this.tokens.length - 1]?.type != "]")) return;
-            
+            if(tokenType in IGNORED_TOKEN_TYPES) return justSpaced = tokenType != "comment"; // uncaught.
+
             tokens.push({
                 line  : lineNumber,
                 type  : this.correct_tokenType(tokenType, match),
                 value : tokenType == "num" ? this.onNumberToken(match) :
                         tokenType == "str" ? match.slice(1, -1) : match,
             });
+
+            if(justSpaced) {
+                justSpaced = false;
+                if(tokenType == "[") tokens[tokens.length - 1].isNewList = true;
+            }
         }, this.tokens);
 
+        //console.log(...this.tokens);
         return this.Program(true).value;
     }
 
@@ -214,7 +223,7 @@ export default class Parser {
         };
     }
 
-    MakeProc() { // MakeProc : "make" ("frozen" | "dynamic" | "global")<?> Assignment
+    MakeProc() { // MakeProc : "make" ("const" | "dynamic" | "global" | "type")<?> Assignment
         const token = {
             type  : "MakeProc",
         };
@@ -223,7 +232,7 @@ export default class Parser {
             const nextToken = this.get_nextToken_ifOfType("keyword");
             if(!(nextToken.value in MAKEPROC_SPECS)) {
                 this.throw(
-                    `"Make" procedure expected optional specifier "frozen", "dynamic" or "global" but got "${nextToken.value}"`,
+                    `"Make" procedure expected optional specifier "const", "dynamic" or "global" but got "${nextToken.value}"`,
                     nextToken.line
                 );
             }
@@ -296,7 +305,6 @@ export default class Parser {
             this.get_nextToken_ifOfType("[");
             const token = this.Type();
             this.get_nextToken_ifOfType("]");
-            this.eatOptionalSpace();
             return token;
         }
 
@@ -334,6 +342,7 @@ export default class Parser {
     }
 
     CallChain(asTarget = false) { // CallChain : Property (("." Property) | IDProp)*
+        this.eatOptionalSpace();
         const token = {
             type  : "CallChain",
             depth : this.currentDepth,
@@ -341,13 +350,12 @@ export default class Parser {
         };
 
         while(true) {
-            const nextTokenType = this.peek_nextToken()?.type;
-            if(nextTokenType == ".") this.get_nextToken_ifOfType(".");
-            else if(nextTokenType != "[") {
-                this.eatOptionalSpace();
-                return token;
-            }
+            const nextToken = this.peek_nextToken();
+            if(nextToken.isNewList) return token;
 
+            if(nextToken.type == ".") this.get_nextToken_ifOfType(".");
+            else if(nextToken.type != "[") return token;
+            
             token.value.push(this.Property());
         }
     }

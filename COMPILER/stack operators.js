@@ -35,8 +35,8 @@ export class StackOp {
   }
 
   getValidatedItemType(item, inputID, ...validTypes) {
+    const got = runtime_checkType(item);
     const expected = new Type(...validTypes);
-    const got      = runtime_checkType(item);
     if(!runtime_checkGot_asValidExpected(expected, got)) throw new RuntimeError(`${this.constructor.name} expected ${inputID + 1}° input value to be of type "${expected.toString()}" but got "${got.toString()}" instead`, "Type");
     return got;
   }
@@ -58,10 +58,6 @@ export class Math_stackOp extends StackOp {
       const  [item2] = this.getValidatedItemAndType_fromStackTop(stack, 0, false, "num");
       const  [item1] = this.getValidatedItemAndType_fromStackTop(stack, 1, false, "num");
       return [item1, item2];
-  }
-
-  round(n) {
-      return Number(Math.round(`${n}e${5}`) + `e-${5}`);
   }
 
   checkNaN(res) {
@@ -102,12 +98,11 @@ export class Plus_stackOp extends StackOp {
   }
 
   exec(stack) {
-      const [el2]    = this.getValidatedItemAndType_fromStackTop(stack, 0, false, "num", "str");
-      const [el1]    = this.getValidatedItemAndType_fromStackTop(stack, 1, false, "num", "str");
-      const res      = el1 + el2;
-      const resIsNum = runtime_getTypeStr(res) != "str";
-      if(resIsNum) Math_stackOp.prototype.checkNaN(res);
-      stack.push(resIsNum ? Math_stackOp.prototype.round(res) : res);
+      const [el2] = this.getValidatedItemAndType_fromStackTop(stack, 0, false, "num", "str");
+      const [el1] = this.getValidatedItemAndType_fromStackTop(stack, 1, false, "num", "str");
+      const res = el1 + el2;
+      if(runtime_getTypeStr(res) != "str") Math_stackOp.prototype.checkNaN(res);
+      stack.push(res);
   }
 }
 
@@ -174,7 +169,7 @@ export class Mult_stackOp extends StackOp {
                   el2_isStr ? this._multiplyNumWithStr(el1, el2) :
                   el1 * el2;
       
-      if(typeof res == "number") Math_stackOp.prototype.checkNaN(res);
+      if(!el1_isStr && !el2_isStr) Math_stackOp.prototype.checkNaN(res);
       stack.push(res);
   }
 }
@@ -222,8 +217,7 @@ export class Dup_stackOp extends StackOp {
   }
 
   exec(stack) {
-    const [item] = this.getValidatedItemAndType_fromStackTop(stack, 0, true, "any");
-    stack.push(item);
+    stack.push(stack[stack.length - 1]);
   }
 }
 
@@ -342,9 +336,7 @@ export class Swap_stackOp extends StackOp {
   
   exec(stack) {
     this.checkStackMinLength(stack, 2);
-    let [item1] = this.getValidatedItemAndType_fromStackTop(stack, 0, false, "any");
-    let [item2] = this.getValidatedItemAndType_fromStackTop(stack, 1, false, "any");
-    stack.push(item1, item2);
+    [stack[stack.length - 2], stack[stack.length - 1]] = [stack[stack.length - 1], stack[stack.length - 2]];
   }
 }
 
@@ -358,7 +350,8 @@ export class Drop_stackOp extends StackOp {
   }
   
   exec(stack) {
-    this.getValidatedItemAndType_fromStackTop(stack, 0, false, "any");
+    this.checkStackMinLength(stack, 1);
+    stack.pop();
   }
 }
 
@@ -372,9 +365,9 @@ export class Pop_stackOp extends StackOp {
   }
 
   exec(stack) {
-    const [item] = this.getValidatedItemAndType_fromStackTop(stack, 0, false, "any");
+    this.checkStackMinLength(stack, 1);
+    stack[0] = stack.pop();
     stack.length = 1;
-    stack[0]     = item;
   }
 }
 
@@ -485,9 +478,8 @@ export class List_stackOp extends StackOp {
   }
 
   exec(stack) {
-    const res    = [...stack];
+    stack[0] = [...stack];
     stack.length = 1;
-    stack[0]     = res;
   }
 }
 

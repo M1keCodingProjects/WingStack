@@ -23,7 +23,7 @@ Property   : IDProp | WORD
 
 IDProp     : "[" StackExpr "]"
 
-IfProc   : "if" StackExpr "loop"? Block ElseProc?
+IfProc     : "if" StackExpr "loop"? Block ElseProc?
 
 Block      : ("{" Program "}") | ("then" Expression)
 
@@ -35,7 +35,7 @@ NextProc   : "next"
 
 ExitProc   : "exit" StackExpr?
 
-MakeProc   : "make" ("frozen" | "dynamic" | "global")<?> Assignment
+MakeProc   : "make" ("const" | "dynamic" | "global" | "type")<?> Assignment
 
 Assignment : CallChain (":" Type)? "=" StackExpr
 

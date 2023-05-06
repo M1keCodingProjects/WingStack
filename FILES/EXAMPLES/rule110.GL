@@ -1,14 +1,22 @@
-use "std GLib" with std
-make tape = "                                                                           *" spill
-
-replace checkBin with "*" == 4 * swap "*" == 2 * + swap "*" == +
-replace rule110  with 110 swap >> 1 &
-
-loop tape range 2 // {
-  make tape2 = "*"
-  loop tape range 2 - with i {
-    tape2 += std.?( tape[ i ] tape[ i 1 + ] tape[ i 2 + ] checkBin rule110 "*" " " )
-  }
-  tape = tape2 spill
-  print tape spill str
+make tape := "";
+make const C := "#";
+make const MAP := " " C C C " " C C " " str;
+make const ITERS := 100;
+loop ITERS {
+  tape = tape " " +;
 }
+
+make const BUFFER = "$<display:block; line-height:.5rem>";
+loop ITERS {
+  make nextTape := C;
+  make const TAPE_SIZE := tape spill size;
+  make i := 0;
+  loop TAPE_SIZE 1 - {
+    nextTape = nextTape MAP[tape[i 1 -] C == 4 * tape[i] C == 2 * tape[i 1 +] C == + +] +;
+    i = i 1 +;
+  }
+  tape = nextTape;
+  BUFFER = BUFFER tape 10 char str;
+}
+
+print BUFFER "<$>" +;

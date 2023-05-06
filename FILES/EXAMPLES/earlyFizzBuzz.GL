@@ -1,12 +1,12 @@
 make n = 1;
 make buffer := "";
 make container :list = [];
-make frozen SIZE := 9999;
+make const SIZE := 9999;
 make benchmarkOffset :num = time;
 loop SIZE {
   buffer = "";
-  if n dup 3 / int 3 * - not then buffer = "Fizz";
-  if n dup 5 / int 5 * - not then buffer = buffer "Buzz" +;
+  if n 3 % not then buffer = "Fizz";
+  if n 5 % not then buffer = buffer "Buzz" +;
   if buffer "" == then make container[n 1 -] = n; else make container[n 1 -] = buffer;
   n = n 1 +;
 }
@@ -18,7 +18,7 @@ make opts = n "Fizz" "Buzz" "FizzBuzz";
 container = [];
 benchmarkOffset = time;
 loop SIZE {
-  make container[n[0] 1 -] = opts[n[0] dup 3 / int 3 * - not n[0] dup 5 / int 5 * - not 2 * +];
+  make container[n[0] 1 -] = opts[n[0] 3 % not n[0] 5 % not 2 * +];
   n[0] = n[0] 1 +;
 }
 

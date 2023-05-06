@@ -24,6 +24,7 @@ export const MATH_SYMBOLS = {
     "-"   : (el1, el2) => el1 - el2,
     "/"   : (el1, el2) => el1 / el2,
     "^"   : (el1, el2) => el1 ** el2,
+    "%"   : (el1, el2) => el1 % el2,
     "and" : (el1, el2) => 1 * (Boolean(el1) && Boolean(el2)),
     "or"  : (el1, el2) => 1 * (Boolean(el1) || Boolean(el2)),
     ">"   : (el1, el2) => 1 * (el1 > el2),
@@ -90,27 +91,27 @@ export class StackExpr {
         }
 
         switch(symbol) {
-            case "not"  : return new StackOp.Not_stackOp(typeStack);
-            case "dup"  : return new StackOp.Dup_stackOp(typeStack);
-            case "size" : return new StackOp.Size_stackOp(typeStack); 
-            case "rot<" : return new StackOp.RotL_stackOp(typeStack);
-            case "rot>" : return new StackOp.RotR_stackOp(typeStack);
-            case "spill": return new StackOp.Spill_stackOp(typeStack);
-            case "type" : return new StackOp.Type_stackOp(typeStack);
-            case "swap" : return new StackOp.Swap_stackOp(typeStack);
-            case "drop" : return new StackOp.Drop_stackOp(typeStack);
-            case "pop"  : return new StackOp.Pop_stackOp(typeStack);
-            case "flip" : return new StackOp.Flip_stackOp(typeStack);
-            case "rand" : return new StackOp.Rand_stackOp(typeStack);
-            case "char" : return new StackOp.Char_stackOp(typeStack);
-            
+            case "not"    : return new StackOp.Not_stackOp(typeStack);
+            case "dup"    : return new StackOp.Dup_stackOp(typeStack);
+            case "size"   : return new StackOp.Size_stackOp(typeStack); 
+            case "rot<"   : return new StackOp.RotL_stackOp(typeStack);
+            case "rot>"   : return new StackOp.RotR_stackOp(typeStack);
+            case "spill"  : return new StackOp.Spill_stackOp(typeStack);
+            case "typeof" : return new StackOp.Type_stackOp(typeStack);
+            case "swap"   : return new StackOp.Swap_stackOp(typeStack);
+            case "drop"   : return new StackOp.Drop_stackOp(typeStack);
+            case "pop"    : return new StackOp.Pop_stackOp(typeStack);
+            case "flip"   : return new StackOp.Flip_stackOp(typeStack);
+            case "rand"   : return new StackOp.Rand_stackOp(typeStack);
+            case "char"   : return new StackOp.Char_stackOp(typeStack);
+            case "inp"    : return new StackOp.Inp_stackOp(typeStack);
+
             //type-casting
             case "num"  : return new StackOp.Num_stackOp(typeStack);
             case "int"  : return new StackOp.Int_stackOp(typeStack);
             case "str"  : return new StackOp.Str_stackOp(typeStack);
             case "list" : return new StackOp.List_stackOp(typeStack);
             case "obj"  : return new StackOp.Obj_stackOp(typeStack);
-            case "inp"  : return new StackOp.Inp_stackOp(typeStack);
         }
     }
 
@@ -148,12 +149,17 @@ export class CallChain {
     async extract(res, value = null, allowNew = false) {
         for(let i = 1; i < this.properties.length; i++) {
             const resType = runtime_getTypeStr(res);
-            if(resType != "list") throw new RuntimeError(`cannot index properties of a non-list item: got ${resType}`, "Property");
-            
+            switch(resType) {
+                case "str"  : if(value !== null) throw new RuntimeError(`Properties on immutable (<str>) item are read-only`, "Type");
+                case "list" : break;
+                default     : throw new RuntimeError(`Tried accessing indexed property of <${resType}> type item`, "Type");
+            }
+
             let id        = await this.properties[i].exec();
             const idType  = runtime_getTypeStr(id);
-            if(idType    != "int" ) throw new RuntimeError(`cannot index properties of a list item with a non-int index: got ${idType}`, "Property");
+            if(idType    != "int" ) throw new RuntimeError(`Indexed property key expected <int>, got <${idType}>`, "Type");
             if(id < 0) id = res.length + id;
+            
             if(res[id] === undefined) {
                 if(allowNew) {
                     switch(id) {
@@ -161,8 +167,9 @@ export class CallChain {
                         case res.length : return res.push(value);    // uncaught
                     }
                 }
-                throw new RuntimeError(`cannot ${allowNew ? "create" : "find"} item at position ${id} in list.`, "Property");
+                throw new RuntimeError(`Cannot ${allowNew ? "create" : "find"} property at position ${id}.`, "Property");
             }
+
             if(value !== null && i == this.properties.length - 1) return res[id] = value; //uncaught
             res = res[id];
         }

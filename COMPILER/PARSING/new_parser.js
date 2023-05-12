@@ -1,6 +1,6 @@
 import tokenize from "./tokenizer.js";
 
-import iota from "../../UTILS/general.js";
+import { iota } from "../../UTILS/general.js";
 const IGNORED_TOKEN_TYPES = {
     space   : iota(),
     EOL     : iota(),
@@ -8,8 +8,8 @@ const IGNORED_TOKEN_TYPES = {
 };
 
 const CONSTANT_REPLACE_MAP = {
-    TRUE  : 1,
-    FALSE : 0,
+    TRUE  : "1",
+    FALSE : "0",
     PI    : Math.PI,
     INF   : Infinity,
 };
@@ -53,11 +53,17 @@ export default class Parser {
             if(tokenType == "EOL") lineNumber += match.length;
             if(tokenType in IGNORED_TOKEN_TYPES) return justSpaced = tokenType != "comment"; // uncaught.
 
+            switch(tokenType) {
+                case "str" : match = match.slice(1, -1); break;
+                case "num" : match = this.onNumberToken(match);
+                             if(typeof match == "string") tokenType = "bin"; break;
+                case "bin" : match = match.replace("b", ""); break;
+            }
+
             tokens.push({
                 line  : lineNumber,
                 type  : this.correct_tokenType(tokenType, match),
-                value : tokenType == "num" ? this.onNumberToken(match) :
-                        tokenType == "str" ? match.slice(1, -1) : match,
+                value : match,
             });
 
             if(justSpaced) {
@@ -324,6 +330,7 @@ export default class Parser {
                 case "WORD"     :
                 case "instance" : token.value.push(this.CallChain()); break;
                 
+                case "bin" :
                 case "num" :
                 case "str" : token.value.push(this.Value()); break;
                 
@@ -351,10 +358,10 @@ export default class Parser {
 
         while(true) {
             const nextToken = this.peek_nextToken();
-            if(nextToken.isNewList) return token;
+            if(nextToken?.isNewList) return token;
 
-            if(nextToken.type == ".") this.get_nextToken_ifOfType(".");
-            else if(nextToken.type != "[") return token;
+            if(nextToken?.type == ".") this.get_nextToken_ifOfType(".");
+            else if(nextToken?.type != "[") return token;
             
             token.value.push(this.Property());
         }
@@ -377,10 +384,19 @@ export default class Parser {
         return token;
     }
 
-    Value() { // Value : NUM | STR
-        const token = {...this.grab_nextToken()};
-        if(!["num", "str"].includes(token.type)) this.throw(`Unexpected token of type ${token.type}, expected: NUM or STR`, token.line);
-        return token;
+    Value() { // Value : NUM | BIN | STR
+        const nextToken = {...this.grab_nextToken()};
+        switch(nextToken.type) {
+            case "bin" :
+                if(nextToken.value[0] == "-") {
+                    nextToken.neg = true;
+                    nextToken.value = nextToken.value.slice(1);
+                }
+                if(nextToken.value.match(/[2-9]/) !== null) this.throw(`Invalid digit in binary literal "${nextToken.value}"`, nextToken.line);
+
+            case "num" :
+            case "str" : return nextToken;
+        }
     }
 
     peek_nextToken() {

@@ -10,6 +10,7 @@
     --keyword-col: rgb(255, 220, 80);
     --str-col: rgb(48, 253, 249);
     --num-col: rgb(227, 93, 207);
+    --bin-col: var(--num-col);
     --stackOp-col: rgb(68, 255, 54);
     --type-col: var(--stackOp-col);
     --apply-col: rgb(0, 129, 121);

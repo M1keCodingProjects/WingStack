@@ -1,5 +1,5 @@
 import * as ArgClasses from "./arguments.js";
-import {Type, runtime_checkGot_asValidExpected, runtime_checkType} from "./type checker.js";
+import {Type, runtime_checkGot_asValidExpected, runtime_checkType, runtime_getTypeStr} from "./type checker.js";
 import {print, RuntimeError} from "./customErrors.js";
 
 class Proc {
@@ -28,7 +28,6 @@ export class PrintProc extends Proc {
 export class IfProc extends Proc {
     constructor(args) {
         super(args);
-        this.expectedType = new Type("num");
     }
 
     buildArgs(args) {
@@ -41,10 +40,14 @@ export class IfProc extends Proc {
     }
 
     async getConditionEval() {
-        const result     = await this.stackExpr.exec();
-        const resultType = runtime_checkType(result);
-        if(!runtime_checkGot_asValidExpected(this.expectedType, resultType)) throw new RuntimeError(`"If" procedure condition expected "num" evaluation but got "${resultType.toString()}"`);
-        return result;
+        const result  = await this.stackExpr.exec();
+        const resType = runtime_getTypeStr(result);
+        switch(resType) {
+            case "bin"   : return !result.isZero();
+            case "int"   : return result;
+            case "float" : return true;
+            default      : throw new RuntimeError(`"If" procedure expected condition to evaluate to <num>, got <${resType}>`, "Type");
+        }
     }
 
     async exec() {
@@ -73,7 +76,6 @@ export class IfProc extends Proc {
 export class LoopProc extends Proc {
     constructor(args) {
         super(args);
-        this.expectedType = new Type("int");
     }
 
     buildArgs(args) {
@@ -82,9 +84,9 @@ export class LoopProc extends Proc {
     }
 
     async exec() {
-        let result = await this.stackExpr.exec();
-        const resultType = runtime_checkType(result);
-        if(!runtime_checkGot_asValidExpected(this.expectedType, resultType)) throw new RuntimeError(`"Loop" procedure iteration expected "int" but got "${resultType}" instead.`);
+        let result    = await this.stackExpr.exec();
+        const resType = runtime_getTypeStr(result);
+        if(resType != "int") throw new RuntimeError(`"Loop" procedure iteration expected <int> evaluation, got <${resType}> instead`, "Type");
         
         result *= result >= 0;
         for(let i = 0; i < result; i++) {

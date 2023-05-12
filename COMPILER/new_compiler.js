@@ -17,7 +17,7 @@ class Variable {
 
     init(value, types) {
         if(types[0] == "inferred") {
-            this.type  = runtime_checkType(value);
+            this.type = runtime_checkType(value);
             if(this.type.canBe("void")) throw new RuntimeError("Cannot expect target of assignment to be of type <void>");
             return this.value = value; //uncaught
         }
@@ -60,7 +60,6 @@ class Compiler {
         this.vars = [
             this.runtimeElapsedVar,
         ];
-
         if(this.state == "deploy") print("\\clear");
     }
 
@@ -90,6 +89,7 @@ class Compiler {
     }
 
     build(text) {
+        if(this.state == "deploy") print("\\clear");
         const AST = this.parse(text);
         this.compile(AST);
         print("Build complete.");

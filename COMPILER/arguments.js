@@ -1,6 +1,8 @@
 import * as Proc                          from "./procedures.js";
 import * as StackOp                       from "./stack operators.js";
+import Binary                             from "./customTypes.js";
 import { GLC }                            from "./new_compiler.js";
+import { MATH_SYMBOLS }                   from "./stack operators.js";
 import { CompileTimeError, RuntimeError } from "./customErrors.js";
 import { Type, runtime_getTypeStr }       from "./type checker.js";
 
@@ -15,24 +17,6 @@ const EXPR_TYPES = {
     
     // OTHER STUFF
     "Assignment" : expr => new Assignment(expr),
-};
-
-export const MATH_SYMBOLS = {
-    "+"   : null,
-    "*"   : null,
-    "=="  : null,
-    "-"   : (el1, el2) => el1 - el2,
-    "/"   : (el1, el2) => el1 / el2,
-    "^"   : (el1, el2) => el1 ** el2,
-    "%"   : (el1, el2) => el1 % el2,
-    "and" : (el1, el2) => 1 * (Boolean(el1) && Boolean(el2)),
-    "or"  : (el1, el2) => 1 * (Boolean(el1) || Boolean(el2)),
-    ">"   : (el1, el2) => 1 * (el1 > el2),
-    ">="  : (el1, el2) => 1 * (el1 >= el2),
-    "<"   : (el1, el2) => 1 * (el1 < el2),
-    "<="  : (el1, el2) => 1 * (el1 <= el2),
-    ">>"  : (el1, el2) => 1 * (el1 >> el2),
-    "<<"  : (el1, el2) => 1 * (el1 << el2),
 };
 
 export class Block {
@@ -75,23 +59,16 @@ export class StackExpr {
                 case "CallChain": return new CallChain(stackElm.value, stackElm.depth, typeStack);
 
                 case "num":
-                case "str": return new StackValue(stackElm.value, typeStack);
+                case "bin":
+                case "str": return new StackValue(stackElm, typeStack);
             }
         });
     }
 
     getStackOp(symbol, typeStack) {
-        if(symbol in MATH_SYMBOLS) {
-            switch(symbol) {
-                case "+" : return new StackOp.Plus_stackOp(typeStack);
-                case "==": return new StackOp.Eqs_stackOp(typeStack);
-                case "*" : return new StackOp.Mult_stackOp(typeStack);
-                default  : return new StackOp.Math_stackOp(symbol, typeStack);
-            }
-        }
+        if(symbol in MATH_SYMBOLS) return MATH_SYMBOLS[symbol](typeStack);
 
         switch(symbol) {
-            case "not"    : return new StackOp.Not_stackOp(typeStack);
             case "dup"    : return new StackOp.Dup_stackOp(typeStack);
             case "size"   : return new StackOp.Size_stackOp(typeStack); 
             case "rot<"   : return new StackOp.RotL_stackOp(typeStack);
@@ -105,10 +82,12 @@ export class StackExpr {
             case "rand"   : return new StackOp.Rand_stackOp(typeStack);
             case "char"   : return new StackOp.Char_stackOp(typeStack);
             case "inp"    : return new StackOp.Inp_stackOp(typeStack);
+            case "?"      : return new StackOp.When_stackOp(typeStack);
 
             //type-casting
             case "num"  : return new StackOp.Num_stackOp(typeStack);
             case "int"  : return new StackOp.Int_stackOp(typeStack);
+            case "bin"  : return new StackOp.Bin_stackOp(typeStack);
             case "str"  : return new StackOp.Str_stackOp(typeStack);
             case "list" : return new StackOp.List_stackOp(typeStack);
             case "obj"  : return new StackOp.Obj_stackOp(typeStack);
@@ -125,12 +104,19 @@ export class StackExpr {
 }
 
 export class StackValue {
-    constructor(value, typeStack) {
-        this.value = value;
-        this.type = runtime_getTypeStr(value);
+    constructor(token, typeStack) {
+        if(token.type == "bin") {
+            this.value = Binary.fromToken(token);
+            this.exec  = this.execBin;
+        }
+        else this.value = token.value;
     }
 
     checkType(typeStack) {
+    }
+
+    execBin(stack) {
+        stack.push(this.value.copy());
     }
 
     exec(stack) {
@@ -146,34 +132,62 @@ export class CallChain {
         );
     }
 
-    async extract(res, value = null, allowNew = false) {
+    copyIfBin(value) {
+        return runtime_getTypeStr(value) == "bin" ? value.copy() : value;
+    }
+
+    isBoolean(value) {
+        return value.isBool?.() || value === 0 || value === 1;
+    }
+
+    async extract(res, value = null, isNewItem = false) {
+        const valueExists = value !== null;
         for(let i = 1; i < this.properties.length; i++) {
             const resType = runtime_getTypeStr(res);
+            let   resLen  = res.length;
             switch(resType) {
-                case "str"  : if(value !== null) throw new RuntimeError(`Properties on immutable (<str>) item are read-only`, "Type");
+                case "str"  : if(valueExists) throw new RuntimeError(`Tried assigning to property of immutable <str> item`, "Property"); break;
+                case "bin"  :
+                    if(!valueExists) break;
+                    if(!this.isBoolean(value)) throw new RuntimeError("<bin> items can only accept <0|1|b0|b1> as property values", "Type");
+                    resLen = res.value.length; break;
+                
+                default     : throw new RuntimeError(`Cannot access properties of <${resType}> items`, "Type");
                 case "list" : break;
-                default     : throw new RuntimeError(`Tried accessing indexed property of <${resType}> type item`, "Type");
             }
 
             let id        = await this.properties[i].exec();
             const idType  = runtime_getTypeStr(id);
             if(idType    != "int" ) throw new RuntimeError(`Indexed property key expected <int>, got <${idType}>`, "Type");
-            if(id < 0) id = res.length + id;
-            
-            if(res[id] === undefined) {
-                if(allowNew) {
-                    switch(id) {
-                        case -1         : return res.unshift(value); // uncaught
-                        case res.length : return res.push(value);    // uncaught
-                    }
+            if(id < 0) id += resLen;
+
+            if(valueExists && i == this.properties.length - 1) {
+                if(resType == "bin") value = Binary.toBool(value);
+                switch(id) {
+                    case -1 :
+                        if(!isNewItem) throw new RuntimeError("Cannot add new property \"-1\" outside of \"Make\" procedure", "Property");
+                        return resType == "bin" ? res.addBottomDigit(value) : res.unshift(value); // uncaught.
+                    
+                    case resLen :
+                        if(!isNewItem) throw new RuntimeError(`Cannot add new property "${id}" outside of \"Make\" procedure`, "Property");
+                        return resType == "bin" ? res.addTopDigit(value) : res.push(value); // uncaught.
+                    
+                    default :
+                        if(id < 0 || id > resLen) throw new RuntimeError(`Index "${id}" is out of bounds for an item with length "${resLen}"`, "Property");
+                        if(isNewItem) throw new RuntimeError(`Property "${id}" already exists on item`, "Property");
+                        return resType == "bin" ? res.assignDigit(id, value) : res[id] = value; // uncaught.
                 }
-                throw new RuntimeError(`Cannot ${allowNew ? "create" : "find"} property at position ${id}.`, "Property");
             }
 
-            if(value !== null && i == this.properties.length - 1) return res[id] = value; //uncaught
+            if(resType == "bin") {
+                if(valueExists) throw new RuntimeError("Assigning to a <bin> value digit's digit is pointless and not allowed", "Property");
+                res = res.getDigit(id);
+                continue;
+            }
             res = res[id];
+            if(res === undefined) throw new RuntimeError(`Cannot find property "${id}" on item`, "Property");
         }
-        return res;
+        return this.copyIfBin(res);
     }
 
     async exec(stack) {
@@ -181,7 +195,11 @@ export class CallChain {
                     GLC.getVar(this.properties[0]).get() :
                     await this.properties[0].exec(true);
         
-        stack.push(this.properties.length == 1 ? res : await this.extract(res));
+        stack.push(
+            this.properties.length == 1 ?
+            this.copyIfBin(res) :
+            await this.extract(res)
+        );
     }
 
     async execWrite(value, allowNew = false) {
@@ -198,8 +216,6 @@ export class Assignment {
         
         this.target    = new CallChain(assignmentExprToken.target.value, this.depth);
         this.stackExpr = new StackExpr(assignmentExprToken.value);
-
-        //if(this.inMake) this.target.inMake = true;
     }
 
     extractAssignmentToken(exprToken) {
@@ -210,7 +226,10 @@ export class Assignment {
             this.dynamic = exprToken.dynamic;
             this.depth   = assignmentExprToken.target.depth * !exprToken.global;
             this.exec    = this.execCreate;
-            this.buildTypeArg(assignmentExprToken.typeSignature);
+            if(assignmentExprToken.typeSignature) {
+                if(assignmentExprToken.target.value.length > 1) throw new CompileTimeError("Assignments that target properties of <bin|str|list> type items cannot be type-annotated");
+                this.buildTypeArg(assignmentExprToken.typeSignature);
+            }
         }
 
         return assignmentExprToken;
@@ -241,8 +260,6 @@ export class Assignment {
 
     async exec() {
         await this.target.execWrite(await this.stackExpr.exec());
-        //const target = GLC.getVar(this.target.properties[0]); // TODO: get writeable reference
-        //target.set(await this.stackExpr.exec());
     }
 
     async execCreate() {

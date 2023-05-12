@@ -1,13 +1,16 @@
 const createMatchPatterns = str => str.split("").map(ch => [new RegExp(`^\\${ch}`, "g"), ch]);
 
-export const NUMBER_MATCH_PATTERN = /^-?\d+(_\d{3})*(\.\d+)?/; ///^-?\d+(\.\d+)?/;
+export const NUM_MATCH_PATTERN = /^-?\d+(_\d{3})*(\.\d+)?/;
+export const BIN_MATCH_PATTERN = /^-?b\d+/;
+
 const TOKEN_MATCH_PATTERNS = [
     [/^ +/, "space"],
     [/^#.*/, "comment"],
     [/^\n+/, "EOL"],
-    [NUMBER_MATCH_PATTERN, "num"],
-    [/^(%|\+|\-|\^|\*|\/|\=\=|<<|>>|((<|>)\=?))/, "op"],
-    ...createMatchPatterns("()[]{}.,;:?=|"),
+    [NUM_MATCH_PATTERN, "num"],
+    [BIN_MATCH_PATTERN, "bin"],
+    [/^(\?|%|\+|\-|\^|\*|\/|\=\=|<<|>>|((<|>)\=?))/, "op"],
+    ...createMatchPatterns("()[]{}.,;:=|"),
     [/^\@/, "apply"],
     [/^((\"[^\"\n]*\"?)|(\'[^\'\n]*\'?))/, "str"],
     [/^-?[a-zA-Z_](\w|<|>)*/, "WORD"],
@@ -66,8 +69,10 @@ const HIGHLIGHT_KEYWORDS = {
     rand   : "stackOp",
 
     num    : "type",
+    dec    : "type",
     int    : "type",
     float  : "type",
+    bin    : "type",
     str    : "type",
     list   : "type",
     obj    : "type",

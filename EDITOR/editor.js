@@ -1,11 +1,12 @@
 import tokenize from "../COMPILER/PARSING/tokenizer.js";
 const GUIfileTab = document.getElementById("openFiles-container").children[0]; // One file at a time for now
 
-import iota from "../UTILS/general.js";
+import { iota } from "../UTILS/general.js";
 const HIGHLIGHT_COLORS = {
     "comment"    : iota(),
     "str"        : iota(),
     "num"        : iota(),
+    "bin"        : iota(),
     "keyword"    : iota(),
     "stackOp"    : iota(),
     "type"       : iota(),

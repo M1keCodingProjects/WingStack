@@ -1,13 +1,25 @@
-import iota from "../UTILS/general.js";
+import {iota} from "../UTILS/general.js";
+
+/*
+    all is :any|void
+    :any is :num|str|list|obj
+    :num is :dec|bin
+    :dec is :int|float
+    :list is :[all]
+    :obj is not implemented
+*/
+
 const PRIMITIVE_TYPES = {
     void  : iota(),
     int   : iota(),
     float : iota(),
+    bin   : iota(),
     str   : iota(),
     list  : iota(),
     obj   : iota(),
 };
 
+import Binary from "./customTypes.js";
 export class Type {
     constructor(...types) {
         this.asOptions = new Set();
@@ -18,7 +30,8 @@ export class Type {
         types.forEach(type => this.addType(type));
         this.asOptions = Array.from(this.asOptions);
 
-        if(!this.num && this.int && this.float) this.num = true;
+        if(!this.dec && this.int && this.float) this.dec = true;
+        if(!this.num && this.dec && this.bin) this.num = true;
         if(!this.any && this.num && this.str && this.list && this.obj) this.any = true;
     }
 
@@ -36,7 +49,9 @@ export class Type {
 
     canBe(type) {
         if(this.any) return type == "void" ? this.void == true : true;
-        if(this.num && (type == "int" || type == "float")) return true; 
+        if(type == "int" || type == "float" || type == "bin") {
+            if(this.num || (this.dec && type != "bin")) return true; 
+        }
         return this[type] !== undefined;
     }
 
@@ -81,7 +96,9 @@ export function runtime_getTypeStr(value) {
         case "undefined" : return "void";
         case "number"    : return Math.floor(value) === value ? "int" : "float";
         case "string"    : return "str";
-        case "object"    : return value instanceof Array ? "list" : "obj";
+        case "object"    : return value instanceof Array  ? "list" :
+                                  value instanceof Binary ? "bin"  :
+                                  "obj";
     }
 }
 
@@ -97,12 +114,3 @@ function runtime_buildCompleteTypeStr(value) {
 export function runtime_checkType(value) {
     return new Type(runtime_buildCompleteTypeStr(value));
 }
-
-/*
-const got      = new Type(["num"]);
-const expected = new Type(["str"], ["int"], "list");
-
-console.log("expected:", expected);
-console.log("got:", got);
-console.log(runtime_checkGot_asValidExpected(expected, got));
-*/

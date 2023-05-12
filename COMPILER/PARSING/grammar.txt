@@ -15,7 +15,7 @@ PrintProc  : "print" StackExpr
 
 StackExpr  : (StackValue | STACKOP | CallChain)+
 
-StackValue : NUM | STR
+StackValue : NUM | BIN | STR
 
 CallChain  : Property (("." Property) | IDProp)*
 

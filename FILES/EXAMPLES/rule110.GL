@@ -1,22 +1,23 @@
-make tape := "";
+make t = time;
+make const EOL := 10 char; # not a bottleneck, but inconvenient.
 make const C := "#";
-make const MAP := " " C C C " " C C " " str;
+make const MAP := 110 bin;
 make const ITERS := 100;
-loop ITERS {
-  tape = tape " " +;
-}
+make tape := " " ITERS *;
 
 make const BUFFER = "$<display:block; line-height:.5rem>";
 loop ITERS {
   make nextTape := C;
-  make const TAPE_SIZE := tape spill size;
   make i := 0;
-  loop TAPE_SIZE 1 - {
-    nextTape = nextTape MAP[tape[i 1 -] C == 4 * tape[i] C == 2 * tape[i 1 +] C == + +] +;
+  loop ITERS 1 - {  # potential bottleneck: "loop with i" would be faster.
+    if tape[i 1 -] C == tape[i] C == tape[i 1 +] C == bin int MAP swap >> b1 and
+    then nextTape = nextTape C   +; # potential bottleneck: conditional assignments coupled with "+=" would be
+    else nextTape = nextTape " " +; # faster and more convenient.
     i = i 1 +;
   }
   tape = nextTape;
-  BUFFER = BUFFER tape 10 char str;
+  BUFFER = BUFFER tape EOL str;
 }
 
 print BUFFER "<$>" +;
+print time t - int "Time elapsed " swap " ms." str; # averages at 250ms

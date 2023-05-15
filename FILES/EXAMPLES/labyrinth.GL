@@ -27,7 +27,7 @@ if TRUE loop {
     make x := 0;
     loop W {
       cellID = y W * x +;
-      cells  = maze[cellID][0] maze[cellID][3] 1 << b1100 or or; #bin
+      cells  = b11 maze[cellID][3] maze[cellID][0] bin;
       if x then cells[2] = maze[cellID W 1 + -][2];
       if y then cells[3] = maze[cellID W -][3];
 
@@ -35,12 +35,12 @@ if TRUE loop {
       bottomRender = V_SIDE_MAP[cells[1] int] bottomRender swap [" " "$<color:red>#<$>"][cellID current == int] str;
       
       if y H 1 - == {
-        bbRender = bbRender CORNER_MAP[b10 x not 2 << maze[cellID][3] 3 << or or int] H_SIDE_MAP[0] str;
+        bbRender = bbRender CORNER_MAP[maze[cellID][3] x not b10 bin int] H_SIDE_MAP[0] str;
       }
     
       x = x 1 +;
     }
-    topRender = topRender CORNER_MAP[b1 cells[0] 2 << y not 3 << or or int] str;
+    topRender = topRender CORNER_MAP[y not cells[0] 0 1 bin int] str;
     bottomRender = bottomRender "║" +;
     mazeRender = mazeRender topRender EOL bottomRender EOL str;
     y = y 1 +;

@@ -30,6 +30,20 @@ export default class Binary { // :bin
         };
         return Binary.fromToken(token);
     }
+
+    static fromMany(values) {
+        const res = new Binary(
+            values.reduceRight((acc, item) => {
+                item instanceof Binary ?
+                acc.push(...item.value) :
+                acc.push(item != 0);
+                return acc;
+            }, []),
+            values[0].neg || values[0] < 0
+        );
+        res.minimize();
+        return res;
+    }
     
     static toDigitList(value) {
         const lastOne = value.search("1");
@@ -83,6 +97,7 @@ export default class Binary { // :bin
 
     and(that, thatType) {
         if(!thatType.canBe("bin")) return Binary.fromBool(that !== 0);
+        this.neg   = this.neg && that.neg;
         this.value = this.value.map((digit, i) => digit && (that.value[i] || false));
         this.minimize();
         return this;
@@ -90,6 +105,7 @@ export default class Binary { // :bin
 
     or(that, thatType) {
         if(!thatType.canBe("bin")) return Binary.fromBool(that !== 0 || !this.isBool() || this.value[0]);
+        this.neg   = this.neg || that.neg;
         this.value = this.value.length >= that.value.length ?
                      this.value.map((digit, i) => digit || (that.value[i] || false)) :
                      that.value.map((digit, i) => digit || (this.value[i] || false));
@@ -105,7 +121,7 @@ export default class Binary { // :bin
     }
 
     shiftL(amt) {
-        this.value.unshift(...Array(amt).fill(false));
+        if(!this.isZero()) this.value.unshift(...Array(amt).fill(false));
         return this;
     }
 

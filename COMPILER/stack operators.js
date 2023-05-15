@@ -13,6 +13,12 @@ import { requestInput, RuntimeError } from "./customErrors.js";
 import { Type, runtime_checkGot_asValidExpected, runtime_checkType, runtime_getTypeStr } from "./type checker.js";
 import { NUM_MATCH_PATTERN, BIN_MATCH_PATTERN } from "./PARSING/tokenizer.js";
 
+class UnexpectedInputType_RuntimeError extends RuntimeError {
+  constructor(stackOperator, argID, expectedType, gotType, ID) {
+    super(`${stackOperator} expected ${argID}° argument to be of type <${expectedType}>, but got <${gotType}> instead`, "Type", ID);
+  }
+}
+
 export class StackOp {
   constructor(typeStack) {
     //this.checkType(typeStack); Temporarily paused development on compile-time typechecking
@@ -37,8 +43,8 @@ export class StackOp {
   getValidatedItemType(item, inputID, ...validTypes) {
     const got = runtime_checkType(item);
     const expected = new Type(...validTypes);
-    if(!runtime_checkGot_asValidExpected(expected, got)) throw new RuntimeError(`${this.constructor.name} expected ${inputID + 1}° input value to be of type "${expected.toString()}" but got "${got.toString()}" instead`, "Type");
-    return got;
+    if(runtime_checkGot_asValidExpected(expected, got)) return got;
+    throw new UnexpectedInputType_RuntimeError(this.constructor.name, inputID + 1, expected.toString(), got.toString());
   }
 }
 
@@ -672,11 +678,13 @@ export class Str_stackOp extends StackOp {
     let res = "";
     const initialLength = stack.length;
     for(let i = 0; i < initialLength; i++) {
-      const [item, type] = this.getValidatedItemAndType_fromStackTop(stack, i, false, "num", "str");
-      res = (type == "bin" ? item.toStr() : item) + res;
+      const type = runtime_getTypeStr(stack[i]);
+      if(type == "list" || type == "obj") throw new UnexpectedInputType_RuntimeError(this.constructor.name, i, "num|str", type);
+      res += type == "bin" ? stack[i].toStr() : stack[i];
     }
     
     stack[0] = res;
+    stack.length = 1;
   }
 }
 
@@ -741,9 +749,21 @@ export class Bin_stackOp extends Num_stackOp {
     throw new RuntimeError(`<str> doesn't meet syntax requirements for <${this.type}> casting`, "Value");
   }
 
+  isValidBinSegment(value, type = null) {
+    return value === 0 || value === 1 || value === -1 || (type ? type.canBe("bin") : runtime_getTypeStr(value) == "bin");
+  }
+
   exec(stack) {
     if(!stack.length) return stack.push(Binary.fromBool(0)); // uncaught.
-    let [item, type] = this.getValidatedItemAndType_fromStackTop(stack, 0, false, "num", "str");
+    let [item, type] = this.getValidatedItemAndType_fromStackTop(stack, 0, true, "num", "str");
+
+    if(this.isValidBinSegment(item, type)) {
+      if(!stack.find(value => !this.isValidBinSegment(value))) {
+        stack[0] = Binary.fromMany(stack);
+        return stack.length = 1; // uncaught.
+      }
+    }
+    stack.pop();
 
     switch(type.asOptions[0]) {
       case "int"   :

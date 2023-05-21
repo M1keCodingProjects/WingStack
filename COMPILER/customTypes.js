@@ -1,29 +1,33 @@
 export default class Binary { // :bin
-    constructor(value, isNeg = false) {
+    constructor(value, isNeg = false) { // ok
         this.neg   = isNeg;
         this.value = value;
     }
     
-    copy() {
-        return new Binary([...this.value], this.neg);
+    copy() { // ok
+        return new Binary(new Uint8Array(this.value), this.neg);
     }
     
-    static fromToken(token) {
+    static get emptyValue() { // ok
+        return new Uint8Array(1);
+    }
+
+    static fromToken(token) { // ok
         const isNeg = token.neg ?? false;
         const value = token.value;
         return new Binary(this.toDigitList(value), isNeg);
     }
 
-    static fromBool(value) {
-        return new Binary([!!value]);
+    static fromBool(value) { // ok
+        return new Binary(new Uint8Array(1).fill(!!value));
     }
 
-    static fromNum(value) {
+    static fromNum(value) { // ok
         const binVal = value.toString(2);
         return new Binary(this.toDigitList(binVal), value < 0);
     }
 
-    static fromStr(value) {
+    static fromStr(value) { // ok
         const token = {
             neg   : value[0] == "-",
             value : value.replace(/^\-?b/, ""),
@@ -31,114 +35,126 @@ export default class Binary { // :bin
         return Binary.fromToken(token);
     }
 
-    static fromMany(values) {
-        const res = new Binary(
-            values.reduceRight((acc, item) => {
-                item instanceof Binary ?
-                acc.push(...item.value) :
-                acc.push(item != 0);
-                return acc;
-            }, []),
-            values[0].neg || values[0] < 0
-        );
-        res.minimize();
-        return res;
+    static fromMany(values) { // ok
+        let i = -1;
+        const resValue    = [];
+        let foundFirstOne = false;
+        while (i < values.length - 1) {
+            i++;
+            const digit = values[i];
+            if(!foundFirstOne) foundFirstOne = Binary.toBool(digit);
+            if(!foundFirstOne) continue;
+            if(digit instanceof Binary) resValue.unshift(...digit.value);
+            else resValue.unshift(digit);
+        }
+        return new Binary(new Uint8Array(resValue), values[0].neg || values[0] < 0);
     }
     
-    static toDigitList(value) {
-        const lastOne = value.search("1");
-        return lastOne >= 0 ? value.slice(lastOne).split("").reverse().map(e => e == 1) : [false];
+    static toDigitList(value) { // ok
+        value = value.slice(value.search("1"));
+        if(value === "") return Binary.emptyValue;
+        const digitArray = new Uint8Array(value.length);
+        for(let i = 0; i < value.length; i++) digitArray[i] = value[value.length - i - 1] == 1;
+        return digitArray;
     }
 
-    static toBool(value) {
-        return value.value?.[0] || value == 1;
+    static toBool(value) { // ok
+        return value instanceof Binary ? !value.isZero() : value != 0;
     }
 
-    static isValidDigit(value) {
+    static isValidDigit(value) { // ok
         return value.isBool?.() || value === 1 || value === 0;
     }
 
-    toBase10(value) {
-        return value.reduce((acc, digit, i) => acc + digit * 2 ** i, 0);
+    toBase10(value) { // ok
+        return value.reduce((acc, digit) => acc << 1 | digit, 0);
     }
 
-    toNum() {
+    toNum() { // ok
         return this.toBase10(this.value) * (1 - 2 * this.neg);
     }
 
-    toStr() {
-        return `${"-".repeat(this.neg)}b${this.value.slice().reverse().reduce((acc, digit) => acc + 1 * digit, "")}`;
+    toStr() { // ok
+        const strValue = `b${this.value.toReversed().join("")}`;
+        return this.neg ? "-" + strValue : strValue;
     }
 
-    isBool() {
+    isBool() { // ok
         return this.value.length == 1 && !this.neg;
     }
 
-    isZero() {
+    isZero() { // ok
         return this.isBool() && !this.value[0];
     }
 
-    isOne() {
+    isOne() { // ok
         return this.isBool() && this.value[0];
     }
 
-    minimize() {
+    minimize() { // ok
         for(let i = this.value.length - 1; i >= 0; i--) {
-            if(this.value[i]) return this.value.splice(i + 1); // uncaught.
+            if(this.value[i]) return this.value = this.value.subarray(0, i + 1); // uncaught
         }
-        this.value = [false];
+        this.value = Binary.emptyValue;
     }
 
-    not() {
-       this.value = this.value.map(digit => !digit);
-       this.minimize();
-       return this;
+    not() { // ok
+        for(let i = 0; i < this.value.length; i++) this.value[i] = !this.value[i];
+        this.minimize();
+        return this;
     }
 
-    and(that, thatType) {
+    and(that, thatType) { // ok
         if(!thatType.canBe("bin")) return Binary.fromBool(that !== 0);
-        this.neg   = this.neg && that.neg;
-        this.value = this.value.map((digit, i) => digit && (that.value[i] || false));
+        this.neg = this.neg && that.neg;
+        if(that.value.length < this.value.length)  this.value = this.value.subarray(0, that.value.length);
+        for(let i = 0; i < this.value.length; i++) this.value[i] &= that.value[i];
         this.minimize();
         return this;
     }
 
-    or(that, thatType) {
+    or(that, thatType) { // ok
         if(!thatType.canBe("bin")) return Binary.fromBool(that !== 0 || !this.isBool() || this.value[0]);
-        this.neg   = this.neg || that.neg;
-        this.value = this.value.length >= that.value.length ?
-                     this.value.map((digit, i) => digit || (that.value[i] || false)) :
-                     that.value.map((digit, i) => digit || (this.value[i] || false));
-        
-        this.minimize();
+        this.neg = this.neg || that.neg;
+        const resValue = new Uint8Array(Math.max(this.value.length, that.value.length));
+        for(let i = 0; i < resValue.length; i++) resValue[i] = this.value[i] | that.value[i];
+        this.value = resValue;
         return this;
     }
 
-    shiftR(amt) {
-        if(amt >= this.value.length) this.value = [false];
-        else this.value.splice(0, amt);
+    shiftR(amt) { // ok
+        this.value = amt < this.value.length ? this.value.subarray(amt) : Binary.emptyValue;
         return this;
     }
 
-    shiftL(amt) {
-        if(!this.isZero()) this.value.unshift(...Array(amt).fill(false));
+    shiftL(amt) { // ok
+        if(!this.isZero()) {
+            const resValue = new Uint8Array(this.value.length + amt);
+            resValue.set(this.value, amt);
+            this.value = resValue;
+        }
         return this;
     }
 
-    getDigit(pos) {
+    getDigit(pos) { // ok
         return Binary.fromBool(this.value[pos]);
     }
 
-    assignDigit(pos, value) {
-        if(!value && pos == this.value.length - 1) this.value.pop();
-        else this.value[pos] = value;
+    assignDigit(pos, value) { // ok
+        this.value[pos] = value;
+        this.minimize();
     }
 
-    addTopDigit(value) {
-        if(value) this.value.push(value);
+    addTopDigit(value) { // ok
+        if(!value) return;
+        const resValue = new Uint8Array(this.value.length + 1);
+        resValue.set(this.value);
+        resValue[this.value.length] = value;
+        this.value = resValue;
     }
 
-    addBottomDigit(value) {
-        this.value.unshift(value);
+    addBottomDigit(value) { // ok
+        this.shiftL(1);
+        this.value[0] = value;
     }
 }

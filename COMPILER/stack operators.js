@@ -585,7 +585,7 @@ export class Spill_stackOp extends StackOp {
     const [item, type] = this.getValidatedItemAndType_fromStackTop(stack, 0, false, "str", "list", "obj");
     switch(type.asOptions[0]) {
       case "str"  : stack.push(...item.split("")); return;
-      case "list" : stack.push(...item); return;
+      case "list" : stack.push(...item.map(listItem => runtime_getTypeStr(listItem) == "bin" ? listItem.copy() : listItem)); return;
       case "obj"  : stack.push(...item.listEnumerable()); return; //NOT READY
     }
   }
@@ -637,7 +637,6 @@ export class Num_stackOp extends StackOp {
     stack.push(item);
   }
 }
-
 export class Int_stackOp extends Num_stackOp {
   constructor(typeStack) {
     super(typeStack);
@@ -659,7 +658,6 @@ export class Int_stackOp extends Num_stackOp {
     stack.push(item);
   }
 }
-
 export class Str_stackOp extends StackOp {
   constructor(typeStack) {
     super(typeStack);
@@ -687,7 +685,6 @@ export class Str_stackOp extends StackOp {
     stack.length = 1;
   }
 }
-
 export class Char_stackOp extends StackOp {
   constructor(typeStack) {
     super(typeStack);
@@ -702,7 +699,6 @@ export class Char_stackOp extends StackOp {
     stack.push(String.fromCharCode(item));
   }
 }
-
 export class List_stackOp extends StackOp {
   constructor(typeStack) {
     super(typeStack);
@@ -717,7 +713,6 @@ export class List_stackOp extends StackOp {
     stack.length = 1;
   }
 }
-
 export class Obj_stackOp extends StackOp {
   constructor(typeStack) {
     super(typeStack);
@@ -733,7 +728,6 @@ export class Obj_stackOp extends StackOp {
     stack.push({...item}); // NOT READY!!
   }
 }
-
 export class Bin_stackOp extends Num_stackOp {
   constructor(typeStack) {
     super(typeStack);
@@ -755,7 +749,7 @@ export class Bin_stackOp extends Num_stackOp {
 
   exec(stack) {
     if(!stack.length) return stack.push(Binary.fromBool(0)); // uncaught.
-    let [item, type] = this.getValidatedItemAndType_fromStackTop(stack, 0, true, "num", "str");
+    let [item, type] = this.getValidatedItemAndType_fromStackTop(stack, 0, true, "int", "bin", "str");
 
     if(this.isValidBinSegment(item, type)) {
       if(!stack.find(value => !this.isValidBinSegment(value))) {
@@ -766,8 +760,7 @@ export class Bin_stackOp extends Num_stackOp {
     stack.pop();
 
     switch(type.asOptions[0]) {
-      case "int"   :
-      case "float" : item = Binary.fromNum(item); break;
+      case "int"   : item = Binary.fromNum(item); break;
       case "str"   : item = this.castStr(item);   break;
     }
     stack.push(item);

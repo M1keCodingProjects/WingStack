@@ -14,6 +14,7 @@ const EXPR_TYPES = {
     "NextProc"  : expr => null,
     "ExitProc"  : expr => new Proc.ExitProc(expr),
     "MakeProc"  : expr => new Proc.MakeProc(expr),
+    "FreeProc"  : expr => new Proc.FreeProc(expr),
     
     // OTHER STUFF
     "Assignment" : expr => new Assignment(expr),
@@ -148,9 +149,10 @@ export class CallChain {
             switch(resType) {
                 case "str"  : if(valueExists) throw new RuntimeError(`Tried assigning to property of immutable <str> item`, "Property"); break;
                 case "bin"  :
+                    resLen = res.value.length;
                     if(!valueExists) break;
                     if(!this.isBoolean(value)) throw new RuntimeError("<bin> items can only accept <0|1|b0|b1> as property values", "Type");
-                    resLen = res.value.length; break;
+                    break;
                 
                 default     : throw new RuntimeError(`Cannot access properties of <${resType}> items`, "Type");
                 case "list" : break;
@@ -161,26 +163,34 @@ export class CallChain {
             if(idType    != "int" ) throw new RuntimeError(`Indexed property key expected <int>, got <${idType}>`, "Type");
             if(id < 0) id += resLen;
 
-            if(valueExists && i == this.properties.length - 1) {
-                if(resType == "bin") value = Binary.toBool(value);
-                switch(id) {
-                    case -1 :
-                        if(!isNewItem) throw new RuntimeError("Cannot add new property \"-1\" outside of \"Make\" procedure", "Property");
-                        return resType == "bin" ? res.addBottomDigit(value) : res.unshift(value); // uncaught.
-                    
-                    case resLen :
-                        if(!isNewItem) throw new RuntimeError(`Cannot add new property "${id}" outside of \"Make\" procedure`, "Property");
-                        return resType == "bin" ? res.addTopDigit(value) : res.push(value); // uncaught.
-                    
-                    default :
-                        if(id < 0 || id > resLen) throw new RuntimeError(`Index "${id}" is out of bounds for an item with length "${resLen}"`, "Property");
-                        if(isNewItem) throw new RuntimeError(`Property "${id}" already exists on item`, "Property");
-                        return resType == "bin" ? res.assignDigit(id, value) : res[id] = value; // uncaught.
+            if(i == this.properties.length - 1) {
+                if(valueExists) {
+                    if(resType == "bin") value = Binary.toBool(value);
+                    switch(id) {
+                        case -1 :
+                            if(!isNewItem) throw new RuntimeError("Cannot add new property \"-1\" outside of \"Make\" procedure", "Property");
+                            return resType == "bin" ? res.addBottomDigit(value) : res.unshift(value); // uncaught.
+                        
+                        case resLen :
+                            if(!isNewItem) throw new RuntimeError(`Cannot add new property "${id}" outside of \"Make\" procedure`, "Property");
+                            return resType == "bin" ? res.addTopDigit(value) : res.push(value); // uncaught.
+                        
+                        default :
+                            if(id < 0 || id > resLen) throw new RuntimeError(`Index "${id}" is out of bounds for an item with length "${resLen}"`, "Property");
+                            if(isNewItem) throw new RuntimeError(`Property "${id}" already exists on item`, "Property");
+                            return resType == "bin" ? res.assignDigit(id, value) : res[id] = value; // uncaught.
+                    }
+                }
+
+                if(isNewItem == "delete") {
+                    if(id < 0 || id >= resLen) throw new RuntimeError(`Cannot find property "${id}" on item`, "Property");
+                    return resType == "bin" ? res.deleteDigit(id) : res.splice(id, 1);
                 }
             }
 
             if(resType == "bin") {
                 if(valueExists) throw new RuntimeError("Assigning to a <bin> value digit's digit is pointless and not allowed", "Property");
+                if(isNewItem == "delete") throw new RuntimeError("Deleting a <bin> value digit's digit is pointless and not allowed", "Property");
                 res = res.getDigit(id);
                 continue;
             }
@@ -204,8 +214,16 @@ export class CallChain {
 
     async execWrite(value, allowNew = false) {
         const res = GLC.getVar(this.properties[0]);
-        if(this.properties.length == 1) return res.set(value);
+        if(this.properties.length == 1) return res.set(value); // uncaught.
         await this.extract(res.get(), value, allowNew);
+    }
+
+    async free() {
+        //if(this.properties.length != 1) throw new RuntimeError("Cannot free property yet", "Demo");
+        const deleteVar = this.properties.length == 1;
+        const res = GLC.getVar(this.properties[0], deleteVar).get();
+        if(deleteVar) return;
+        await this.extract(res, null, "delete");
     }
 }
 

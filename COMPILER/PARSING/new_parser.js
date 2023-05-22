@@ -139,6 +139,7 @@ export default class Parser {
             case "next"  : return this.NextProc();
             case "exit"  : return this.ExitProc();
             case "make"  : return this.MakeProc();
+            case "free"  : return this.FreeProc();
             default      : this.throw(`Procedure "${keyword.value}" is not implemented yet`);
         }
     }
@@ -273,10 +274,17 @@ export default class Parser {
         return token;
     }
 
+    FreeProc() { // FreeProc : "free" CallChain
+        return {
+            type  : "FreeProc",
+            value : this.CallChain("when deleting a variable").value,
+        };
+    }
+
     Assignment(inMakeProc = false) { // Assignment : CallChain (":" Type)? "=" StackExpr
         const token = {
             type   : "Assignment",
-            target : this.CallChain(true),
+            target : this.CallChain("as target of assignment"),
         };
 
         if(this.peek_nextToken()?.type == ":") {
@@ -348,12 +356,12 @@ export default class Parser {
         }
     }
 
-    CallChain(asTarget = false) { // CallChain : Property (("." Property) | IDProp)*
+    CallChain(noListBuild = false) { // CallChain : Property (("." Property) | IDProp)*
         this.eatOptionalSpace();
         const token = {
             type  : "CallChain",
             depth : this.currentDepth,
-            value : [this.Property(asTarget)],
+            value : [this.Property(noListBuild)],
         };
 
         while(true) {
@@ -367,10 +375,10 @@ export default class Parser {
         }
     }
 
-    Property(asTarget = false) { // Property : IDProp | WORD
+    Property(noListBuild = false) { // Property : IDProp | WORD
         const nextToken = this.peek_nextToken();
         if(nextToken?.type != "[") return this.get_nextToken_ifOfType(nextToken?.type == "instance" ? "instance" : "WORD");
-        if(asTarget) this.throw("Cannot build list as target of assignment", nextToken?.line);
+        if(noListBuild) this.throw(`Cannot build list ${noListBuild}`, nextToken?.line);
         return this.IDProp();
     }
 

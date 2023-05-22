@@ -157,4 +157,12 @@ export default class Binary { // :bin
         this.shiftL(1);
         this.value[0] = value;
     }
+
+    deleteDigit(pos) { // ok
+        const resValue = new Uint8Array(this.value.length - 1);
+        resValue.set(this.value.subarray(0, pos));
+        resValue.set(this.value.subarray(pos + 1), pos);
+        this.value = resValue;
+        this.minimize();
+    }
 }

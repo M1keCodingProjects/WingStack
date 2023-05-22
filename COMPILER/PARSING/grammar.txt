@@ -9,7 +9,7 @@ Program    : Expression*
 
 Expression : (Procedure | Assignment) ";"?
 
-Procedure  : PrintProc | IfProc | LoopProc | NextProc | ExitProc | MakeProc
+Procedure  : PrintProc | IfProc | LoopProc | NextProc | ExitProc | MakeProc | FreeProc
 
 PrintProc  : "print" StackExpr
 
@@ -42,3 +42,5 @@ Assignment : CallChain (":" Type)? "=" StackExpr
 Type       : SingleType ("|" SingleType)*
 
 SingleType : (TYPE | WORD) | "[" Type "]"
+
+FreeProc   : "free" CallChain

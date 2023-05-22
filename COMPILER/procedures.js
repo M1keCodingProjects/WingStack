@@ -129,21 +129,20 @@ export class MakeProc extends Proc {
     }
 }
 
-/*
 export class FreeProc extends Proc {
-    constructor(compilerRef, line) {
-        super(compilerRef, line);
+    constructor(args) {
+        super(args);
     }
 
-    getArguments(line) {
-        this.target = new ArgClasses.StackCallArg(this.ID, this.compiler, line.value);
+    buildArgs(args) {
+        this.target = new ArgClasses.CallChain(args.value, args.depth);
     }
 
-    execute() {
-        this.compiler.removeVar(this.target);
+    async exec() {
+        await this.target.free();
     }
 }
-
+/*
 export class ReplaceProc extends Proc {
     constructor(compilerRef, line) {
         super(compilerRef, line);

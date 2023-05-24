@@ -119,21 +119,21 @@ export default class Parser {
         return token;
     }
 
-    Expression(needsTerminator = true) { // Expression : (Procedure | Assignment) ";"?
+    Expression() { // Expression : (Procedure | Assignment) ";"?
         this.beginExpr_lineID = this.peek_nextToken()?.line;
         const token = this.peek_nextToken()?.type == "keyword" ?
-                      this.Procedure(needsTerminator) :
+                      this.Procedure() :
                       this.Assignment();
         
         if(this.peek_nextToken()?.type == ";") this.get_nextToken_ifOfType(";");
         return token;
     }
 
-    Procedure(needsTerminator) { // Procedure : PrintProc | IfProc | LoopProc
+    Procedure() { // Procedure : PrintProc | IfProc | LoopProc
         const keyword = this.get_nextToken_ifOfType("keyword");
 
         switch(keyword.value) {
-            case "print" : return this.PrintProc(needsTerminator);
+            case "print" : return this.PrintProc();
             case "if"    : return this.IfProc();
             case "loop"  : return this.LoopProc();
             case "next"  : return this.NextProc();
@@ -144,10 +144,10 @@ export default class Parser {
         }
     }
 
-    PrintProc(needsTerminator) { // PrintProc : "print" StackExpr
+    PrintProc() { // PrintProc : "print" StackExpr
         return {
             type  : "PrintProc",
-            value : this.StackExpr(needsTerminator).value,
+            value : this.StackExpr().value,
         };
     }
 
@@ -200,7 +200,7 @@ export default class Parser {
 
     NextProc() { // NextProc : "next"
         const nextTokenType = this.peek_nextToken()?.type;
-        if(nextTokenType && nextTokenType != "}") this.get_nextToken_ifOfType(";", false);
+        //if(nextTokenType && nextTokenType != "}") this.get_nextToken_ifOfType(";", false);
         
         if(!this.defloopStack.length) this.throw('Cannot use "Next" procedure outside of a looping block');
         if(this.defloopStack[this.defloopStack.length - 1].type == "DefProc") this.throw("Next procedure cannot bypass the scope of a function");
@@ -211,7 +211,7 @@ export default class Parser {
     }
 
     ExitProc() { // ExitProc : "exit" StackExpr?
-        const tokenValue = this.StackExpr(true, true).value; // can be empty
+        const tokenValue = this.StackExpr(true).value; // can be empty
         
         if(!this.defloopStack.length) this.throw('Cannot use "Exit" procedure outside of a looping or function block');
         const targetProc = this.defloopStack[this.defloopStack.length - 1];
@@ -294,7 +294,7 @@ export default class Parser {
         }
 
         this.get_nextToken_ifOfType("=");
-        token.value = this.StackExpr(true).value;
+        token.value = this.StackExpr().value;
         return token;
     }
     
@@ -325,7 +325,7 @@ export default class Parser {
         if(nextTokenType == "WORD" || nextTokenType == "type") return this.get_nextToken_ifOfType(nextTokenType);
     }
 
-    StackExpr(atLineEnd = false, allowEmpty = false) { // StackExpr : (StackValue | STACKOP | CallChain)+
+    StackExpr(allowEmpty = false) { // StackExpr : (StackValue | STACKOP | CallChain)+
         const token = {
             type    : "StackExpr",
             value   : [],
@@ -346,7 +346,9 @@ export default class Parser {
                                  nextToken.type = "stackOp";
                 case "stackOp" : token.value.push(this.get_nextToken_ifOfType("stackOp")); break;
 
-                default        : if(atLineEnd) this.throw(`Unexpected token "${nextToken.value}" of type "${nextToken.type}" in Stack Expression, expected LiteralValue, CallChain or StackOperator`, nextToken.line);
+                case "="       : this.throw('Unexpected token "=" in Stack Expression, make sure to end the previous expression with a ";"', nextToken.line);
+                
+                default        :
                 case "}"       :
                 case ";"       :
                 case undefined :
@@ -386,7 +388,7 @@ export default class Parser {
         this.get_nextToken_ifOfType("[");
         const token = {
             type  : "IndexedProperty",
-            value : this.StackExpr(false, true).value,
+            value : this.StackExpr(true).value,
         };
         this.get_nextToken_ifOfType("]");
         return token;

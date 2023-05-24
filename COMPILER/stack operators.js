@@ -57,6 +57,7 @@ export const MATH_SYMBOLS = {
     "%"   : (typeStack) => new Mod_stackOp(typeStack),
 
     "=="  : (typeStack) => new Eqs_stackOp(typeStack),
+    "!="  : (typeStack) => new Neq_stackOp(typeStack),
     "<"   : (typeStack) => new Lst_stackOp(typeStack),
     ">"   : (typeStack) => new Grt_stackOp(typeStack),
     "<="  : (typeStack) => new LstEq_stackOp(typeStack),
@@ -249,6 +250,25 @@ export class Eqs_stackOp extends StackOp {
         const el2 = stack.pop();
         const el1 = stack.pop();
         const res = Binary.fromBool(el1 === el2);
+        stack.push(res);
+    }
+}
+export class Neq_stackOp extends StackOp {
+    constructor(typeStack) {
+        super(typeStack);
+    }
+
+    checkType(typeStack) { // *any *any -> bin
+        const el2 = this.requestItem(typeStack, true, "any");
+        const el1 = this.requestItem(typeStack, true, "any");
+        typeStack.addOption("num");
+    }
+
+    exec(stack) {
+        this.checkStackMinLength(stack, 2);
+        const el2 = stack.pop();
+        const el1 = stack.pop();
+        const res = Binary.fromBool(el1 !== el2);
         stack.push(res);
     }
 }

@@ -37,7 +37,7 @@ ExitProc   : "exit" StackExpr?
 
 MakeProc   : "make" ("const" | "dynamic" | "global" | "type")<?> Assignment
 
-Assignment : CallChain (":" Type)? "=" StackExpr
+Assignment : CallChain (":" Type)? ((ASSIGN_OP StackExpr) | INCR_OP)
 
 Type       : SingleType ("|" SingleType)*
 

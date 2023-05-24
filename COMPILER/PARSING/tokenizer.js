@@ -9,8 +9,11 @@ const TOKEN_MATCH_PATTERNS = [
     [/^\n+/, "EOL"],
     [NUM_MATCH_PATTERN, "num"],
     [BIN_MATCH_PATTERN, "bin"],
-    [/^(\?|%|\+|\-|\^|\*|\/|\=\=|<<|>>|((<|>)\=?))/, "op"],
-    ...createMatchPatterns("()[]{}.,;:=|"),
+    [/^\=\=/, "op"], // due to priority rules, this has to go here
+    [/^(\+|\-|\*|\/|&|\|)?\=/, "assignOp"],
+    [/^(\+\+|\-\-|!!)/, "incdecOp"],
+    [/^(\?|%|\+|\-|\^|\*|\/|<<|>>|((<|>|!)\=?))/, "op"],
+    ...createMatchPatterns("()[]{}.,;:|"),
     [/^\@/, "apply"],
     [/^((\"[^\"\n]*\"?)|(\'[^\'\n]*\'?))/, "str"],
     [/^-?[a-zA-Z_](\w|<|>)*/, "WORD"],

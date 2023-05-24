@@ -31,19 +31,20 @@ if TRUE loop {
       if x then cells[2] = maze[cellID W 1 + -][2];
       if y then cells[3] = maze[cellID W -][3];
 
-      topRender = topRender CORNER_MAP[cells int] H_SIDE_MAP[cells[0] int] str;
-      bottomRender = V_SIDE_MAP[cells[1] int] bottomRender swap [" " "$<color:red>#<$>"][cellID current == int] str;
+      topRender    += CORNER_MAP[cells int] H_SIDE_MAP[cells[0] int] str;
+      bottomRender += V_SIDE_MAP[cells[1] int] [" " "$<color:red>#<$>"][cellID current == int] str;
       
       if y H 1 - == {
-        bbRender = bbRender CORNER_MAP[maze[cellID][3] x not b10 bin int] H_SIDE_MAP[0] str;
+        bbRender += CORNER_MAP[maze[cellID][3] x not b10 bin int] H_SIDE_MAP[0] str;
       }
     
-      x = x 1 +;
+      x++;
     }
-    topRender = topRender CORNER_MAP[y not cells[0] 0 1 bin int] str;
-    bottomRender = bottomRender "║" +;
-    mazeRender = mazeRender topRender EOL bottomRender EOL str;
-    y = y 1 +;
+    
+    topRender    += CORNER_MAP[y not cells[0] 0 1 bin int] str;
+    bottomRender += "║";
+    mazeRender   += topRender EOL bottomRender EOL str;
+    y++;
   }
   print "\clear";
   print mazeRender bbRender "╝<$>" str;
@@ -73,13 +74,13 @@ if TRUE loop {
   
   if moveID "exit" == then exit;
   make move := MOVES[moveID];
-  maze[current] = maze[current] b1 moveID << or;
+  maze[current] |= b1 moveID <<;
   
-  current = current move[0] +;
-  currentX = currentX moveIsVert not int +;
-  currentY = currentY moveIsVert     int +;
+  current  += move[0];
+  currentX += moveIsVert not int;
+  currentY += moveIsVert     int;
   
-  maze[current] = maze[current] b1 move[1] << or;
+  maze[current] |= b1 move[1] <<;
 }
 
 print "Thanks for playing!";

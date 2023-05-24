@@ -67,7 +67,7 @@ export default class Binary { // :bin
     }
 
     toBase10(value) { // ok
-        return value.reduce((acc, digit) => acc << 1 | digit, 0);
+        return value.reduceRight((acc, digit) => acc << 1 | digit, 0);
     }
 
     toNum() { // ok

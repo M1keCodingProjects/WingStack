@@ -8,12 +8,17 @@ make const REAL_SET = -2 1;
 make const IMG_SET  = -1 1;
 
 make const COLORS :[str|void] = [];
-loop 16 then make COLORS[COLORS spill size] =
-  "$<color:rgb("
-  rand 155 * 100 + int ","
-  rand 155 * 100 + int ","
-  rand 155 * 100 + int
-  ");>" str;
+make i := 0;
+loop 16 {
+  make COLORS[i] =
+    "$<background-color:rgb("
+    rand 155 * 100 + int ","
+    rand 155 * 100 + int ","
+    rand 155 * 100 + int
+    ");>" str;
+  
+  i++;
+}
 
 make image :str = "$<display:block; line-height:.5rem>";
 
@@ -30,24 +35,20 @@ loop H {
     make n := 0;
     make d :num = 0;
     if d 2 <= n MAX_ITERS < and loop {
-      make p :[num] =
-        z[0] 2 ^ z[1] 2 ^ -
-        2 z[0] z[1] * *;
+      make p :[num] = z[0] 2 ^ z[1] 2 ^ - 2 z[0] z[1] * *;
       
-      z =
-        p[0] complex[0] +
-        p[1] complex[1] +;
+      z = p[0] complex[0] + p[1] complex[1] +;
       
       d = z[0] 2 ^ z[1] 2 ^ + 0.5 ^;
-      n = n 1 +;
+      n++;
     }
     ####
-    if d 2 <= then image = image " " +;
-    else image = image COLORS[n 16 %] "#<$>" str;
-    x = x 1 +;
+    if d 2 <= then image += " ";
+    else image += COLORS[n 16 %] " <$>" str;
+    x++;
   }
-  image = image EOL +;
-  y = y 1 +;
+  image += EOL;
+  y++;
 }
 
 print image "<$>" +;

@@ -1,10 +1,25 @@
-use "std GLib" with std
+make n = 1;
+make buffer := "";
+make container :list = [];
+make const SIZE := 9999;
+make benchmarkOffset :num = time;
+loop SIZE {
+  buffer = "";
+  if n 3 % not then buffer = "Fizz";
+  if n 5 % not then buffer += "Buzz";
+  if buffer "" == then make container[n 1 -] = n; else make container[n 1 -] = buffer;
+  n++;
+}
+print "Results for " SIZE " items:" str;
+print time benchmarkOffset - int "Classic implementation ran for " swap " ms." str;
 
-def fizzbuzz with n { 
-  make opts = n "Fizz" "Buzz" "FizzBuzz"
-  exit opts[ n dup 3 % 0 dup rot> == rot> 5 % == 2 * + ]
+make opts = 1 "Fizz" "Buzz" "FizzBuzz";
+container = [];
+benchmarkOffset = time;
+loop SIZE {
+  make n = opts[0];
+  make container[n 1 -] = opts[n 5 % not n 3 % not bin int];
+  opts[0]++;
 }
 
-loop 99 with n = 1 {
-  print fizzbuzz( n )
-}
+print time benchmarkOffset - int "List implementation ran for " swap " ms." str;

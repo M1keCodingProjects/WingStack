@@ -19,7 +19,13 @@ const MAKEPROC_SPECS = {
     global  : iota(),
     dynamic : iota(),
     //type    : iota(),
-}
+};
+
+const ASSIGNOP_REPLACE_MAP = {
+    "|" : "or",
+    "&" : "and",
+    "!" : "not",
+};
 
 import {ParsingError} from "../customErrors.js";
 export default class Parser {
@@ -281,7 +287,7 @@ export default class Parser {
         };
     }
 
-    Assignment(inMakeProc = false) { // Assignment : CallChain (":" Type)? "=" StackExpr
+    Assignment(inMakeProc = false) { // Assignment : CallChain (":" Type)? ((ASSIGN_OP StackExpr) | INCR_OP)
         const token = {
             type   : "Assignment",
             target : this.CallChain("as target of assignment"),
@@ -293,8 +299,55 @@ export default class Parser {
             token.typeSignature = this.Type().value;
         }
 
-        this.get_nextToken_ifOfType("=");
-        token.value = this.StackExpr().value;
+        const assignSymbol = this.grab_nextToken();
+        if(assignSymbol?.type != "assignOp" &&
+           assignSymbol?.type != "incdecOp") {
+            this.throw(
+                `Expected assignment operator, got "${assignSymbol ? assignSymbol.type : "nothing"}" instead`,
+                token.typeSignature ? token.typeSignature.line : token.target.line
+            );
+        }
+        
+        if(inMakeProc && assignSymbol.value != "=") this.throw(`Assignment with "${assignSymbol.value}" operator references variable value prior to its definition`, assignSymbol.line);
+        const operator = assignSymbol.value[0];
+        switch(assignSymbol?.type) {
+            case "assignOp":
+                token.value = this.StackExpr().value;
+                if(assignSymbol.value != "=") {
+                    token.value.push(
+                        {...token.target},
+                        {
+                            type  : "stackOp",
+                            value : "rot>",
+                        },
+                        {
+                            type  : "stackOp",
+                            value : operator in ASSIGNOP_REPLACE_MAP ?
+                                    ASSIGNOP_REPLACE_MAP[operator]   :
+                                    operator,
+                        },
+                    );
+                } break;
+
+            case "incdecOp":
+                token.value =
+                    operator in ASSIGNOP_REPLACE_MAP ?
+                    [{...token.target},
+                    {
+                        type  : "stackOp",
+                        value : ASSIGNOP_REPLACE_MAP[operator],
+                    }] :
+                    
+                    [{...token.target},
+                    {
+                        type  : "num",
+                        value : 1,
+                    },
+                    {
+                        type  : "stackOp",
+                        value : operator,
+                    }]; break;
+        }
         return token;
     }
     
@@ -346,7 +399,8 @@ export default class Parser {
                                  nextToken.type = "stackOp";
                 case "stackOp" : token.value.push(this.get_nextToken_ifOfType("stackOp")); break;
 
-                case "="       : this.throw('Unexpected token "=" in Stack Expression, make sure to end the previous expression with a ";"', nextToken.line);
+                case "assignOp" :
+                case "incdecOp" : this.throw(`Unexpected assignment operator "${nextToken.value}" in Stack Expression, make sure to end the previous expression with a ";"`, nextToken.line);
                 
                 default        :
                 case "}"       :

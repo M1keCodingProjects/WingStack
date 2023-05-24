@@ -11,12 +11,12 @@ loop ITERS {
   make i := 0;
   loop ITERS 1 - {  # potential bottleneck: "loop with i" would be faster.
     if tape[i 1 -] C == tape[i] C == tape[i 1 +] C == bin int MAP swap >> b1 and
-    then nextTape = nextTape C   +; # potential bottleneck: conditional assignments coupled with "+=" would be
-    else nextTape = nextTape " " +; # faster and more convenient.
-    i = i 1 +;
+    then nextTape += C;   # not a bottleneck, but inconvenient: conditional assignments would be
+    else nextTape += " "; # more convenient.
+    i++;
   }
-  tape = nextTape;
-  BUFFER = BUFFER tape EOL str;
+  tape    = nextTape;
+  BUFFER += tape EOL str;
 }
 
 print BUFFER "<$>" +;

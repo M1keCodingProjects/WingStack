@@ -29,7 +29,7 @@ loop 9 {
     print "Bot is deciding..";
     move = rand 9 * int;
     if availableMoves[move] not loop {
-      move = move 1 +;
+      move++;
       if move 9 == then move = 0;
     }
   }
@@ -43,11 +43,11 @@ loop 9 {
   loop 3 {
     if i then board = board "$<color:var(--idle-text-col)>─╋─╋─<$>" EOL str;
     loop 3 {
-      board =
-        board symbolMap[boardData[i] 1 +] "$<color:var(--idle-text-col)>┃<$>" EOL
+      board +=
+        symbolMap[boardData[i] 1 +] "$<color:var(--idle-text-col)>┃<$>" EOL
         i 1 + 3 % not dup not rot> ? swap rot< ? str;
       
-      i = i 1 +;
+      i++;
     }
   }
   print "\clear";
@@ -61,7 +61,7 @@ loop 9 {
       win = TRUE;
       exit;
     }
-    i = i 3 +;
+    i += 3;
   }
   
   if win not {
@@ -71,7 +71,7 @@ loop 9 {
         win = TRUE;
         exit;
       }
-      i = i 1 +;
+      i++;
     }
   }
 
@@ -80,10 +80,10 @@ loop 9 {
              boardData[2] boardData[4] boardData[6] + + 2 ^ 9 == or and then win = TRUE;
   
   if win {
-    print players[turn] " won!" +;
+    print players[turn int] " won!" +;
     exit;
   };
-  turn = turn not;
+  turn!!;
 }
 
 print "Game is over! Run script to play again.";

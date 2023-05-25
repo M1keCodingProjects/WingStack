@@ -1,5 +1,4 @@
 # Initialize data
-make const EOL             := 10 char;
 make const boardData       := 0 0 0 0 0 0 0 0 0;
 make const availableMoves  := b111111111;
 make const symbolMap :[str] = "$<color:var(--error-col)>X<$>" " " "$<color:var(--str-col)>O<$>";
@@ -41,10 +40,10 @@ loop 9 {
   make board := "$<display:block; line-height:1rem>";
   make i := 0;
   loop 3 {
-    if i then board = board "$<color:var(--idle-text-col)>─╋─╋─<$>" EOL str;
+    if i then board += "$<color:var(--idle-text-col)>─╋─╋─<$>&EOL";
     loop 3 {
       board +=
-        symbolMap[boardData[i] 1 +] "$<color:var(--idle-text-col)>┃<$>" EOL
+        symbolMap[boardData[i] 1 +] "$<color:var(--idle-text-col)>┃<$>" "&EOL"
         i 1 + 3 % not dup not rot> ? swap rot< ? str;
       
       i++;

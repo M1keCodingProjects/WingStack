@@ -1,5 +1,4 @@
 make t = time;
-make const EOL := 10 char; # not a bottleneck, but inconvenient.
 make const C := "#";
 make const MAP := 110 bin;
 make const ITERS := 100;
@@ -16,7 +15,7 @@ loop ITERS {
     i++;
   }
   tape    = nextTape;
-  BUFFER += tape EOL str;
+  BUFFER += tape "&EOL" str;
 }
 
 print BUFFER "<$>" +;

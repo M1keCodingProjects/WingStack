@@ -1,6 +1,4 @@
 make t :num = time;
-
-make const EOL := 10 char;
 make const W = 60;
 make const H = 45;
 make const MAX_ITERS = 100;
@@ -47,7 +45,7 @@ loop H {
     else image += COLORS[n 16 %] " <$>" str;
     x++;
   }
-  image += EOL;
+  image += "&EOL";
   y++;
 }
 

@@ -5,7 +5,7 @@ export const BIN_MATCH_PATTERN = /^-?b\d+/;
 
 const TOKEN_MATCH_PATTERNS = [
     [/^ +/, "space"],
-    [/^#.*/, "comment"],
+    [/^(#%(.|\n)*%#|#.*)/, "comment"],
     [/^\n+/, "EOL"],
     [NUM_MATCH_PATTERN, "num"],
     [BIN_MATCH_PATTERN, "bin"],

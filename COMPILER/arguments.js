@@ -219,7 +219,6 @@ export class CallChain {
     }
 
     async free() {
-        //if(this.properties.length != 1) throw new RuntimeError("Cannot free property yet", "Demo");
         const deleteVar = this.properties.length == 1;
         const res = GLC.getVar(this.properties[0], deleteVar).get();
         if(deleteVar) return;

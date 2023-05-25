@@ -1,12 +1,11 @@
-make const EOL := 10 char;
 make colorDisplayCSS := "$<padding:0; margin:0; line-height: 1rem; display:block; background:rgb(";
-make canvas := ")>" " " 5 * EOL + 5 * "<$>" str;
+make canvas := ")>" " " 5 * "&EOL" + 5 * "<$>" str;
 
 if TRUE loop {
   make randomColor := rand 255 * int rand 255 * int rand 255 * int;
   make randomColorStr := randomColor[0] ", " randomColor[1] ", " randomColor[2] str;
-  make guessColorTitle := EOL "Guess the color: " +;
-  make guessColorDisplay := guessColorTitle EOL colorDisplayCSS randomColorStr canvas + + +;
+  make guessColorTitle := "&EOLGuess the color: ";
+  make guessColorDisplay := guessColorTitle "&EOL" colorDisplayCSS randomColorStr canvas + + +;
 
   print "\clear";
   print guessColorDisplay spill str;
@@ -33,8 +32,8 @@ if TRUE loop {
                    randomColor[2] guessedColor[2] - 2 ^ 255 2 ^ dup -100 swap / rot> - rot< * + + 3 / int;
 
   print "\clear";
-  print guessColorDisplay spill str EOL "Your guess was: " guess EOL colorDisplayCSS guess canvas EOL
-        "Guess accuracy: " precision " %" EOL "Continue? (write 'no' to exit game)" str;
+  print guessColorDisplay spill str "&EOLYour guess was: " guess "&EOL" colorDisplayCSS guess canvas
+        "&EOLGuess accuracy: " precision " %&EOLContinue? (write 'no' to exit game)" str;
 
   if inp "no" == then exit;
 }

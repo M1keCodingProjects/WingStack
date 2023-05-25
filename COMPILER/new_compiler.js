@@ -115,7 +115,7 @@ class Compiler {
     getVar(name, free = false) {
         for(let i = this.vars.length - 1; i >= 0; i--) { //from the top, the first match is always the deepest.
             if(this.vars[i].name != name) continue;
-            return free ? this.vars.splice(i, 1) : this.vars[i];
+            return free ? this.vars.splice(i, 1)[0] : this.vars[i];
         }
         
         throw new RuntimeError(`Variable "${name}" is either not defined or not available in the current scope`, "Name");

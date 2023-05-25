@@ -84,13 +84,13 @@ export default class Console {
         let formattedText = "";
         for(let char of text) {
             switch(char) {
-                case "\n" : char = "<br>";   break;
                 case " "  : char = "&nbsp;"; break;
                 case "<"  : char = "&lt;";   break;
                 case ">"  : char = "&gt;";   break;
             }
             formattedText += char;
         }
+        formattedText = formattedText.replace(/&EOL/g, "<br>");
         return firstCall ? `"${formattedText}"` : formattedText;
     }
 

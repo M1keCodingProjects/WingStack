@@ -1,4 +1,3 @@
-make EOL = 10 char;
 make W := 15;
 make H := 13;
 
@@ -43,7 +42,7 @@ if TRUE loop {
     
     topRender    += CORNER_MAP[y not cells[0] 0 1 bin int] str;
     bottomRender += "║";
-    mazeRender   += topRender EOL bottomRender EOL str;
+    mazeRender   += topRender "&EOL" bottomRender "&EOL" str;
     y++;
   }
   print "\clear";

@@ -29,18 +29,18 @@ Block      : ("{" Program "}") | ("then" Expression)
 
 ElseProc   : "else" (IfProc | Block)
 
-LoopProc   : "loop" StackExpr Block
+LoopProc   : "loop" StackExpr ("with" Assignment ("," StackExpr)?)? Block
+
+Assignment : CallChain ((":" Type)? ((ASSIGN_OP StackExpr) | INCR_OP))?
+
+Type       : SingleType ("|" SingleType)*
+
+SingleType : (TYPE | WORD) | "[" Type "]"
 
 NextProc   : "next"
 
 ExitProc   : "exit" StackExpr?
 
 MakeProc   : "make" ("const" | "dynamic" | "global" | "type")<?> Assignment
-
-Assignment : CallChain (":" Type)? ((ASSIGN_OP StackExpr) | INCR_OP)
-
-Type       : SingleType ("|" SingleType)*
-
-SingleType : (TYPE | WORD) | "[" Type "]"
 
 FreeProc   : "free" CallChain

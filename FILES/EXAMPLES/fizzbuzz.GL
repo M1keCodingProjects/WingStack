@@ -1,14 +1,12 @@
-make n = 1;
 make buffer := "";
 make container :list = [];
 make const SIZE := 9999;
 make benchmarkOffset :num = time;
-loop SIZE {
+loop SIZE with n = 1 {
   buffer = "";
   if n 3 % not then buffer = "Fizz";
   if n 5 % not then buffer += "Buzz";
   if buffer "" == then make container[n 1 -] = n; else make container[n 1 -] = buffer;
-  n++;
 }
 print "Results for " SIZE " items:" str;
 print time benchmarkOffset - int "Classic implementation ran for " swap " ms." str;

@@ -7,16 +7,14 @@ make tape := " " ITERS *;
 make const BUFFER = "$<display:block; line-height:.5rem>";
 loop ITERS {
   make nextTape := C;
-  make i := 0;
-  loop ITERS 1 - {  # potential bottleneck: "loop with i" would be faster.
+  loop ITERS 1 - with i {
     if tape[i 1 -] C == tape[i] C == tape[i 1 +] C == bin int MAP swap >> b1 and
     then nextTape += C;   # not a bottleneck, but inconvenient: conditional assignments would be
     else nextTape += " "; # more convenient.
-    i++;
   }
   tape    = nextTape;
   BUFFER += tape "&EOL" str;
 }
 
 print BUFFER "<$>" +;
-print time t - int "Time elapsed " swap " ms." str; # averages at 250ms
+print time t - int "Time elapsed " swap " ms." str; # averages at 230ms

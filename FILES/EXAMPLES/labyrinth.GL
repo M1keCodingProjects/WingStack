@@ -9,22 +9,20 @@ make CORNER_MAP := "╬╣╩╝╠║╚ ╦╗═ ╔   " spill;
 make maze :[bin|void]= [];
 loop H W * then make maze[maze spill size] = b0;
 
-make current  := 0;
-make currentX := 0;
-make currentY := 0;
+make current;
+make currentX;
+make currentY;
 
 if TRUE loop {
   # rendering
   make mazeRender := "$<display:block; line-height:1rem;>";
   make bbRender := "";
-  make y := 0;
-  loop H {
+  loop H with y {
     make topRender := "";
     make bottomRender := "";
-    make cellID := 0;
-    make cells  := b1111;
-    make x := 0;
-    loop W {
+    make cellID;
+    make cells := b1111;
+    loop W with x {
       cellID = y W * x +;
       cells  = b11 maze[cellID][3] maze[cellID][0] bin;
       if x then cells[2] = maze[cellID W 1 + -][2];
@@ -36,20 +34,17 @@ if TRUE loop {
       if y H 1 - == {
         bbRender += CORNER_MAP[maze[cellID][3] x not b10 bin int] H_SIDE_MAP[0] str;
       }
-    
-      x++;
     }
     
     topRender    += CORNER_MAP[y not cells[0] 0 1 bin int] str;
     bottomRender += "║";
     mazeRender   += topRender "&EOL" bottomRender "&EOL" str;
-    y++;
   }
   print "\clear";
   print mazeRender bbRender "╝<$>" str;
 
   # advance through the maze
-  make moveID :int|str = 0;
+  make moveID;
   make moveIsVert :bin = FALSE;
   if TRUE loop {
     moveID = inp;

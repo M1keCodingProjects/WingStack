@@ -1,4 +1,5 @@
 import * as ArgClasses from "./arguments.js";
+import {GLC} from "./new_compiler.js";
 import {Type, runtime_checkGot_asValidExpected, runtime_checkType, runtime_getTypeStr} from "./type checker.js";
 import {print, RuntimeError} from "./customErrors.js";
 
@@ -80,7 +81,9 @@ export class LoopProc extends Proc {
 
     buildArgs(args) {
         super.buildArgs(args);
-        if(args.trigger) this.trigger = args.trigger;
+        if(args.trigger)  this.trigger  = args.trigger;
+        if(args.iterator) this.iterator = new ArgClasses.Assignment(args.iterator, true);
+        if(args.onIter)   this.onIter   = new ArgClasses.Assignment(args.onIter);
     }
 
     async exec() {
@@ -88,14 +91,18 @@ export class LoopProc extends Proc {
         const resType = runtime_getTypeStr(result);
         if(resType != "int") throw new RuntimeError(`"Loop" procedure iteration expected <int> evaluation, got <${resType}> instead`, "Type");
         
+        if(this.iterator) await this.iterator.exec();
         result *= result >= 0;
         for(let i = 0; i < result; i++) {
             await this.block.exec();
-            if(!this.trigger?.sent) continue;
-            if(this.trigger.sent !== true) return true; // trigger was meant for function.
-            this.trigger.sent = false;
-            return;
+            if(this.onIter) await this.onIter.exec();
+            if(this.trigger?.sent) break;
         }
+
+        if(this.iterator) GLC.vars.pop(); // this is a sin but it should work
+        if(!this.trigger?.sent) return;
+        if(this.trigger.sent !== true) return true; // trigger was meant for function.
+        this.trigger.sent = false;
     }
 }
 
@@ -120,12 +127,14 @@ export class MakeProc extends Proc {
     }
 
     buildArgs(args) {
-        this.assignment = new ArgClasses.Assignment(args);
-        this.depth = this.assignment.depth;
+        this.assignment = new ArgClasses.Assignment(args.value, true);
+        this.assignment.frozen  = args.frozen;
+        this.assignment.dynamic = args.dynamic;
+        this.depth              = this.assignment.depth;
     }
 
     async exec() {
-        await this.assignment.exec(true);
+        await this.assignment.exec();
     }
 }
 

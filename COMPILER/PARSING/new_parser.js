@@ -192,22 +192,47 @@ export default class Parser {
         };
     }
 
-    LoopProc() { // LoopProc : "loop" StackExpr Block
+    LoopProc() { // LoopProc : "loop" StackExpr ("with" Assignment ("," StackExpr)?)? Block
         const token = {
             type  : "LoopProc",
             value : this.StackExpr().value,
         };
 
+        const nextToken = this.peek_nextToken();
+        if(nextToken?.type == "keyword" && nextToken.value != "then") {
+            if(this.grab_nextToken().value != "with") this.throw(`"Loop" procedure expected optional "with" keyword but got "${withKW.value}"`, withKW.line);
+            this.currentDepth++; // this ensures iterator scope-safety
+            token.iterator = this.Assignment(true);
+            token.onIter = {
+                type   : "Assignment",
+                target : {...token.iterator.target},
+            };
+            
+            if(this.peek_nextToken()?.type == ",") {
+                this.grab_nextToken();
+                token.onIter.value = this.StackExpr().value
+            }
+            else token.onIter.value = [
+                {...token.iterator.target},
+                {
+                    type  : "num",
+                    value : 1,
+                },
+                {
+                    type  : "stackOp",
+                    value : "+",
+                },
+            ];
+        }
+
         this.defloopStack.push(token); // loop is always valid but must be validated before its block is parsed.
         token.block = this.Block().value;
+        if(token.iterator) this.currentDepth--;
         this.defloopStack.pop();
         return token;
     }
 
-    NextProc() { // NextProc : "next"
-        const nextTokenType = this.peek_nextToken()?.type;
-        //if(nextTokenType && nextTokenType != "}") this.get_nextToken_ifOfType(";", false);
-        
+    NextProc() { // NextProc : "next"        
         if(!this.defloopStack.length) this.throw('Cannot use "Next" procedure outside of a looping block');
         if(this.defloopStack[this.defloopStack.length - 1].type == "DefProc") this.throw("Next procedure cannot bypass the scope of a function");
         
@@ -287,11 +312,21 @@ export default class Parser {
         };
     }
 
-    Assignment(inMakeProc = false) { // Assignment : CallChain (":" Type)? ((ASSIGN_OP StackExpr) | INCR_OP)
+    Assignment(inMakeProc = false) { // Assignment : CallChain ((":" Type)? ((ASSIGN_OP StackExpr) | INCR_OP))?
         const token = {
             type   : "Assignment",
             target : this.CallChain("as target of assignment"),
         };
+
+        const nextToken = this.peek_nextToken();
+        if(!nextToken || ![":", "assignOp", "incdecOp"].includes(nextToken.type)) {
+            if(!inMakeProc) this.throw("Defaulted assignments are only possible during variable declaration", token.target.line);
+            token.value = [{
+                type  : "num",
+                value : 0,
+            }];
+            return token;
+        }
 
         if(this.peek_nextToken()?.type == ":") {
             if(!inMakeProc) this.throw("Typed assignments are only possible within \"Make\" procedures", this.peek_nextToken().line);

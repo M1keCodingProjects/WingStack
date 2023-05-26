@@ -227,29 +227,17 @@ export class CallChain {
 }
 
 export class Assignment {
-    constructor(exprToken) {
-        this.inMake = exprToken.type == "MakeProc";
-        const assignmentExprToken = this.extractAssignmentToken(exprToken);
-        
-        this.target    = new CallChain(assignmentExprToken.target.value, this.depth);
-        this.stackExpr = new StackExpr(assignmentExprToken.value);
-    }
+    constructor(args, makesNewVar = false) {
+        this.depth     = args.target.depth * !args.global;
+        this.target    = new CallChain(args.target.value, this.depth);
+        this.stackExpr = new StackExpr(args.value);
 
-    extractAssignmentToken(exprToken) {
-        let assignmentExprToken = exprToken;
-        if(this.inMake) {
-            assignmentExprToken = assignmentExprToken.value;
-            this.frozen  = exprToken.frozen;
-            this.dynamic = exprToken.dynamic;
-            this.depth   = assignmentExprToken.target.depth * !exprToken.global;
-            this.exec    = this.execCreate;
-            if(assignmentExprToken.typeSignature) {
-                if(assignmentExprToken.target.value.length > 1) throw new CompileTimeError("Assignments that target properties of <bin|str|list> type items cannot be type-annotated");
-                this.buildTypeArg(assignmentExprToken.typeSignature);
-            }
+        if(makesNewVar) this.exec = this.execCreate;
+
+        if(args.typeSignature) {
+            if(args.target.value.length > 1) throw new CompileTimeError("Assignments that target properties of items cannot be type-annotated");
+            this.buildTypeArg(args.typeSignature);
         }
-
-        return assignmentExprToken;
     }
 
     buildTypeArg(typeSignature) {

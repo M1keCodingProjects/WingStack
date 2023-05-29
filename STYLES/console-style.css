@@ -45,13 +45,14 @@
 
 #circle-btns-container { 
     display: flex;
-    margin-right: .4rem;
     justify-content: space-between;
     gap: 1rem;
+    width: min-content;
+    margin-bottom: .5rem;
 }
 
 .circle-btn {
-    --size: 2.5rem;
+    --size: 2rem;
     width: var(--size);
     height: var(--size);
     border-radius: 50%;

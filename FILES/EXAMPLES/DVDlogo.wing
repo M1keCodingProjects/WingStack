@@ -1,0 +1,43 @@
+make const W = 45
+make const H = 33
+
+make ballPos   = W 2 / int H 2 / int
+make ballSpeed = 2 1
+make color = "$<color:rgb(" rand 255 * int "," rand 255 * int "," rand 255 * int ");" str
+
+if TRUE loop {
+  loop 2 with i then ballPos[i] += ballSpeed[i]
+  if ballPos[0] 0 < {
+    ballPos[0] = 0;
+    ballSpeed[0] *= -1;
+    color = "$<color:rgb(" rand 255 * int "," rand 255 * int "," rand 255 * int ");" str
+  }
+  
+  if ballPos[1] 0 < {
+    ballPos[1] = 0;
+    ballSpeed[1] *= -1;
+    color = "$<color:rgb(" rand 255 * int "," rand 255 * int "," rand 255 * int ");" str
+  }
+  
+  if ballPos[0] W 2 - >= {
+    ballPos[0] = W 3 -;
+    ballSpeed[0] *= -1;
+    color = "$<color:rgb(" rand 255 * int "," rand 255 * int "," rand 255 * int ");" str
+  }
+  
+  if ballPos[1] H >= {
+    ballPos[1] = H 1 -;
+    ballSpeed[1] *= -1;
+    color = "$<color:rgb(" rand 255 * int "," rand 255 * int "," rand 255 * int ");" str
+  }
+  # render
+  make screen := "┌" "─" W * "┐&EOL" str
+  loop H with y {
+    screen += "|"
+    loop W 2 ballPos[1] y == ? - with x then screen += ballPos[0] x == ballPos[1] y == and dup not " " swap ? color ">DVD<$>" + rot< ? +;
+    screen += "|&EOL"
+  }
+  print "\clear"
+  print "$<display:block; line-height:.85rem;>" screen "└" "─" W * "┘<$>" str
+  wait 100
+}

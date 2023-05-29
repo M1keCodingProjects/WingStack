@@ -7,15 +7,14 @@ export default class FileManager {
         [this.fileHandle] = await window.showOpenFilePicker({
             multiple: false,
             excludeAcceptAllOption: true,
-            types: [{ accept: { "text/plain" : [".GL"] } }],
+            types: [{ accept: { "text/plain" : [".wing"] } }],
         });
     }
 
     async readFile() {
         const fileObj      = await this.fileHandle.getFile();
-        const fileName     = fileObj.name.slice(0, -3);
         const fileContents = await fileObj.text();
-        return [fileName, fileContents];
+        return [fileObj.name, fileContents];
     }
 
     async saveFile(data) {
@@ -28,5 +27,6 @@ export default class FileManager {
     async saveFileAs(data) {
         this.fileHandle = await window.showSaveFilePicker();
         this.saveFile(data);
+        return await this.fileHandle.getFile().name;
     }
 }

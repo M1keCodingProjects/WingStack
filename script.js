@@ -5,18 +5,18 @@ const [ // re-work, I hate this:
     compileBtn,
     runBtn,
     buildBtn
-] = document.querySelector("#console-header > #circle-btns-container").children;
+] = document.querySelector("#editor-container #circle-btns-container").children;
 
-compileBtn.onclick =_=> {
+compileBtn.onclick = async _=> {
     const text = IDE.getText(false); // get text, don't save file
     GLC.build(text); // parse text into AST, save expressions
 }
 
-runBtn.onclick =_=> {
-    GLC.run();
+runBtn.onclick = async _=> {
+    GLC.run(true);
 }
 
-buildBtn.onclick =_=> {
+buildBtn.onclick = async _=> {
     const text = IDE.getText(false);
     GLC.build_and_run(text);
 };
@@ -50,5 +50,6 @@ saveFileBtn.onclick = async _=> {
 };
 
 saveFileAsBtn.onclick = async _=> {
-    await fileManager.saveFileAs(IDE.getText());
+    const fileName = await fileManager.saveFileAs(IDE.getText());
+    IDE.updateFileName(fileName);
 };

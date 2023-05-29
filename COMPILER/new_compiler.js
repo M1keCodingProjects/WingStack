@@ -73,30 +73,55 @@ class Compiler {
         return AST;
     }
 
+    async killPreviousProcesses() {
+        this.interrupt = true;
+        if(this.activeTimeout) this.activeTimeout();
+        await new Promise(this.stall.bind(this));
+    }
+
+    async stall(resolve) {
+        if(GLC.isRunning) setTimeout(this.stall.bind(this, resolve), 50);
+        else resolve();
+    }
+
     compile(AST) {
         this.expressions = new Block(AST);
         if(this.state == "debug") print("Code compiled successfully.");
     }
 
     async run() {
+        if(this.isRunning) await this.killPreviousProcesses();
         this.reset_runtime();
         if(!this.expressions) throw new RuntimeError("Couldn't find any previous build to run.");
-
         this.runtimeElapsedVar.value = window.performance.now(); // bypass freeze, quicker.
-        await this.expressions.exec();
+        
+        this.isRunning = true;
+        this.interrupt = false;
+        try {
+            await this.expressions.exec();
+        }
+        catch(e) {
+            this.isRunning = false;
+            this.interrupt = false;
+            return;
+        }
+
+        this.isRunning = false;
+
         print("Execution complete.");
         if(this.state == "debug") console.log(this.vars);
     }
 
-    build(text) {
+    async build(text) {
+        if(this.isRunning) await this.killPreviousProcesses();
         if(this.state == "deploy") print("\\clear");
         const AST = this.parse(text);
         this.compile(AST);
         print("Build complete.");
     }
 
-    build_and_run(text) {
-        this.build(text);
+    async build_and_run(text) {
+        await this.build(text);
         this.run();
     }
 

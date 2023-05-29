@@ -47,7 +47,7 @@ class Editor {
     }
 
     updateFileName(fileName) {
-        GUIfileTab.innerHTML = `${fileName}.GL`;
+        GUIfileTab.innerHTML = fileName;
     }
 
     loadText(fileName, text) {

@@ -5,7 +5,7 @@ export const BIN_MATCH_PATTERN = /^-?b\d+/;
 
 const TOKEN_MATCH_PATTERNS = [
     [/^ +/, "space"],
-    [/^(#%(.|\n)*%#|#.*)/, "comment"],
+    [/^(^#%[^%]*%+(?:[^#%][^%]*%+)*#?|#.*)/, "comment"],
     [/^\n+/, "EOL"],
     [NUM_MATCH_PATTERN, "num"],
     [BIN_MATCH_PATTERN, "bin"],
@@ -43,6 +43,7 @@ const HIGHLIGHT_KEYWORDS = {
     then    : "keyword",
     from    : "keyword",
     ref     : "keyword",
+    wait    : "keyword",
 
     PI    : "num",
     INF   : "num",

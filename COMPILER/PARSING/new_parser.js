@@ -146,6 +146,7 @@ export default class Parser {
             case "exit"  : return this.ExitProc();
             case "make"  : return this.MakeProc();
             case "free"  : return this.FreeProc();
+            case "wait"  : return this.WaitProc();
             default      : this.throw(`Procedure "${keyword.value}" is not implemented yet`);
         }
     }
@@ -309,6 +310,13 @@ export default class Parser {
         return {
             type  : "FreeProc",
             value : this.CallChain("when deleting a variable").value,
+        };
+    }
+
+    WaitProc() { // WaitProc : "wait" StackExpr
+        return {
+            type  : "WaitProc",
+            value : this.StackExpr().value,
         };
     }
 

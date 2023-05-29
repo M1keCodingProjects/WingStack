@@ -9,7 +9,7 @@ Program    : Expression*
 
 Expression : (Procedure | Assignment) ";"?
 
-Procedure  : PrintProc | IfProc | LoopProc | NextProc | ExitProc | MakeProc | FreeProc
+Procedure  : PrintProc | IfProc | LoopProc | NextProc | ExitProc | MakeProc | FreeProc | WaitProc
 
 PrintProc  : "print" StackExpr
 
@@ -44,3 +44,5 @@ ExitProc   : "exit" StackExpr?
 MakeProc   : "make" ("const" | "dynamic" | "global" | "type")<?> Assignment
 
 FreeProc   : "free" CallChain
+
+WaitProc   : "wait" StackExpr

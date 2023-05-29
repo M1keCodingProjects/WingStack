@@ -15,6 +15,7 @@ const EXPR_TYPES = {
     "ExitProc"  : expr => new Proc.ExitProc(expr),
     "MakeProc"  : expr => new Proc.MakeProc(expr),
     "FreeProc"  : expr => new Proc.FreeProc(expr),
+    "WaitProc"  : expr => new Proc.WaitProc(expr),
     
     // OTHER STUFF
     "Assignment" : expr => new Assignment(expr),
@@ -41,6 +42,7 @@ export class Block {
 
     async exec() {
         for(const expr of this.expressions) {
+            if(GLC.interrupt) throw new Error();
             if(await expr.exec()) return this.onEnd(true);
         }
         return this.onEnd(this.earlyStop);

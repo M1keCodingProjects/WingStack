@@ -1,0 +1,88 @@
+#%
+  0
+ ___
+|6  | 1
+ ___ 2
+|5  | 3
+ ___
+  4
+%#
+make const GLOBAL_STYLE = "$<display:block; line-height:.5rem; color:#333>"
+make const ON_COL = "red; text-shadow: 0 0 10px"
+make const SPACER = "$<color:" ON_COL ">•<$> " + +
+make const DIGITS_MAP = 
+  b1111011 # 0
+  b0001010 # 1
+  b0110111 # 2
+  b0011111 # 3
+  b1001110 # 4
+  b1011101 # 5
+  b1111101 # 6
+  b0001011 # 7
+  b1111111 # 8
+  b1011111 # 9
+
+make Time = 23 58 55
+
+if TRUE loop {
+  make evalTime = []
+  loop 3 with i then make evalTime[i] = DIGITS_MAP[Time[i] 10 / int] DIGITS_MAP[Time[i] 10 %]
+  
+  make hours = evalTime[0]
+  make mins  = evalTime[1]
+  make secs  = evalTime[2]
+  
+  make hoursBuffer = "" "" "" "" ""
+  loop 2 with digitID {
+    loop 5 with sliceID {
+      if sliceID 2 % not then hoursBuffer[sliceID] += " $<color:" ON_COL hours[digitID][sliceID] ? ">•••<$>  " str
+      else hoursBuffer[sliceID] += "$<color:" ON_COL hours[digitID][5 sliceID 1 == int +] ?
+                           ">•<$>   $<color:" ON_COL hours[digitID][sliceID] ? ">•<$> " str
+    }
+  }
+
+  make minsBuffer = "" "" "" "" ""
+  loop 2 with digitID {
+    loop 5 with sliceID {
+      if sliceID 2 % not then minsBuffer[sliceID] += " $<color:" ON_COL mins[digitID][sliceID] ? ">•••<$>  " str
+      else minsBuffer[sliceID] += "$<color:" ON_COL mins[digitID][5 sliceID 1 == int +] ?
+                          ">•<$>   $<color:" ON_COL mins[digitID][sliceID] ? ">•<$> " str
+    }
+  }
+  
+  make secsBuffer = "" "" "" "" ""
+  loop 2 with digitID {
+    loop 5 with sliceID {
+      if sliceID 2 % not then secsBuffer[sliceID] += " $<color:" ON_COL secs[digitID][sliceID] ? ">•••<$>  " str
+      else secsBuffer[sliceID] += "$<color:" ON_COL secs[digitID][5 sliceID 1 == int +] ?
+                          ">•<$>   $<color:" ON_COL secs[digitID][sliceID] ? ">•<$> " str
+    }
+  }
+
+  make buffer = ""
+  loop 5 with sliceID {
+    if sliceID 6 == sliceID 2 % 0 != or {
+      buffer += hoursBuffer[sliceID] "  " minsBuffer[sliceID] "  " secsBuffer[sliceID] "&EOL" str dup
+                hoursBuffer[sliceID] SPACER minsBuffer[sliceID] SPACER secsBuffer[sliceID] "&EOL" rot< str
+    }
+    else buffer += hoursBuffer[sliceID] "  " minsBuffer[sliceID] "  " secsBuffer[sliceID] "&EOL" str
+  }
+
+  print "\clear";
+  print GLOBAL_STYLE buffer "<$>" str
+
+  # advance clock
+  wait 1000;
+  Time[2]++
+  if Time[2] 59 > {
+    Time[2] = 0;
+    Time[1]++
+  }
+  
+  if Time[1] 59 > {
+    Time[1] = 0;
+    Time[0]++
+  }
+  
+  if Time[0] 23 > then Time[0] = 0
+}

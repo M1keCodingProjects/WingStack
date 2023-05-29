@@ -1,0 +1,42 @@
+make const W = 40
+make const H = 40
+make const SIZE = W H *
+make board = "b1"
+  "0000000000000000000000000000000000000000"
+  "0000000000000000000000000100000000000000"
+  "0000000000000000000000010100000000000000"
+  "0000000000000110000001100000000000011000"
+  "0000000000001000100001100000000000011000"
+  "0110000000010000010001100000000000000000"
+  "0110000000010001011000010100000000000000"
+  "0000000000010000010000000100000000000000"
+  "0000000000001000100000000000000000000000"
+  "0000000000000110000000000000000000000000"
+  "0" SIZE W 10 * - * str bin
+
+if TRUE loop {
+  make frameT = time
+  make buffer = ""
+  make nextBoard = board
+  loop H with y {
+    loop W with x {
+      make cellID = x y W * +
+      make score =
+        board[cellID W - 1 -] int board[cellID W -] int board[cellID W - 1 +] int
+        board[cellID 1 -] int board[cellID 1 +] int
+        board[cellID W + 1 -] int board[cellID W +] int board[cellID W + 1 +] int
+        + + + + + + +
+    
+      if board[cellID] then nextBoard[cellID] = score 2 == score 3 == or
+      else then nextBoard[cellID] = score 3 == ;
+      
+      buffer += "$<color:" "var(--str-col)" board[cellID] ? ">#<$>" str;
+    }
+    buffer += "&EOL"
+  }
+  board = nextBoard;
+  frameT = time frameT -
+  print "\clear"
+  print frameT "$<display:block; line-height:.5rem; color:transparent>" buffer "<$>" str;
+  wait 0
+}

@@ -151,6 +151,22 @@ export class FreeProc extends Proc {
         await this.target.free();
     }
 }
+
+export class WaitProc extends Proc {
+    constructor(args) {
+        super(args);
+    }
+
+    async exec() {
+        const result  = await this.stackExpr.exec();
+        const resType = runtime_getTypeStr(result);
+        if(resType != "int") throw new RuntimeError(`"Wait" procedure expected <int> evaluation, got <${resType}> instead`, "Type");
+        await new Promise(resolve => {
+            GLC.activeTimeout = resolve;
+            setTimeout(resolve, result);
+        });
+    }
+}
 /*
 export class ReplaceProc extends Proc {
     constructor(compilerRef, line) {

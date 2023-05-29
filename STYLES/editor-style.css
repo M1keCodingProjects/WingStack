@@ -51,11 +51,12 @@ button {
 #gui-container {
     flex-grow: 0;
     width: 100%;
-    height: 12%;
+    height: 13%;
     padding: .5rem;
     padding-bottom: 0;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
+    justify-content: space-between;
 }
 
 .content-container {
@@ -85,10 +86,15 @@ input[type="text"] {
 }
 
 /* OPEN FILES */
-#openFiles-container {
+.stuffOnTop {
     position: absolute;
     width: 100%;
-    top: -2rem;
+    top: -2.5rem;
+    display: flex;
+    justify-content: space-between;
+}
+
+#openFiles-container {
     display: flex;
     align-items: flex-end;
     justify-content: flex-end;
@@ -114,6 +120,7 @@ input[type="text"] {
 
 #openFiles-container .fileTab:not([saved])::after {
     content: "*";
+    vertical-align: super;
 }
 
 /* TEXT EDITOR */

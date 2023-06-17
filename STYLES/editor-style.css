@@ -56,7 +56,7 @@ button {
     padding-bottom: 0;
     display: flex;
     flex-direction: row;
-    justify-content: space-between;
+    justify-content: flex-end;
 }
 
 .content-container {

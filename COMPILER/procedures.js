@@ -81,9 +81,13 @@ export class LoopProc extends Proc {
 
     buildArgs(args) {
         super.buildArgs(args);
-        if(args.trigger)  this.trigger  = args.trigger;
-        if(args.iterator) this.iterator = new ArgClasses.Assignment(args.iterator, true);
-        if(args.onIter)   this.onIter   = new ArgClasses.Assignment(args.onIter);
+        if(args.trigger) this.trigger = args.trigger;
+        if(args.onIter)  this.onIter  = new ArgClasses.Assignment(args.onIter);
+        if(args.iterator) {
+            this.iterator = args.iterator.type == "MakeProc" ?
+                            new MakeProc(args.iterator) :
+                            new ArgClasses.Assignment(args.iterator);
+        }
     }
 
     async exec() {
@@ -99,7 +103,7 @@ export class LoopProc extends Proc {
             if(this.trigger?.sent) break;
         }
 
-        if(this.iterator) GLC.vars.pop(); // this is a sin but it should work
+        if(this.iterator && this.iterator.depth) GLC.vars.pop(); // this is a sin but it should work
         if(!this.trigger?.sent) return;
         if(this.trigger.sent !== true) return true; // trigger was meant for function.
         this.trigger.sent = false;
@@ -128,7 +132,7 @@ export class MakeProc extends Proc {
 
     buildArgs(args) {
         this.assignment = new ArgClasses.Assignment(args.value, true);
-        this.assignment.frozen  = args.frozen;
+        this.assignment.const   = args.const;
         this.assignment.dynamic = args.dynamic;
         this.depth              = this.assignment.depth;
     }

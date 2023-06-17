@@ -18,8 +18,8 @@ if TRUE loop {
   make frameT = time
   make buffer = ""
   make nextBoard = board
-  loop H with y {
-    loop W with x {
+  loop H with make y {
+    loop W with make x {
       make cellID = x y W * +
       make score =
         board[cellID W - 1 -] int board[cellID W -] int board[cellID W - 1 +] int

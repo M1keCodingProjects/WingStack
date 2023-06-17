@@ -103,7 +103,7 @@ export default class Parser {
         };
     }
 
-    Block(noThen = false) { // Block : ("{" Program "}") | ("then" Expression)
+    Block(noThen = false) { // Block : "{" Program "}" | "then" Expression
         const token = {
             type  : "Block",
             value : [],
@@ -193,7 +193,7 @@ export default class Parser {
         };
     }
 
-    LoopProc() { // LoopProc : "loop" StackExpr ("with" Assignment ("," StackExpr)?)? Block
+    LoopProc() { // LoopProc : "loop" StackExpr ("with" (MakeProc | Assignment | ForcedRef) ("," StackExpr)?)? Block
         const token = {
             type  : "LoopProc",
             value : this.StackExpr().value,
@@ -201,12 +201,31 @@ export default class Parser {
 
         const nextToken = this.peek_nextToken();
         if(nextToken?.type == "keyword" && nextToken.value != "then") {
-            if(this.grab_nextToken().value != "with") this.throw(`"Loop" procedure expected optional "with" keyword but got "${withKW.value}"`, withKW.line);
+            let keyword = this.grab_nextToken();
+            if(keyword?.value != "with") this.throw(`"Loop" procedure expected optional "with" keyword but got "${keyword.value ?? "nothing"}"`, keyword.line);
             this.currentDepth++; // this ensures iterator scope-safety
-            token.iterator = this.Assignment(true);
+            let assignmentTarget;
+            if(this.peek_nextToken()?.type == "keyword") {
+                keyword = this.grab_nextToken();
+                switch(keyword?.value) {
+                    case "make" : {
+                        token.iterator = this.MakeProc();
+                        assignmentTarget = {...token.iterator.value.target}; break;
+                    }
+
+                    case "ref" : assignmentTarget = {...this.ForcedRef().value}; break;
+                    
+                    default : this.throw(`"Loop" procedure expected either "Make" procedure or "Assignment" after "with", got "${keyword.value ?? "nothing"}" instead`, keyword.line);
+                }
+            }
+            else {
+                token.iterator = this.Assignment();
+                assignmentTarget = {...token.iterator.target};
+            }
+
             token.onIter = {
                 type   : "Assignment",
-                target : {...token.iterator.target},
+                target : assignmentTarget,
             };
             
             if(this.peek_nextToken()?.type == ",") {
@@ -214,7 +233,7 @@ export default class Parser {
                 token.onIter.value = this.StackExpr().value
             }
             else token.onIter.value = [
-                {...token.iterator.target},
+                assignmentTarget,
                 {
                     type  : "num",
                     value : 1,
@@ -262,7 +281,7 @@ export default class Parser {
         };
     }
 
-    MakeProc() { // MakeProc : "make" ("const" | "dynamic" | "global" | "type")<?> Assignment
+    MakeProc() { // MakeProc : "make" ("const" | "dynamic" | "global" | "type")<?> Assignment?
         const token = {
             type  : "MakeProc",
         };
@@ -294,6 +313,7 @@ export default class Parser {
         }
 
         token.value = this.Assignment(true);
+        token.value.global = token.global;
         const assignmentTargetCallChain = token.value.target.value;
         const firstProperty = assignmentTargetCallChain[0];
         if(assignmentTargetCallChain.length == 1 && firstProperty.type == "instance") {
@@ -320,7 +340,7 @@ export default class Parser {
         };
     }
 
-    Assignment(inMakeProc = false) { // Assignment : CallChain ((":" Type)? ((ASSIGN_OP StackExpr) | INCR_OP))?
+    Assignment(inMakeProc = false) { // Assignment : CallChain ((":" Type)? (ASSIGN_OP StackExpr | INCR_OP))?
         const token = {
             type   : "Assignment",
             target : this.CallChain("as target of assignment"),
@@ -421,6 +441,13 @@ export default class Parser {
         if(nextTokenType == "WORD" || nextTokenType == "type") return this.get_nextToken_ifOfType(nextTokenType);
     }
 
+    ForcedRef() { // ForcedRef : "ref" CallChain
+        return {
+            type  : "Reference",
+            value : this.CallChain("when assigning by reference"),
+        };
+    }
+
     StackExpr(allowEmpty = false) { // StackExpr : (StackValue | STACKOP | CallChain)+
         const token = {
             type    : "StackExpr",
@@ -455,7 +482,7 @@ export default class Parser {
         }
     }
 
-    CallChain(noListBuild = false) { // CallChain : Property (("." Property) | IDProp)*
+    CallChain(noListBuild = false) { // CallChain : Property ("." Property | IDProp)*
         this.eatOptionalSpace();
         const token = {
             type  : "CallChain",

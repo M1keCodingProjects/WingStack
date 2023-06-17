@@ -1,0 +1,20 @@
+make const target = "Hello, World!"
+make guess :[void|str] = []
+loop target spill size with make i then make guess[i] = rand 100 * int 25 + char
+
+make i
+if guess spill str target != loop {
+  if guess[i] target[i] == then i++;
+  guess[i] = rand 100 * int 25 + char
+  
+  make buffer := ""
+  loop guess spill size with make j {
+    buffer += "$<color:#ededed; "
+    if j i == then buffer += "background:#ededed; color:var(--bg-col)";
+    buffer += ">" guess[j] dup "$" != ? "<$>" str
+  }
+  
+  print "\clear"
+  print buffer
+  wait 0
+}

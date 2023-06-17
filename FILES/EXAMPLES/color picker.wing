@@ -15,7 +15,7 @@ if TRUE loop {
   make guessedColor = [];
   make currentColor := "";
   make j;
-  loop guess spill size with i {
+  loop guess spill size with make i {
     if guess[i] " " == {
       make guessedColor[j] = currentColor int;
       currentColor = "";

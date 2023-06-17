@@ -26,15 +26,15 @@ make Time = 23 58 55
 
 if TRUE loop {
   make evalTime = []
-  loop 3 with i then make evalTime[i] = DIGITS_MAP[Time[i] 10 / int] DIGITS_MAP[Time[i] 10 %]
+  loop 3 with make i then make evalTime[i] = DIGITS_MAP[Time[i] 10 / int] DIGITS_MAP[Time[i] 10 %]
   
   make hours = evalTime[0]
   make mins  = evalTime[1]
   make secs  = evalTime[2]
   
   make hoursBuffer = "" "" "" "" ""
-  loop 2 with digitID {
-    loop 5 with sliceID {
+  loop 2 with make digitID {
+    loop 5 with make sliceID {
       if sliceID 2 % not then hoursBuffer[sliceID] += " $<color:" ON_COL hours[digitID][sliceID] ? ">•••<$>  " str
       else hoursBuffer[sliceID] += "$<color:" ON_COL hours[digitID][5 sliceID 1 == int +] ?
                            ">•<$>   $<color:" ON_COL hours[digitID][sliceID] ? ">•<$> " str
@@ -42,8 +42,8 @@ if TRUE loop {
   }
 
   make minsBuffer = "" "" "" "" ""
-  loop 2 with digitID {
-    loop 5 with sliceID {
+  loop 2 with make digitID {
+    loop 5 with make sliceID {
       if sliceID 2 % not then minsBuffer[sliceID] += " $<color:" ON_COL mins[digitID][sliceID] ? ">•••<$>  " str
       else minsBuffer[sliceID] += "$<color:" ON_COL mins[digitID][5 sliceID 1 == int +] ?
                           ">•<$>   $<color:" ON_COL mins[digitID][sliceID] ? ">•<$> " str
@@ -51,8 +51,8 @@ if TRUE loop {
   }
   
   make secsBuffer = "" "" "" "" ""
-  loop 2 with digitID {
-    loop 5 with sliceID {
+  loop 2 with make digitID {
+    loop 5 with make sliceID {
       if sliceID 2 % not then secsBuffer[sliceID] += " $<color:" ON_COL secs[digitID][sliceID] ? ">•••<$>  " str
       else secsBuffer[sliceID] += "$<color:" ON_COL secs[digitID][5 sliceID 1 == int +] ?
                           ">•<$>   $<color:" ON_COL secs[digitID][sliceID] ? ">•<$> " str
@@ -60,7 +60,7 @@ if TRUE loop {
   }
 
   make buffer = ""
-  loop 5 with sliceID {
+  loop 5 with make sliceID {
     if sliceID 6 == sliceID 2 % 0 != or {
       buffer += hoursBuffer[sliceID] "  " minsBuffer[sliceID] "  " secsBuffer[sliceID] "&EOL" str dup
                 hoursBuffer[sliceID] SPACER minsBuffer[sliceID] SPACER secsBuffer[sliceID] "&EOL" rot< str

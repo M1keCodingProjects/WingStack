@@ -4,10 +4,10 @@ make const MAP := 110 bin;
 make const ITERS := 100;
 make tape := " " ITERS *;
 
-make const BUFFER = "$<display:block; line-height:.5rem>";
+make BUFFER = "$<display:block; line-height:.5rem>";
 loop ITERS {
   make nextTape := C;
-  loop ITERS 1 - with i {
+  loop ITERS 1 - with make i {
     if tape[i 1 -] C == tape[i] C == tape[i 1 +] C == bin int MAP swap >> b1 and
     then nextTape += C;   # not a bottleneck, but inconvenient: conditional assignments would be
     else nextTape += " "; # more convenient.

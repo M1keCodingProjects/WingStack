@@ -1,4 +1,5 @@
 //
+|   : everything at left of "|" or everything at right of "|"
 ?   : 0 or 1 times (optional)
 *   : 0 or more times
 +   : 1 or more times
@@ -13,35 +14,37 @@ Procedure  : PrintProc | IfProc | LoopProc | NextProc | ExitProc | MakeProc | Fr
 
 PrintProc  : "print" StackExpr
 
-StackExpr  : (StackValue | STACKOP | CallChain)+
+StackExpr  : (StackValue | STACKOP | CallChain)+ //| ForcedRef
 
 StackValue : NUM | BIN | STR
 
-CallChain  : Property (("." Property) | IDProp)*
+CallChain  : Property ("." Property | IDProp)*
 
 Property   : IDProp | WORD
 
 IDProp     : "[" StackExpr "]"
 
+ForcedRef  : "ref" CallChain
+
 IfProc     : "if" StackExpr "loop"? Block ElseProc?
 
-Block      : ("{" Program "}") | ("then" Expression)
+Block      : "{" Program "}" | "then" Expression
 
 ElseProc   : "else" (IfProc | Block)
 
-LoopProc   : "loop" StackExpr ("with" Assignment ("," StackExpr)?)? Block
+LoopProc   : "loop" StackExpr ("with" (MakeProc | Assignment | ForcedRef) ("," StackExpr)?)? Block
 
-Assignment : CallChain ((":" Type)? ((ASSIGN_OP StackExpr) | INCR_OP))?
+Assignment : CallChain ((":" Type)? (ASSIGN_OP StackExpr | INCR_OP))?
 
 Type       : SingleType ("|" SingleType)*
 
 SingleType : (TYPE | WORD) | "[" Type "]"
 
+MakeProc   : "make" ("const" | "dynamic" | "global" | "type")<?> Assignment?
+
 NextProc   : "next"
 
 ExitProc   : "exit" StackExpr?
-
-MakeProc   : "make" ("const" | "dynamic" | "global" | "type")<?> Assignment
 
 FreeProc   : "free" CallChain
 

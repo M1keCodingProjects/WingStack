@@ -8,10 +8,10 @@ const GLP = new Parser();
 import {Block} from "./arguments.js";
 
 class Variable {
-    constructor(name, value, frozen, depth, ...types) {
+    constructor(name, value, constant, depth, ...types) {
         this.name = name;
         this.init(value, types);
-        this.frozen = frozen;
+        this.const = constant;
         this.depth  = depth;
     }
 
@@ -27,7 +27,7 @@ class Variable {
     }
 
     set(value) {
-        if(this.frozen) throw new RuntimeError(`Cannot assign to frozen variable "${this.name}"`, "Scope");
+        if(this.const) throw new RuntimeError(`Cannot assign to constant "${this.name}"`, "Scope");
         const got = runtime_checkType(value);
         if(runtime_checkGot_asValidExpected(this.type, got)) return this.value = value; //uncaught
         throw new RuntimeError(`Variable "${this.name}" expected value to be of type <${this.type}> but got <${got}> instead`, "Type");
@@ -39,8 +39,8 @@ class Variable {
 }
 
 class InstanceVariable extends Variable {
-    constructor(name, value, frozen, whenReferenced_callback, ...types) {
-        super(name, value, frozen, 0, ...types);
+    constructor(name, value, constant, whenReferenced_callback, ...types) {
+        super(name, value, constant, 0, ...types);
         this.whenReferenced = whenReferenced_callback;
     }
 
@@ -125,13 +125,13 @@ class Compiler {
         this.run();
     }
 
-    createVar(name, value, type = "any", depth = 0, frozen = false) {
+    createVar(name, value, type = "any", depth = 0, constant = false) {
         for(let i = this.vars.length - 1; i >= 0; i--) {
             if(this.vars[i].depth < depth) break;
             if(this.vars[i].name == name) throw new RuntimeError(`Variable "${name}" already defined in scope`, "Name");
         }
 
-        const newVar = new Variable(name, value, frozen, depth, type);
+        const newVar = new Variable(name, value, constant, depth, type);
         if(depth) this.vars.push(newVar);
         else      this.vars.unshift(newVar);
         return newVar;

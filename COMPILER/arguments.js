@@ -272,7 +272,7 @@ export class Assignment {
     async execCreate() {
         const value = await this.stackExpr.exec();
         if(this.target.properties.length > 1) return await this.target.execWrite(value, true);
-        const target = GLC.createVar(this.target.properties[0], value, this.expectedType, this.depth, this.frozen);
+        const target = GLC.createVar(this.target.properties[0], value, this.expectedType, this.depth, this.const);
         if(this.dynamic) target.type = new Type();
     }
 }

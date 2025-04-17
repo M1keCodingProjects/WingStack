@@ -71,6 +71,7 @@ const HIGHLIGHT_KEYWORDS = {
     inp    : "stackOp",
     flip   : "stackOp",
     rand   : "stackOp",
+    sin    : "stackOp",
 
     num    : "type",
     dec    : "type",

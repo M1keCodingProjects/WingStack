@@ -787,6 +787,24 @@ export class Bin_stackOp extends Num_stackOp {
   }
 }
 
+export class Sin_stackOp extends StackOp {
+  constructor(typeStack) {
+    super(typeStack);
+  }
+  
+  checkType(typeStack) {
+    typeStack.addOption("num");
+  }
+
+  exec(stack) {
+    const [item, _] = this.getValidatedItemAndType_fromStackTop(stack, 0, false, "num");
+    const res = Math.sin(item);
+    if(isNaN(res)) throw new RuntimeError("Obtained NaN value from sin operation", "Math");
+    
+    stack.push(res);
+  }
+}
+
 /*
 export class _stackOp extends StackOp {
   constructor(typeStack) {

@@ -86,6 +86,7 @@ export class StackExpr {
             case "char"   : return new StackOp.Char_stackOp(typeStack);
             case "inp"    : return new StackOp.Inp_stackOp(typeStack);
             case "?"      : return new StackOp.When_stackOp(typeStack);
+            case "sin"    : return new StackOp.Sin_stackOp(typeStack);
 
             //type-casting
             case "num"  : return new StackOp.Num_stackOp(typeStack);

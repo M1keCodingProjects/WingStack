@@ -230,14 +230,17 @@ export class CallChain {
 
 export class Assignment {
     constructor(args, makesNewVar = false) {
-        this.depth     = args.target.depth * !args.global;
-        this.target    = new CallChain(args.target.value, this.depth);
+        this.depth     = args.depth * !args.global;
+        this.target    = makesNewVar ?
+                         args.target.map(arg => new CallChain(arg.value, this.depth)) :
+                         new CallChain(args.target.value, this.depth);
+        
         this.stackExpr = new StackExpr(args.value);
 
         if(makesNewVar) this.exec = this.execCreate;
 
         if(args.typeSignature) {
-            if(args.target.value.length > 1) throw new CompileTimeError("Assignments that target properties of items cannot be type-annotated");
+            if((makesNewVar && args.target.find(target => target.value.length > 1)) || args.target?.value?.length > 1) throw new CompileTimeError("Assignments that target properties of items cannot be type-annotated");
             this.buildTypeArg(args.typeSignature);
         }
     }
@@ -271,9 +274,11 @@ export class Assignment {
 
     async execCreate() {
         const value = await this.stackExpr.exec();
-        if(this.target.properties.length > 1) return await this.target.execWrite(value, true);
-        const target = GLC.createVar(this.target.properties[0], value, this.expectedType, this.depth, this.const);
-        if(this.dynamic) target.type = new Type();
+        for(const target of this.target) {
+            if(target.properties.length > 1) return await target.execWrite(value, true);
+            const targetVar = GLC.createVar(target.properties[0], value, this.expectedType, this.depth, this.const);
+            if(this.dynamic) targetVar.type = new Type();
+        }
     }
 }
 

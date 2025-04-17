@@ -787,6 +787,20 @@ export class Bin_stackOp extends Num_stackOp {
   }
 }
 
+export class Sin_stackOp extends StackOp {
+  constructor(typeStack) {
+    super(typeStack);
+  }
+  
+  checkType(typeStack) {
+    typeStack.addOption("num");
+  }
+
+  exec(stack) {
+
+  }
+}
+
 /*
 export class _stackOp extends StackOp {
   constructor(typeStack) {

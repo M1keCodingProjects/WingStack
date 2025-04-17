@@ -156,7 +156,12 @@ class Editor {
         tokenize(text, (match, tokenType, result) => {
             let cleanMatch = this.replaceCharacters(match);
             if(tokenType in HIGHLIGHT_COLORS) {
-                let appliedStyle = `color:var(--${tokenType}-col);`;
+                let appliedStyle;
+                if(tokenType == HIGHLIGHT_COLORS.str && cleanMatch.includes('{')) {
+                    cleanMatch.matchAll(/(\{[^\}]*\})+/);
+                }
+                else appliedStyle = `color:var(--${tokenType}-col);`;
+
                 if(tokenType == "comment") appliedStyle += "font-style:italic";
                 cleanMatch = `<span style="${appliedStyle}">${cleanMatch}</span>`;
             }

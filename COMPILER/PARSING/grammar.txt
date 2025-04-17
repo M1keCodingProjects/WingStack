@@ -34,7 +34,7 @@ ElseProc   : "else" (IfProc | Block)
 
 LoopProc   : "loop" StackExpr ("with" (MakeProc | Assignment | ForcedRef) ("," StackExpr)?)? Block
 
-Assignment : CallChain ((":" Type)? (ASSIGN_OP StackExpr | INCR_OP))?
+Assignment : CallChain ("," CallChain)* ((":" Type)? (ASSIGN_OP StackExpr | INCR_OP))?
 
 Type       : SingleType ("|" SingleType)*
 

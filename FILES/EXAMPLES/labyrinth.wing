@@ -9,17 +9,14 @@ make CORNER_MAP := "╬╣╩╝╠║╚ ╦╗═ ╔   " spill;
 make maze :[bin|void]= [];
 loop H W * then make maze[maze spill size] = b0;
 
-make current;
-make currentX;
-make currentY;
+make current, currentX, currentY;
 
 if TRUE loop {
   # rendering
   make mazeRender := "$<display:block; line-height:1rem;>";
   make bbRender := "";
   loop H with make y {
-    make topRender := "";
-    make bottomRender := "";
+    make topRender, bottomRender := "";
     make cellID;
     make cells := b1111;
     loop W with make x {

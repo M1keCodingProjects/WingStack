@@ -53,3 +53,12 @@ saveFileAsBtn.onclick = async _=> {
     const fileName = await fileManager.saveFileAs(IDE.getText());
     IDE.updateFileName(fileName);
 };
+
+import { parser } from './COMPILER/PARSING/parser.js';
+parser.parse("print \"Hello, World!\"");
+parser.updateNextToken();
+parser.updateNextToken();
+parser.updateNextToken();
+parser.updateNextToken();
+parser.updateNextToken();
+parser.updateNextToken();

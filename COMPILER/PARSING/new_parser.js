@@ -57,7 +57,10 @@ export default class Parser {
         let lineNumber = 1;
         tokenize(text, (match, tokenType, tokens) => {
             if(tokenType == "EOL") lineNumber += match.length;
-            if(tokenType in IGNORED_TOKEN_TYPES) return justSpaced = tokenType != "comment"; // uncaught.
+            if(tokenType in IGNORED_TOKEN_TYPES) {
+                if(tokenType == "comment") lineNumber += match.split("\n").length - 1;
+                return justSpaced = tokenType != "comment"; // uncaught.
+            }
 
             switch(tokenType) {
                 case "str" : match = match.slice(1, -1); break;
@@ -209,8 +212,8 @@ export default class Parser {
                 keyword = this.grab_nextToken();
                 switch(keyword?.value) {
                     case "make" : {
-                        token.iterator = this.MakeProc();
-                        assignmentTarget = {...token.iterator.value.target}; break;
+                        token.iterator = this.MakeProc(false);
+                        assignmentTarget = {...token.iterator.value.target[0]}; break;
                     }
 
                     case "ref" : assignmentTarget = {...this.ForcedRef().value}; break;
@@ -219,7 +222,7 @@ export default class Parser {
                 }
             }
             else {
-                token.iterator = this.Assignment();
+                token.iterator = this.Assignment(false, false);
                 assignmentTarget = {...token.iterator.target};
             }
 
@@ -314,15 +317,6 @@ export default class Parser {
 
         token.value = this.Assignment(true);
         token.value.global = token.global;
-        const assignmentTargetCallChain = token.value.target.value;
-        const firstProperty = assignmentTargetCallChain[0];
-        if(assignmentTargetCallChain.length == 1 && firstProperty.type == "instance") {
-            this.throw(
-                `Cannot use reserved word "${firstProperty.value}" to name a variable`,
-                firstProperty.line
-            );
-        }
-        
         return token;
     }
 
@@ -340,20 +334,32 @@ export default class Parser {
         };
     }
 
-    Assignment(inMakeProc = false) { // Assignment : CallChain ((":" Type)? (ASSIGN_OP StackExpr | INCR_OP))?
+    Assignment(inMakeProc = false, allowConcurrent = true) { // Assignment : CallChain ("," CallChain)* ((":" Type)? (ASSIGN_OP StackExpr | INCR_OP))?
         const token = {
             type   : "Assignment",
             target : this.CallChain("as target of assignment"),
         };
+        token.depth = token.target.depth;
+        if(allowConcurrent) token.target = [token.target];
 
         const nextToken = this.peek_nextToken();
-        if(!nextToken || ![":", "assignOp", "incdecOp"].includes(nextToken.type)) {
+        if(!nextToken || ![",", ":", "assignOp", "incdecOp"].includes(nextToken.type)) {
             if(!inMakeProc) this.throw("Defaulted assignments are only possible during variable declaration", token.target.line);
             token.value = [{
                 type  : "num",
                 value : 0,
             }];
             return token;
+        }
+
+        if(nextToken.type == ",") {
+            if(!allowConcurrent) this.throw("Concurrent assignments are not allowed for iterators", nextToken.line);
+            this.grab_nextToken();
+            token.target.push(this.CallChain("as target of assignment"));
+            while(this.peek_nextToken()?.type == ",") {
+                this.grab_nextToken();
+                token.target.push(this.CallChain("as target of assignment"));
+            }
         }
 
         if(this.peek_nextToken()?.type == ":") {
